@@ -1,11 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
-
-const otpStore = new Map();
-
 import { v4 as uuidv4 } from 'uuid';
 
-export async function POST_SIGNUP(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const { phoneNumber, fullName, collegeName, hostelName, email } = await request.json();
 
@@ -28,6 +25,6 @@ export async function POST_SIGNUP(request: NextRequest) {
 
     return NextResponse.json({ success: true, student: { id: userId, phoneNumber, fullName, email } });
   } catch (error) {
-    return NextResponse.json({ success: false, message: 'Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }
 }

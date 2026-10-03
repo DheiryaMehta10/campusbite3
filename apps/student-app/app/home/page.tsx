@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation';
-// FILE: apps/student-app/app/home/page.tsx
 'use client';
+
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -9,15 +8,15 @@ import axios from 'axios';
 interface Restaurant {
   id: string;
   name: string;
-  operationalStatus: string;
+  operational_status?: string;
+  operationalStatus?: string;
 }
 
 export default function HomePage() {
   const router = useRouter();
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
-  const [cartCount, setCartCount] = useState(0);
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL });
+  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '' });
 
   useEffect(() => {
     if (!localStorage.getItem('userId')) router.push('/auth/login');
@@ -27,7 +26,7 @@ export default function HomePage() {
   const fetchRestaurants = async () => {
     try {
       const res = await api.get('/api/restaurants');
-      setRestaurants(res.data.data);
+      setRestaurants(res.data.data || []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -50,7 +49,7 @@ export default function HomePage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {restaurants
-              .filter((r) => r.operationalStatus === 'open')
+              .filter((r) => (r.operational_status || r.operationalStatus || 'open') === 'open')
               .map((restaurant) => (
                 <Link key={restaurant.id} href={`/restaurant/${restaurant.id}`}>
                   <div className="bg-white rounded-lg overflow-hidden shadow hover:shadow-lg cursor-pointer transition-shadow">

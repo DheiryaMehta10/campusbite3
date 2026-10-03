@@ -1,16 +1,19 @@
-import { redirect } from 'next/navigation';
-// FILE: apps/student-app/app/orders/page.tsx
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
 interface Order {
   id: string;
-  orderNumber: string;
-  totalAmount: number;
-  orderStatus: string;
-  placedAt: string;
+  orderNumber?: string;
+  order_number?: string;
+  totalAmount?: number;
+  total_amount?: number;
+  orderStatus?: string;
+  order_status?: string;
+  placedAt?: string;
+  placed_at?: string;
 }
 
 export default function OrdersPage() {
@@ -18,8 +21,8 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL,
-    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
+    baseURL: process.env.NEXT_PUBLIC_API_URL || '',
+    headers: typeof window !== 'undefined' ? { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } : {},
   });
 
   useEffect(() => {
@@ -30,7 +33,7 @@ export default function OrdersPage() {
   const fetchOrders = async () => {
     try {
       const res = await api.get('/api/orders');
-      setOrders(res.data.data);
+      setOrders(res.data.data || []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -50,18 +53,26 @@ export default function OrdersPage() {
         </div>
       ) : (
         <div className="space-y-4">
-          {orders.map((order) => (
-            <div key={order.id} className="bg-white rounded-lg p-4 shadow">
-              <div className="flex justify-between items-start mb-2">
-                <div>
-                  <p className="font-bold">#{order.orderNumber}</p>
-                  <p className="text-xs text-gray-600">{new Date(order.placedAt).toLocaleDateString()}</p>
+          {orders.map((order) => {
+            const num = order.orderNumber || order.order_number || 'N/A';
+            const dateStr = order.placedAt || order.placed_at;
+            const status = order.orderStatus || order.order_status || 'placed';
+            const total = order.totalAmount ?? order.total_amount ?? 0;
+            return (
+              <div key={order.id} className="bg-white rounded-lg p-4 shadow">
+                <div className="flex justify-between items-start mb-2">
+                  <div>
+                    <p className="font-bold">#{num}</p>
+                    <p className="text-xs text-gray-600">
+                      {dateStr ? new Date(dateStr).toLocaleDateString() : 'Recent'}
+                    </p>
+                  </div>
+                  <span className="text-sm px-2 py-1 bg-blue-100 text-blue-800 rounded">{status}</span>
                 </div>
-                <span className="text-sm px-2 py-1 bg-blue-100 text-blue-800 rounded">{order.orderStatus}</span>
+                <p className="font-bold">₹{total}</p>
               </div>
-              <p className="font-bold">₹{order.totalAmount}</p>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

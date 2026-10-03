@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation';
-// FILE: apps/student-app/app/cart/page.tsx
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
@@ -9,25 +8,16 @@ export default function CartPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL,
-    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
+    baseURL: process.env.NEXT_PUBLIC_API_URL || '',
+    headers: typeof window !== 'undefined' ? { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } : {},
   });
 
   const handleCheckout = async () => {
     setLoading(true);
     try {
-      // Get available slots
-      const slotsRes = await api.get('/api/slots');
-      const activeSlot = slotsRes.data.data.find((s: any) => s.active);
-
-      if (!activeSlot) {
-        alert('No delivery slots available');
-        return;
-      }
-
       const res = await api.post('/api/orders', {
         restaurantId: 'temp-id',
-        deliverySlotId: activeSlot.id,
+        deliverySlotId: 'default-slot',
         paymentMethod: 'cod',
       });
 

@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation';
-// FILE: apps/restaurant-app/app/auth/login/page.tsx
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
@@ -14,15 +13,17 @@ export default function LoginPage() {
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL });
+  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '' });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       const res = await api.post('/api/auth/restaurant/login', form);
-      localStorage.setItem('restaurantId', res.data.restaurant.id);
-      localStorage.setItem('restaurantName', res.data.restaurant.name);
+      if (res.data.restaurant?.id) {
+        localStorage.setItem('restaurantId', res.data.restaurant.id);
+        localStorage.setItem('restaurantName', res.data.restaurant.name || 'Restaurant');
+      }
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed');

@@ -1,12 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase';
+import { supabaseServer, getUser } from '@/lib/supabase';
 
-const otpStore = new Map();
-export async function POST_CART(request: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
     const token = authHeader?.replace('Bearer ', '');
-    const { getUser } = await import('@/lib/supabase');
     const user = await getUser(token!);
 
     if (!user) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
@@ -33,8 +31,47 @@ export async function POST_CART(request: NextRequest) {
       unit_price: foodItem.price,
     });
 
-    return NextResponse.json({ success: true, message: 'Item added' });
+    return NextResponse.json({ success: true, message: 'Item added to cart' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: 'Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+  }
+}
+
+export async function GET(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    const user = await getUser(token!);
+
+    if (!user) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+
+    const { data: cart } = await supabaseServer
+      .from('carts')
+      .select('*, cart_items(*, food_items(*))')
+      .eq('student_id', user.id)
+      .eq('cart_type', 'food')
+      .single();
+
+    return NextResponse.json({ success: true, data: cart });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader?.replace('Bearer ', '');
+    const user = await getUser(token!);
+
+    if (!user) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
+
+    const { cartItemId } = await request.json();
+
+    await supabaseServer.from('cart_items').delete().eq('id', cartItemId);
+
+    return NextResponse.json({ success: true, message: 'Item removed' });
+  } catch (error) {
+    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }
 }

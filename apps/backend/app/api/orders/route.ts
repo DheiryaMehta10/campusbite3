@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase';
-
-const otpStore = new Map();
+import { supabaseServer, getUser } from '@/lib/supabase';
 import { v4 as uuidv4 } from 'uuid';
-export async function POST_ORDER(request: NextRequest) {
+
+export async function POST(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
     const token = authHeader?.replace('Bearer ', '');
-    const { getUser } = await import('@/lib/supabase');
     const user = await getUser(token!);
 
     if (!user) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
@@ -23,23 +21,33 @@ export async function POST_ORDER(request: NextRequest) {
       .single();
 
     if (!cart || cart.cart_items.length === 0) {
-      return NextResponse.json({ success: false, message: 'Cart empty' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Cart is empty' }, { status: 400 });
     }
 
     // Validate slot
-    const { data: slot } = await supabaseServer.from('delivery_slots').select('*').eq('id', deliverySlotId).single();
+    const { data: slot } = await supabaseServer
+      .from('delivery_slots')
+      .select('*')
+      .eq('id', deliverySlotId)
+      .single();
+
     if (!slot || !slot.active) {
-      return NextResponse.json({ success: false, message: 'Slot unavailable' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Delivery slot unavailable' }, { status: 400 });
     }
 
-    // Calculate totals - SERVER SIDE (CRITICAL)
+    // Calculate totals server-side
     let subtotal = 0;
     const items = [];
 
     for (const cartItem of cart.cart_items) {
-      const { data: foodItem } = await supabaseServer.from('food_items').select('*').eq('id', cartItem.item_id).single();
+      const { data: foodItem } = await supabaseServer
+        .from('food_items')
+        .select('*')
+        .eq('id', cartItem.item_id)
+        .single();
+
       if (!foodItem || foodItem.is_sold_out) {
-        return NextResponse.json({ success: false, message: 'Item not available' }, { status: 400 });
+        return NextResponse.json({ success: false, message: `Item not available` }, { status: 400 });
       }
       subtotal += foodItem.price * cartItem.quantity;
       items.push({
@@ -51,10 +59,16 @@ export async function POST_ORDER(request: NextRequest) {
     }
 
     // Get fees from database
-    const { data: feeConfig } = await supabaseServer.from('delivery_fee_config').select('fee_amount').single();
-    const deliveryFee = feeConfig?.fee_amount || 10;
+    const { data: feeConfig } = await supabaseServer
+      .from('delivery_fee_config')
+      .select('fee_amount')
+      .single();
+    const deliveryFee = feeConfig?.fee_amount ?? 10;
 
-    const itemCount = (cart?.cart_items || []).reduce((sum: number, item: { quantity: number }) => sum + (item.quantity || 0),0);
+    const itemCount = cart.cart_items.reduce(
+      (sum: number, item: { quantity: number }) => sum + (item.quantity || 0),
+      0
+    );
     const { data: feeRule } = await supabaseServer
       .from('platform_fee_rules')
       .select('fee_amount')
@@ -62,7 +76,7 @@ export async function POST_ORDER(request: NextRequest) {
       .gte('max_items', itemCount)
       .single();
 
-    const platformFee = feeRule?.fee_amount || 0;
+    const platformFee = feeRule?.fee_amount ?? 0;
     const totalAmount = subtotal + deliveryFee + platformFee;
 
     // Create order
@@ -109,15 +123,14 @@ export async function POST_ORDER(request: NextRequest) {
     });
   } catch (error) {
     console.error(error);
-    return NextResponse.json({ success: false, message: 'Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }
 }
 
-export async function GET_ORDERS(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const authHeader = request.headers.get('Authorization');
     const token = authHeader?.replace('Bearer ', '');
-    const { getUser } = await import('@/lib/supabase');
     const user = await getUser(token!);
 
     if (!user) return NextResponse.json({ success: false, message: 'Unauthorized' }, { status: 401 });
@@ -130,6 +143,6 @@ export async function GET_ORDERS(request: NextRequest) {
 
     return NextResponse.json({ success: true, data: orders });
   } catch (error) {
-    return NextResponse.json({ success: false, message: 'Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }
 }

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
 
-const otpStore = new Map();
+const otpStore = new Map<string, { otp: string; attempts: number; expiresAt: number }>();
 
 export async function POST(request: NextRequest) {
   try {
     const { phoneNumber } = await request.json();
     if (!/^[0-9]{10}$/.test(phoneNumber)) {
-      return NextResponse.json({ success: false, message: 'Invalid phone' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Invalid phone number' }, { status: 400 });
     }
 
     const otp = Math.floor(100000 + Math.random() * 900000).toString();
@@ -18,6 +18,6 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ success: true, message: 'OTP sent' });
   } catch (error) {
-    return NextResponse.json({ success: false, message: 'Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }
 }

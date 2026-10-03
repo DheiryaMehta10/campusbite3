@@ -1,11 +1,6 @@
-import { redirect } from 'next/navigation';
-// FILE: apps/admin-app/app/config/page.tsx
 'use client';
-import { useRouter } from 'next/navigation';
 
 export default function ConfigPage() {
-  const router = useRouter();
-
   return (
     <div className="min-h-screen bg-gray-50 p-4">
       <div className="max-w-2xl mx-auto">

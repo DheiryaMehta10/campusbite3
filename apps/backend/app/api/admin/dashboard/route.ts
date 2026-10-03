@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
 
-const otpStore = new Map();
-// FILE: apps/backend/app/api/admin/dashboard/route.ts
-export async function GET_ADMIN_DASHBOARD(request: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
     const { count: totalOrders } = await supabaseServer
       .from('orders')
@@ -42,6 +40,6 @@ export async function GET_ADMIN_DASHBOARD(request: NextRequest) {
       },
     });
   } catch (error) {
-    return NextResponse.json({ success: false, message: 'Error' }, { status: 500 });
+    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
   }
 }

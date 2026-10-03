@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation';
-// FILE: apps/student-app/app/restaurant/[id]/page.tsx
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import axios from 'axios';
@@ -18,18 +17,22 @@ export default function RestaurantPage() {
   const [items, setItems] = useState<FoodItem[]>([]);
   const [loading, setLoading] = useState(true);
   const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL,
-    headers: { Authorization: `Bearer ${localStorage.getItem('authToken')}` },
+    baseURL: process.env.NEXT_PUBLIC_API_URL || '',
+    headers: typeof window !== 'undefined' ? { Authorization: `Bearer ${localStorage.getItem('authToken') || ''}` } : {},
   });
 
+  const restaurantId = params?.id as string;
+
   useEffect(() => {
-    fetchMenu();
-  }, []);
+    if (restaurantId) {
+      fetchMenu();
+    }
+  }, [restaurantId]);
 
   const fetchMenu = async () => {
     try {
-      const res = await api.get(`/api/restaurants/${params.id}/menu`);
-      setItems(res.data.data);
+      const res = await api.get(`/api/restaurants/${restaurantId}/menu`);
+      setItems(res.data.data || []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -57,6 +60,8 @@ export default function RestaurantPage() {
 
         {loading ? (
           <p>Loading menu...</p>
+        ) : items.length === 0 ? (
+          <p>No items found for this restaurant.</p>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {items.map((item) => (

@@ -1,13 +1,14 @@
-import { redirect } from 'next/navigation';
-// FILE: apps/student-app/app/profile/page.tsx
 'use client';
+
 import { useRouter } from 'next/navigation';
 
 export default function ProfilePage() {
   const router = useRouter();
 
   const handleLogout = () => {
-    localStorage.clear();
+    if (typeof window !== 'undefined') {
+      localStorage.clear();
+    }
     router.push('/auth/login');
   };
 
@@ -19,19 +20,15 @@ export default function ProfilePage() {
         <div className="space-y-4">
           <div>
             <p className="text-gray-600 text-sm">Name</p>
-            <p className="font-medium">John Doe</p>
+            <p className="font-medium">Student User</p>
           </div>
           <div>
             <p className="text-gray-600 text-sm">College</p>
-            <p className="font-medium">IIT Madras</p>
+            <p className="font-medium">Campus</p>
           </div>
           <div>
             <p className="text-gray-600 text-sm">Hostel</p>
-            <p className="font-medium">A Block</p>
-          </div>
-          <div>
-            <p className="text-gray-600 text-sm">Phone</p>
-            <p className="font-medium">+91 9876543210</p>
+            <p className="font-medium">Block A</p>
           </div>
         </div>
 

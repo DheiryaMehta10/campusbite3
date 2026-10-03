@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation';
-// FILE: apps/admin-app/app/dashboard/page.tsx
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
@@ -17,11 +16,16 @@ export default function DashboardPage() {
   const router = useRouter();
   const [stats, setStats] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL });
+  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '' });
 
   useEffect(() => {
-    if (!localStorage.getItem('adminId')) router.push('/auth/login');
-    fetchDashboard();
+    if (typeof window !== 'undefined') {
+      if (!localStorage.getItem('adminId')) {
+        router.push('/auth/login');
+        return;
+      }
+      fetchDashboard();
+    }
   }, []);
 
   const fetchDashboard = async () => {
@@ -126,7 +130,7 @@ export default function DashboardPage() {
                 </Link>
                 <button
                   onClick={() => {
-                    localStorage.clear();
+                    if (typeof window !== 'undefined') localStorage.clear();
                     router.push('/auth/login');
                   }}
                   className="w-full border rounded-lg p-3 hover:bg-red-50 text-sm font-medium text-red-600"

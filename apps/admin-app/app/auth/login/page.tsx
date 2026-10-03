@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation';
-// FILE: apps/admin-app/app/auth/login/page.tsx
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
@@ -10,14 +9,16 @@ export default function LoginPage() {
   const [form, setForm] = useState({ email: '', password: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL });
+  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '' });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
       const res = await api.post('/api/auth/admin/login', form);
-      localStorage.setItem('adminId', res.data.admin.id);
+      if (res.data.admin?.id) {
+        localStorage.setItem('adminId', res.data.admin.id);
+      }
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Login failed');

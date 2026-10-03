@@ -1,6 +1,5 @@
-import { redirect } from 'next/navigation';
-// FILE: apps/student-app/app/auth/login/page.tsx
 'use client';
+
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
@@ -14,7 +13,7 @@ export default function LoginPage() {
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL });
+  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '' });
 
   const [signup, setSignup] = useState({
     fullName: '',

@@ -1,17 +1,20 @@
-import { redirect } from 'next/navigation';
-// FILE: apps/restaurant-app/app/dashboard/page.tsx
 'use client';
+
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
 interface Order {
   id: string;
-  orderNumber: string;
-  totalAmount: number;
-  orderStatus: string;
-  placedAt: string;
-  order_items: Array<{ itemName: string; quantity: number }>;
+  orderNumber?: string;
+  order_number?: string;
+  totalAmount?: number;
+  total_amount?: number;
+  orderStatus?: string;
+  order_status?: string;
+  placedAt?: string;
+  placed_at?: string;
+  order_items?: Array<{ itemName?: string; item_name?: string; quantity: number }>;
 }
 
 export default function DashboardPage() {
@@ -19,20 +22,29 @@ export default function DashboardPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [status, setStatus] = useState('open');
   const [loading, setLoading] = useState(true);
-  const restaurantId = localStorage.getItem('restaurantId');
-  const restaurantName = localStorage.getItem('restaurantName');
+  const [restaurantId, setRestaurantId] = useState<string | null>(null);
+  const [restaurantName, setRestaurantName] = useState('Restaurant');
 
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL });
+  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '' });
 
   useEffect(() => {
-    if (!restaurantId) router.push('/auth/login');
-    fetchOrders();
+    if (typeof window !== 'undefined') {
+      const id = localStorage.getItem('restaurantId');
+      const name = localStorage.getItem('restaurantName');
+      if (!id) {
+        router.push('/auth/login');
+        return;
+      }
+      setRestaurantId(id);
+      if (name) setRestaurantName(name);
+      fetchOrders(id);
+    }
   }, []);
 
-  const fetchOrders = async () => {
+  const fetchOrders = async (id: string) => {
     try {
-      const res = await api.get(`/api/restaurants/${restaurantId}/orders`);
-      setOrders(res.data.data);
+      const res = await api.get(`/api/restaurants/${id}/orders`);
+      setOrders(res.data.data || []);
     } catch (error) {
       console.error(error);
     } finally {
@@ -41,6 +53,7 @@ export default function DashboardPage() {
   };
 
   const toggleStatus = async () => {
+    if (!restaurantId) return;
     const newStatus = status === 'open' ? 'temporarily_closed' : 'open';
     try {
       await api.patch(`/api/restaurants/${restaurantId}/status`, {
@@ -57,7 +70,7 @@ export default function DashboardPage() {
       await api.patch(`/api/orders/${orderId}/status`, {
         orderStatus: newStatus,
       });
-      fetchOrders();
+      if (restaurantId) fetchOrders(restaurantId);
     } catch (error) {
       alert('Failed to update order');
     }
@@ -93,7 +106,9 @@ export default function DashboardPage() {
           </div>
           <div className="bg-white rounded-lg p-6 shadow">
             <p className="text-gray-600 text-sm">Pending Orders</p>
-            <p className="text-3xl font-bold mt-2">{orders.filter((o) => o.orderStatus === 'placed').length}</p>
+            <p className="text-3xl font-bold mt-2">
+              {orders.filter((o) => (o.orderStatus || o.order_status || '') === 'placed').length}
+            </p>
           </div>
         </div>
 
@@ -107,65 +122,73 @@ export default function DashboardPage() {
             <p className="text-center text-gray-600 py-8">No orders yet</p>
           ) : (
             <div className="space-y-4">
-              {orders.map((order) => (
-                <div key={order.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
-                  <div className="flex justify-between items-start mb-3">
-                    <div>
-                      <p className="font-bold text-lg">#{order.orderNumber}</p>
-                      <p className="text-sm text-gray-600">{new Date(order.placedAt).toLocaleTimeString()}</p>
+              {orders.map((order) => {
+                const num = order.orderNumber || order.order_number || 'N/A';
+                const dateStr = order.placedAt || order.placed_at;
+                const ordStatus = order.orderStatus || order.order_status || 'placed';
+                const total = order.totalAmount ?? order.total_amount ?? 0;
+                return (
+                  <div key={order.id} className="border rounded-lg p-4 hover:shadow-md transition-shadow">
+                    <div className="flex justify-between items-start mb-3">
+                      <div>
+                        <p className="font-bold text-lg">#{num}</p>
+                        <p className="text-sm text-gray-600">
+                          {dateStr ? new Date(dateStr).toLocaleTimeString() : 'Recent'}
+                        </p>
+                      </div>
+                      <span
+                        className={`px-3 py-1 rounded-full text-sm font-medium ${
+                          ordStatus === 'placed'
+                            ? 'bg-blue-100 text-blue-800'
+                            : ordStatus === 'accepted'
+                              ? 'bg-yellow-100 text-yellow-800'
+                              : 'bg-green-100 text-green-800'
+                        }`}
+                      >
+                        {ordStatus}
+                      </span>
                     </div>
-                    <span
-                      className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        order.orderStatus === 'placed'
-                          ? 'bg-blue-100 text-blue-800'
-                          : order.orderStatus === 'accepted'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-green-100 text-green-800'
-                      }`}
-                    >
-                      {order.orderStatus}
-                    </span>
-                  </div>
 
-                  <div className="mb-3 space-y-1">
-                    {order.order_items?.map((item, idx) => (
-                      <p key={idx} className="text-sm">
-                        {item.quantity}x {item.itemName}
-                      </p>
-                    ))}
-                  </div>
+                    <div className="mb-3 space-y-1">
+                      {order.order_items?.map((item, idx) => (
+                        <p key={idx} className="text-sm">
+                          {item.quantity}x {item.itemName || item.item_name}
+                        </p>
+                      ))}
+                    </div>
 
-                  <div className="flex justify-between items-center pt-3 border-t">
-                    <p className="font-bold">₹{order.totalAmount}</p>
-                    <div className="space-x-2">
-                      {order.orderStatus === 'placed' && (
-                        <button
-                          onClick={() => updateOrderStatus(order.id, 'accepted')}
-                          className="px-4 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
-                        >
-                          Accept
-                        </button>
-                      )}
-                      {order.orderStatus === 'accepted' && (
-                        <button
-                          onClick={() => updateOrderStatus(order.id, 'preparing')}
-                          className="px-4 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700"
-                        >
-                          Preparing
-                        </button>
-                      )}
-                      {order.orderStatus === 'preparing' && (
-                        <button
-                          onClick={() => updateOrderStatus(order.id, 'ready_for_delivery')}
-                          className="px-4 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
-                        >
-                          Ready
-                        </button>
-                      )}
+                    <div className="flex justify-between items-center pt-3 border-t">
+                      <p className="font-bold">₹{total}</p>
+                      <div className="space-x-2">
+                        {ordStatus === 'placed' && (
+                          <button
+                            onClick={() => updateOrderStatus(order.id, 'accepted')}
+                            className="px-4 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700"
+                          >
+                            Accept
+                          </button>
+                        )}
+                        {ordStatus === 'accepted' && (
+                          <button
+                            onClick={() => updateOrderStatus(order.id, 'preparing')}
+                            className="px-4 py-1 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700"
+                          >
+                            Preparing
+                          </button>
+                        )}
+                        {ordStatus === 'preparing' && (
+                          <button
+                            onClick={() => updateOrderStatus(order.id, 'ready_for_delivery')}
+                            className="px-4 py-1 bg-green-600 text-white rounded text-sm hover:bg-green-700"
+                          >
+                            Ready
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>

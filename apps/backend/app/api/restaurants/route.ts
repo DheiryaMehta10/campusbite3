@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest) {
   try {
-    const { id } = await params;
     const { data, error } = await supabaseServer
-      .from('food_items')
+      .from('restaurants')
       .select('*')
-      .eq('restaurant_id', id)
-      .eq('active', true);
+      .eq('active', true)
+      .order('created_at');
 
     if (error) throw error;
     return NextResponse.json({ success: true, data });
