@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { supabaseServer } from '@/lib/supabase';
+
+export const dynamic = 'force-dynamic';
 
 const otpStore = new Map<string, { otp: string; attempts: number; expiresAt: number }>();
 

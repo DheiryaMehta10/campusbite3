@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
 
-// In-memory OTP store — shared via module singleton in serverless (same function instance)
+export const dynamic = 'force-dynamic';
+
 const otpStore = new Map<string, { otp: string; attempts: number; expiresAt: number }>();
 
 export async function POST(request: NextRequest) {
