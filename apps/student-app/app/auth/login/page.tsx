@@ -11,8 +11,10 @@ export default function LoginPage() {
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
+  const [verificationToken, setVerificationToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [resendTimer, setResendTimer] = useState(30);
   const [canResend, setCanResend] = useState(false);
 
@@ -50,14 +52,21 @@ export default function LoginPage() {
     }
     setLoading(true);
     setError('');
+    setSuccessMsg('');
     try {
-      await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
-    } catch (err: any) {
-      console.log('OTP dispatched to phone');
-    } finally {
+      const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
+      if (res.data?.token) {
+        setVerificationToken(res.data.token);
+      }
       setStep('otp');
       setResendTimer(30);
       setCanResend(false);
+      setOtp('');
+      setSuccessMsg('SMS verification code sent to your mobile number.');
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Failed to send OTP. Please check your number.';
+      setError(msg);
+    } finally {
       setLoading(false);
     }
   };
@@ -66,42 +75,63 @@ export default function LoginPage() {
     if (!canResend) return;
     setLoading(true);
     setError('');
+    setSuccessMsg('');
     try {
       const clean = phone.replace(/\D/g, '').slice(-10);
-      await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
+      const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
+      if (res.data?.token) {
+        setVerificationToken(res.data.token);
+      }
       setResendTimer(30);
       setCanResend(false);
+      setOtp('');
+      setSuccessMsg('A new OTP has been sent to your mobile number.');
     } catch (err: any) {
-      setError('Failed to resend OTP. Please try again.');
+      const msg = err.response?.data?.message || 'Failed to resend OTP. Please try again.';
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
   const handleVerifyOtp = async () => {
-    if (otp.length < 4) {
-      setError('Please enter the 6-digit verification code sent to your phone');
+    const cleanOtp = otp.trim();
+    if (cleanOtp.length !== 6) {
+      setError('Please enter the complete 6-digit OTP code sent to your mobile');
       return;
     }
     setLoading(true);
     setError('');
     try {
       const clean = phone.replace(/\D/g, '').slice(-10);
-      const res = await api.post('/api/auth/student/verify-otp', { phoneNumber: clean, otp });
-      if (res.data?.isNewUser) {
-        setStep('signup');
+      const res = await api.post('/api/auth/student/verify-otp', {
+        phoneNumber: clean,
+        otp: cleanOtp,
+        token: verificationToken,
+      });
+
+      if (res.data?.success) {
+        if (res.data?.isNewUser) {
+          // Validated OTP -> Proceed to registration
+          setStep('signup');
+          setError('');
+        } else {
+          // Existing student -> Direct login
+          localStorage.setItem('userId', res.data?.userId || 'student-' + clean);
+          localStorage.setItem('userPhone', clean);
+          if (res.data?.student?.fullName) localStorage.setItem('userName', res.data.student.fullName);
+          if (res.data?.student?.hostelName) localStorage.setItem('userHostel', res.data.student.hostelName);
+          if (res.data?.student?.roomNumber) localStorage.setItem('userRoom', res.data.student.roomNumber);
+          if (res.data?.student?.collegeName) localStorage.setItem('userCollege', res.data.student.collegeName);
+          if (res.data?.student?.email) localStorage.setItem('userEmail', res.data.student.email);
+          router.push('/home');
+        }
       } else {
-        localStorage.setItem('userId', res.data?.userId || 'student-' + clean);
-        localStorage.setItem('userPhone', clean);
-        if (res.data?.student?.fullName) localStorage.setItem('userName', res.data.student.fullName);
-        if (res.data?.student?.hostelName) localStorage.setItem('userHostel', res.data.student.hostelName);
-        if (res.data?.student?.roomNumber) localStorage.setItem('userRoom', res.data.student.roomNumber);
-        if (res.data?.student?.collegeName) localStorage.setItem('userCollege', res.data.student.collegeName);
-        if (res.data?.student?.email) localStorage.setItem('userEmail', res.data.student.email);
-        router.push('/home');
+        setError(res.data?.message || 'Invalid OTP code. Please enter the correct code.');
       }
     } catch (err: any) {
-      setStep('signup');
+      const msg = err.response?.data?.message || 'Invalid OTP code. Please enter the correct code sent to your phone.';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -131,17 +161,17 @@ export default function LoginPage() {
       });
       const sId = res.data?.student?.id || 'student-' + clean;
       localStorage.setItem('userId', sId);
-    } catch (err: any) {
-      localStorage.setItem('userId', 'student-' + clean);
-    } finally {
       localStorage.setItem('userName', signup.fullName.trim());
       localStorage.setItem('userPhone', clean);
       localStorage.setItem('userCollege', (signup.collegeName || 'Campus').trim());
       localStorage.setItem('userHostel', signup.hostelName.trim());
       localStorage.setItem('userRoom', signup.roomNumber.trim());
       localStorage.setItem('userEmail', signup.email.trim());
-      setLoading(false);
       router.push('/home');
+    } catch (err: any) {
+      setError(err.response?.data?.message || 'Failed to complete registration. Please try again.');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -196,8 +226,9 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
-                {error}
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{error}</span>
               </div>
             )}
 
@@ -211,7 +242,7 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* STEP 2: OTP VERIFICATION (NO ON-SCREEN OTP DISPLAY) */}
+        {/* STEP 2: OTP VERIFICATION */}
         {step === 'otp' && (
           <div className="space-y-4">
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 text-center">
@@ -219,7 +250,10 @@ export default function LoginPage() {
                 SMS verification code sent to <strong>+91 {phone}</strong>
               </span>
               <button
-                onClick={() => setStep('phone')}
+                onClick={() => {
+                  setStep('phone');
+                  setError('');
+                }}
                 className="block mx-auto text-[11px] font-black text-orange-600 underline mt-1"
               >
                 Change Mobile Number
@@ -247,6 +281,7 @@ export default function LoginPage() {
               {canResend ? (
                 <button
                   onClick={handleResendOtp}
+                  disabled={loading}
                   className="text-xs font-bold text-orange-600 hover:underline"
                 >
                   Resend SMS OTP
@@ -259,17 +294,24 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
-                {error}
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{error}</span>
+              </div>
+            )}
+
+            {successMsg && !error && (
+              <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium rounded-xl text-center">
+                {successMsg}
               </div>
             )}
 
             <button
               onClick={handleVerifyOtp}
-              disabled={loading || otp.length < 4}
+              disabled={loading || otp.length !== 6}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'Verifying SMS...' : 'Verify & Continue ➔'}
+              {loading ? 'Verifying...' : 'Verify OTP & Continue ➔'}
             </button>
           </div>
         )}
@@ -278,12 +320,16 @@ export default function LoginPage() {
         {step === 'signup' && (
           <div className="space-y-3.5">
             <div className="border-b pb-2">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg text-[11px] font-bold mb-1.5">
+                <span>✓ Phone Authenticated:</span>
+                <span>+91 {phone}</span>
+              </div>
               <h2 className="text-base font-black text-gray-900">Student Profile Setup</h2>
               <p className="text-xs text-gray-500">Provide your hostel details for scheduled delivery slots</p>
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Full Name</label>
+              <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Full Name *</label>
               <input
                 type="text"
                 value={signup.fullName}
@@ -295,7 +341,7 @@ export default function LoginPage() {
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Hostel Name / Block</label>
+                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Hostel Name / Block *</label>
                 <input
                   type="text"
                   value={signup.hostelName}
@@ -328,7 +374,7 @@ export default function LoginPage() {
             </div>
 
             <div>
-              <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">College Email ID</label>
+              <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">College Email ID *</label>
               <input
                 type="email"
                 value={signup.email}
@@ -339,8 +385,9 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
-                {error}
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-center gap-2">
+                <span>⚠️</span>
+                <span>{error}</span>
               </div>
             )}
 
