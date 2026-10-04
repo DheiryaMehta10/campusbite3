@@ -43,8 +43,20 @@ interface MenuItem {
   price: number;
   isVeg: boolean;
   category: string;
+  description?: string;
   isAvailable: boolean;
 }
+
+const DEFAULT_MENU_ITEMS: MenuItem[] = [
+  { id: 'item-1', name: 'Paneer Butter Masala Combo', price: 140, isVeg: true, category: 'Main Course', description: 'Rich paneer curry with 2 butter naans & salad', isAvailable: true },
+  { id: 'item-2', name: 'Chicken Biryani Bowl', price: 160, isVeg: false, category: 'Main Course', description: 'Hyderabadi dum biryani with raita & salan', isAvailable: true },
+  { id: 'item-3', name: 'Crispy Veg Spring Rolls', price: 80, isVeg: true, category: 'Starters', description: 'Golden fried rolls with spicy dip', isAvailable: true },
+  { id: 'item-4', name: 'Chicken 65 (6 pcs)', price: 120, isVeg: false, category: 'Starters', description: 'Crispy spicy fried chicken bites', isAvailable: true },
+  { id: 'item-5', name: 'Cold Coffee with Ice Cream', price: 60, isVeg: true, category: 'Beverages', description: 'Thick creamy blended cold coffee', isAvailable: true },
+  { id: 'item-6', name: 'Hot Gulab Jamun (2 pcs)', price: 40, isVeg: true, category: 'Desserts', description: 'Soft warm milk dumplings in sugar syrup', isAvailable: true },
+  { id: 'item-7', name: 'Cheese Burst Veg Burger', price: 95, isVeg: true, category: 'Snacks', description: 'Molten cheese patty with crispy veggies', isAvailable: true },
+  { id: 'item-8', name: 'Masala Dosa with Sambar', price: 75, isVeg: true, category: 'South Indian', description: 'Crispy crepe with potato masala & chutney', isAvailable: true },
+];
 
 export default function RestaurantDashboardPage() {
   const router = useRouter();
@@ -56,20 +68,30 @@ export default function RestaurantDashboardPage() {
   const [restaurantName, setRestaurantName] = useState('North Campus Central Canteen');
   const [currentTab, setCurrentTab] = useState<'incoming' | 'preparing' | 'ready' | 'menu'>('incoming');
 
-  // Menu items list
-  const [menuItems, setMenuItems] = useState<MenuItem[]>([
-    { id: 'item-1', name: 'Paneer Butter Masala Combo', price: 140, isVeg: true, category: 'Main Course', isAvailable: true },
-    { id: 'item-2', name: 'Chicken Biryani Bowl', price: 160, isVeg: false, category: 'Main Course', isAvailable: true },
-    { id: 'item-3', name: 'Crispy Veg Spring Rolls', price: 80, isVeg: true, category: 'Starters', isAvailable: true },
-    { id: 'item-4', name: 'Chicken 65 (6 pcs)', price: 120, isVeg: false, category: 'Starters', isAvailable: true },
-    { id: 'item-5', name: 'Cold Coffee with Ice Cream', price: 60, isVeg: true, category: 'Beverages', isAvailable: true },
-    { id: 'item-6', name: 'Hot Gulab Jamun (2 pcs)', price: 40, isVeg: true, category: 'Desserts', isAvailable: true },
-  ]);
+  // Menu items state
+  const [menuItems, setMenuItems] = useState<MenuItem[]>(DEFAULT_MENU_ITEMS);
+
+  // Add Item Modal state
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newItem, setNewItem] = useState({
+    name: '',
+    price: '',
+    category: 'Main Course',
+    isVeg: true,
+    description: '',
+  });
 
   const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '' });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      const savedMenu = localStorage.getItem('cb_restaurant_menu');
+      if (savedMenu) {
+        try {
+          setMenuItems(JSON.parse(savedMenu));
+        } catch {}
+      }
+
       const id = localStorage.getItem('restaurantId') || 'canteen-1';
       const name = localStorage.getItem('restaurantName') || 'North Campus Central Canteen';
       setRestaurantId(id);
@@ -78,22 +100,28 @@ export default function RestaurantDashboardPage() {
     }
   }, []);
 
+  const saveMenuToStorage = (items: MenuItem[]) => {
+    setMenuItems(items);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cb_restaurant_menu', JSON.stringify(items));
+    }
+  };
+
   const fetchOrders = async (id: string) => {
     setLoading(true);
-    let fetched = false;
-    try {
-      const res = await api.get(`/api/restaurants/${id}/orders`);
-      if (res.data?.data && res.data.data.length > 0) {
-        setOrders(res.data.data);
-        fetched = true;
-      }
-    } catch (error) {
-      console.log('Using sample restaurant feed');
+    let loadedOrders: Order[] = [];
+
+    if (typeof window !== 'undefined') {
+      try {
+        const local = localStorage.getItem('cb_orders');
+        if (local) {
+          loadedOrders = JSON.parse(local);
+        }
+      } catch {}
     }
 
-    if (!fetched) {
-      // Seed rich realistic restaurant orders
-      setOrders([
+    if (loadedOrders.length === 0) {
+      loadedOrders = [
         {
           id: 'ord-301',
           orderNumber: 'CB-9412',
@@ -140,44 +168,88 @@ export default function RestaurantDashboardPage() {
             { name: 'Chicken 65 (6 pcs)', quantity: 1, price: 120 },
           ],
         },
-      ]);
+      ];
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cb_orders', JSON.stringify(loadedOrders));
+      }
     }
+
+    setOrders(loadedOrders);
     setLoading(false);
   };
 
   const toggleStatus = async () => {
     if (closedByAdmin) {
-      alert('⚠️ Store has been temporarily locked by Administration. You cannot reopen until Admin unlocks it.');
+      alert('⚠️ Store has been locked by Administration. Contact admin to unlock.');
       return;
     }
     const newStatus = status === 'open' ? 'temporarily_closed' : 'open';
     try {
-      await api.patch(`/api/restaurants/${restaurantId}/status`, {
-        operationalStatus: newStatus,
-      });
-      setStatus(newStatus);
-    } catch (error) {
-      setStatus(newStatus);
-    }
+      await api.patch(`/api/restaurants/${restaurantId}/status`, { operationalStatus: newStatus });
+    } catch {}
+    setStatus(newStatus);
   };
 
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    try {
-      await api.patch(`/api/orders/${orderId}/status`, {
-        orderStatus: newStatus,
-      });
-    } catch (e) {
-      console.log('Simulating status update');
-    }
-    setOrders((prev) =>
-      prev.map((o) => (o.id === orderId ? { ...o, orderStatus: newStatus, order_status: newStatus } : o))
+  const updateOrderStatus = (orderId: string, newStatus: string) => {
+    const updated = orders.map((o) =>
+      o.id === orderId ? { ...o, orderStatus: newStatus, order_status: newStatus } : o
     );
+    setOrders(updated);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cb_orders', JSON.stringify(updated));
+    }
+    try {
+      api.patch(`/api/orders/${orderId}/status`, { orderStatus: newStatus });
+    } catch {}
   };
 
   const toggleItemAvailability = (itemId: string) => {
-    setMenuItems((prev) =>
-      prev.map((itm) => (itm.id === itemId ? { ...itm, isAvailable: !itm.isAvailable } : itm))
+    const updated = menuItems.map((itm) =>
+      itm.id === itemId ? { ...itm, isAvailable: !itm.isAvailable } : itm
     );
+    saveMenuToStorage(updated);
+  };
+
+  const handleDeleteItem = (itemId: string) => {
+    if (confirm('Are you sure you want to remove this dish from the menu?')) {
+      const updated = menuItems.filter((i) => i.id !== itemId);
+      saveMenuToStorage(updated);
+    }
+  };
+
+  const handleAddNewItem = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newItem.name.trim()) {
+      alert('Please enter dish name');
+      return;
+    }
+    const priceNum = parseFloat(newItem.price);
+    if (isNaN(priceNum) || priceNum <= 0) {
+      alert('Please enter a valid price (₹)');
+      return;
+    }
+
+    const created: MenuItem = {
+      id: 'dish-' + Date.now(),
+      name: newItem.name.trim(),
+      price: priceNum,
+      category: newItem.category,
+      isVeg: newItem.isVeg,
+      description: newItem.description.trim() || undefined,
+      isAvailable: true,
+    };
+
+    const updated = [created, ...menuItems];
+    saveMenuToStorage(updated);
+    setShowAddModal(false);
+    setNewItem({
+      name: '',
+      price: '',
+      category: 'Main Course',
+      isVeg: true,
+      description: '',
+    });
+    alert(`✓ "${created.name}" has been added to the menu!`);
   };
 
   const incomingOrders = orders.filter((o) => (o.orderStatus || o.order_status) === 'ORDER_PLACED');
@@ -185,31 +257,26 @@ export default function RestaurantDashboardPage() {
   const readyOrders = orders.filter((o) => (o.orderStatus || o.order_status) === 'READY_FOR_DELIVERY' || (o.orderStatus || o.order_status) === 'OUT_FOR_DELIVERY' || (o.orderStatus || o.order_status) === 'DELIVERED');
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
+    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
       {/* Top Header */}
       <div className="bg-white border-b px-6 py-4 flex flex-wrap justify-between items-center shadow-sm gap-4">
         <div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl font-black text-gray-900">{restaurantName}</h1>
-            <span className="text-[11px] font-bold bg-orange-100 text-orange-800 px-2 py-0.5 rounded-md">
-              Kitchen Portal
+            <span className="text-[11px] font-bold bg-orange-100 text-orange-800 px-2.5 py-0.5 rounded-md">
+              Kitchen Partner Portal
             </span>
           </div>
-          <p className="text-xs text-gray-500 mt-0.5">Live Scheduled Slot Kitchen Operations</p>
+          <p className="text-xs text-gray-500 mt-0.5">Live Scheduled Slot Kitchen Operations & Menu Management</p>
         </div>
 
         <div className="flex items-center gap-3">
-          {closedByAdmin && (
-            <span className="text-xs font-bold bg-red-100 text-red-700 px-3 py-1 rounded-lg border border-red-200">
-              🔒 Admin Locked
-            </span>
-          )}
           <button
             onClick={toggleStatus}
             disabled={closedByAdmin}
             className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-sm transition-all ${
               status === 'open' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-            } ${closedByAdmin ? 'opacity-60 cursor-not-allowed' : ''}`}
+            }`}
           >
             {status === 'open' ? '✓ Accepting Orders (OPEN)' : '✕ Temporarily Closed'}
           </button>
@@ -220,7 +287,7 @@ export default function RestaurantDashboardPage() {
                 router.push('/auth/login');
               }
             }}
-            className="text-xs text-gray-500 hover:text-red-600 font-semibold border px-3 py-2 rounded-xl"
+            className="text-xs text-gray-500 hover:text-red-600 font-semibold border px-3.5 py-2 rounded-xl bg-white hover:bg-red-50"
           >
             Logout
           </button>
@@ -237,7 +304,7 @@ export default function RestaurantDashboardPage() {
             }`}
           >
             <span>🔔 New Orders</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] ${currentTab === 'incoming' ? 'bg-white text-orange-600' : 'bg-gray-200 text-gray-800'}`}>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${currentTab === 'incoming' ? 'bg-white text-orange-600' : 'bg-gray-200 text-gray-800'}`}>
               {incomingOrders.length}
             </span>
           </button>
@@ -249,7 +316,7 @@ export default function RestaurantDashboardPage() {
             }`}
           >
             <span>🍳 In Cooking</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] ${currentTab === 'preparing' ? 'bg-white text-amber-600' : 'bg-gray-200 text-gray-800'}`}>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${currentTab === 'preparing' ? 'bg-white text-amber-600' : 'bg-gray-200 text-gray-800'}`}>
               {preparingOrders.length}
             </span>
           </button>
@@ -261,7 +328,7 @@ export default function RestaurantDashboardPage() {
             }`}
           >
             <span>📦 Ready / Dispatched</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] ${currentTab === 'ready' ? 'bg-white text-green-600' : 'bg-gray-200 text-gray-800'}`}>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${currentTab === 'ready' ? 'bg-white text-green-600' : 'bg-gray-200 text-gray-800'}`}>
               {readyOrders.length}
             </span>
           </button>
@@ -272,19 +339,28 @@ export default function RestaurantDashboardPage() {
               currentTab === 'menu' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'
             }`}
           >
-            <span>📋 Menu & Stock</span>
+            <span>📋 Menu & Stock Control ({menuItems.length})</span>
           </button>
         </div>
 
         {/* Tab 1: Incoming Orders */}
         {currentTab === 'incoming' && (
           <div className="space-y-4">
-            <h2 className="font-bold text-gray-800 text-sm">New Incoming Orders (Requires Kitchen Acceptance)</h2>
+            <div className="flex justify-between items-center">
+              <h2 className="font-bold text-gray-800 text-sm">New Incoming Orders (Requires Kitchen Acceptance)</h2>
+              <button
+                onClick={() => fetchOrders(restaurantId)}
+                className="text-xs text-orange-600 font-bold hover:underline"
+              >
+                🔄 Refresh Feed
+              </button>
+            </div>
+
             {incomingOrders.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 text-center border shadow-sm">
                 <p className="text-4xl mb-2">🎉</p>
                 <p className="font-bold text-gray-700 text-sm">No new orders waiting</p>
-                <p className="text-gray-400 text-xs mt-1">New scheduled slot orders will appear here in real-time.</p>
+                <p className="text-gray-400 text-xs mt-1">When students place slot orders, they will appear here in real-time.</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -294,9 +370,9 @@ export default function RestaurantDashboardPage() {
                       <div>
                         <span className="text-[10px] font-bold text-gray-400">ORDER NO.</span>
                         <h3 className="font-black text-lg text-gray-900">#{order.orderNumber || order.order_number || order.id}</h3>
-                        <p className="text-xs text-orange-600 font-bold mt-0.5">⏱ {order.deliverySlot || 'Evening Slot 1 (6–7 PM)'}</p>
+                        <p className="text-xs text-orange-600 font-bold mt-0.5">⏱ {order.deliverySlot || 'Evening Slot 1 (6:00–7:00 PM)'}</p>
                       </div>
-                      <span className="bg-orange-100 text-orange-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full animate-bounce">
+                      <span className="bg-orange-100 text-orange-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full animate-pulse">
                         NEW ORDER
                       </span>
                     </div>
@@ -311,8 +387,8 @@ export default function RestaurantDashboardPage() {
                     </div>
 
                     <div className="flex justify-between text-xs text-gray-600 border-t pt-2">
-                      <span>Delivery: {order.hostelName} • Room {order.roomNumber}</span>
-                      <span className="font-bold text-gray-900">₹{order.totalAmount || order.total_amount}</span>
+                      <span>Delivery: {order.hostelName} (Room {order.roomNumber})</span>
+                      <span className="font-bold text-gray-900">Total: ₹{order.totalAmount || order.total_amount}</span>
                     </div>
 
                     <div className="grid grid-cols-2 gap-2 pt-1">
@@ -343,7 +419,7 @@ export default function RestaurantDashboardPage() {
             {preparingOrders.length === 0 ? (
               <div className="bg-white rounded-3xl p-12 text-center border shadow-sm">
                 <p className="text-4xl mb-2">🍳</p>
-                <p className="font-bold text-gray-700 text-sm">No orders currently cooking</p>
+                <p className="font-bold text-gray-700 text-sm">No orders currently in preparation</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -352,10 +428,10 @@ export default function RestaurantDashboardPage() {
                     <div className="flex justify-between items-start">
                       <div>
                         <h3 className="font-black text-lg text-gray-900">#{order.orderNumber || order.order_number || order.id}</h3>
-                        <p className="text-xs text-amber-600 font-bold mt-0.5">⏱ {order.deliverySlot || 'Evening Slot 1 (6–7 PM)'}</p>
+                        <p className="text-xs text-amber-600 font-bold mt-0.5">⏱ {order.deliverySlot || 'Evening Slot 1 (6:00–7:00 PM)'}</p>
                       </div>
                       <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full">
-                        COOKING
+                        COOKING IN PROGRESS
                       </span>
                     </div>
 
@@ -372,7 +448,7 @@ export default function RestaurantDashboardPage() {
                       onClick={() => updateOrderStatus(order.id, 'READY_FOR_DELIVERY')}
                       className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
                     >
-                      <span>📦</span> Mark Ready for Slot Runner
+                      <span>📦</span> Mark Ready for Slot Dispatch
                     </button>
                   </div>
                 ))}
@@ -384,7 +460,7 @@ export default function RestaurantDashboardPage() {
         {/* Tab 3: Ready for Delivery */}
         {currentTab === 'ready' && (
           <div className="space-y-4">
-            <h2 className="font-bold text-gray-800 text-sm">Ready / Dispatched to Hostel</h2>
+            <h2 className="font-bold text-gray-800 text-sm">Dispatched & Completed Slot Deliveries</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {readyOrders.map((order) => (
                 <div key={order.id} className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-3">
@@ -408,47 +484,180 @@ export default function RestaurantDashboardPage() {
 
         {/* Tab 4: Menu & Stock Manager */}
         {currentTab === 'menu' && (
-          <div className="bg-white rounded-3xl p-6 border shadow-sm space-y-4">
-            <div className="flex justify-between items-center pb-2 border-b">
+          <div className="bg-white rounded-3xl p-6 border shadow-sm space-y-6">
+            <div className="flex flex-wrap justify-between items-center pb-4 border-b gap-3">
               <div>
-                <h3 className="font-bold text-gray-900 text-base">Menu Items & Stock Control</h3>
-                <p className="text-xs text-gray-500">Toggle items In Stock / Sold Out in 1-click</p>
+                <h3 className="font-black text-gray-900 text-lg">Menu Catalog & Stock Control</h3>
+                <p className="text-xs text-gray-500">Manage dish offerings, prices, veg/non-veg flags, and live availability</p>
               </div>
               <button
-                onClick={() => alert('Add Menu Item feature: Enter name, category, price and veg status.')}
-                className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-bold px-4 py-2 rounded-xl"
+                onClick={() => setShowAddModal(true)}
+                className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-black px-5 py-2.5 rounded-2xl shadow-lg shadow-orange-500/25 transition-transform active:scale-95 flex items-center gap-1.5"
               >
-                + Add New Dish
+                <span>+</span> Add New Dish to Menu
               </button>
             </div>
 
-            <div className="divide-y">
+            <div className="divide-y divide-gray-100">
               {menuItems.map((itm) => (
-                <div key={itm.id} className="py-3 flex justify-between items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <span className={`h-3 w-3 rounded-full ${itm.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></span>
+                <div key={itm.id} className="py-4 flex flex-wrap justify-between items-center gap-4">
+                  <div className="flex items-start gap-3 min-w-[200px] flex-1">
+                    <span className={`mt-1 h-4 w-4 rounded-sm border flex items-center justify-center ${itm.isVeg ? 'border-green-600' : 'border-red-600'}`}>
+                      <span className={`h-2 w-2 rounded-full ${itm.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></span>
+                    </span>
                     <div>
                       <h4 className="font-bold text-sm text-gray-900">{itm.name}</h4>
-                      <p className="text-xs text-gray-500">{itm.category} • ₹{itm.price}</p>
+                      <p className="text-xs text-gray-500">{itm.description || itm.category}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="font-black text-sm text-gray-900">₹{itm.price}</span>
+                        <span className="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
+                          {itm.category}
+                        </span>
+                      </div>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => toggleItemAvailability(itm.id)}
-                    className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${
-                      itm.isAvailable
-                        ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                        : 'bg-red-100 text-red-800 hover:bg-red-200'
-                    }`}
-                  >
-                    {itm.isAvailable ? '✓ In Stock' : '✕ Sold Out'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => toggleItemAvailability(itm.id)}
+                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+                        itm.isAvailable
+                          ? 'bg-green-100 text-green-800 hover:bg-green-200'
+                          : 'bg-red-100 text-red-800 hover:bg-red-200'
+                      }`}
+                    >
+                      {itm.isAvailable ? '✓ In Stock' : '✕ Sold Out'}
+                    </button>
+                    <button
+                      onClick={() => handleDeleteItem(itm.id)}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all text-xs"
+                      title="Delete dish"
+                    >
+                      🗑
+                    </button>
+                  </div>
                 </div>
               ))}
             </div>
           </div>
         )}
       </div>
+
+      {/* Add New Dish Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h3 className="font-black text-lg text-gray-900">Add New Dish to Menu</h3>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="h-8 w-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-600"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddNewItem} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Dish Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Kadai Paneer with Butter Naan"
+                  value={newItem.name}
+                  onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  autoFocus
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Price (₹) *</label>
+                  <input
+                    type="number"
+                    required
+                    min="1"
+                    placeholder="e.g. 140"
+                    value={newItem.price}
+                    onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Category</label>
+                  <select
+                    value={newItem.category}
+                    onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  >
+                    <option value="Main Course">Main Course</option>
+                    <option value="Starters">Starters</option>
+                    <option value="Snacks">Snacks</option>
+                    <option value="Beverages">Beverages</option>
+                    <option value="Desserts">Desserts</option>
+                    <option value="South Indian">South Indian</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Food Type</label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setNewItem({ ...newItem, isVeg: true })}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
+                      newItem.isVeg ? 'bg-green-50 border-green-500 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-600'
+                    }`}
+                  >
+                    <span className="h-2 w-2 rounded-full bg-green-600"></span>
+                    Pure Veg (🟢)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewItem({ ...newItem, isVeg: false })}
+                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
+                      !newItem.isVeg ? 'bg-red-50 border-red-500 text-red-800' : 'bg-gray-50 border-gray-200 text-gray-600'
+                    }`}
+                  >
+                    <span className="h-2 w-2 rounded-full bg-red-600"></span>
+                    Non-Veg (🔴)
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Description (Optional)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Fresh cottage cheese in spicy aromatic gravy"
+                  value={newItem.description}
+                  onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
+                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-900 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="w-1/3 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="w-2/3 py-3 bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/30"
+                >
+                  Add Dish to Menu ➔
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
