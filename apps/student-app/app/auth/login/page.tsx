@@ -24,7 +24,6 @@ export default function LoginPage() {
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
-  const [verificationToken, setVerificationToken] = useState('');
   const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -59,21 +58,46 @@ export default function LoginPage() {
     return () => clearInterval(interval);
   }, [step, resendTimer]);
 
-  // Setup Firebase invisible reCAPTCHA verifier
-  const getOrCreateRecaptchaVerifier = () => {
+  const initRecaptcha = () => {
     if (typeof window === 'undefined') return null;
-    if (!window.recaptchaVerifier) {
+    try {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = undefined;
+      }
       window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         size: 'invisible',
         callback: () => {
           console.log('[Firebase Auth] reCAPTCHA verified');
         },
-        'expired-callback': () => {
-          console.warn('[Firebase Auth] reCAPTCHA expired');
-        },
       });
+      return window.recaptchaVerifier;
+    } catch (err: any) {
+      console.error('[Firebase Recaptcha Init Error]:', err);
+      return null;
     }
-    return window.recaptchaVerifier;
+  };
+
+  const parseFirebaseError = (err: any): string => {
+    const code = err?.code || '';
+    const msg = err?.message || '';
+
+    if (code === 'auth/unauthorized-domain' || msg.includes('unauthorized-domain')) {
+      return 'Domain not authorized in Firebase. Please add "campusbite-amber.vercel.app" to Authorized Domains in Firebase Console > Authentication > Settings.';
+    }
+    if (code === 'auth/operation-not-allowed' || msg.includes('operation-not-allowed')) {
+      return 'Phone authentication is disabled. Please enable "Phone" under Firebase Console > Authentication > Sign-in method.';
+    }
+    if (code === 'auth/quota-exceeded' || msg.includes('quota-exceeded')) {
+      return 'SMS quota exceeded for today. Please try again later or add billing in Firebase.';
+    }
+    if (code === 'auth/invalid-phone-number' || msg.includes('invalid-phone-number')) {
+      return 'Please enter a valid 10-digit Indian phone number.';
+    }
+    if (code === 'auth/too-many-requests' || msg.includes('too-many-requests')) {
+      return 'Too many SMS requests. Please wait a few minutes before trying again.';
+    }
+    return err?.message || 'Failed to send SMS OTP. Please check your network and try again.';
   };
 
   const handleSendOtp = async () => {
@@ -87,42 +111,26 @@ export default function LoginPage() {
     setSuccessMsg('');
 
     try {
-      const appVerifier = getOrCreateRecaptchaVerifier();
-      if (appVerifier) {
-        // 1. Dispatch SMS using Google Firebase Phone Auth
-        const confirmation = await signInWithPhoneNumber(auth, `+91${clean}`, appVerifier);
-        setConfirmationResult(confirmation);
-        window.confirmationResult = confirmation;
-        setSuccessMsg('SMS verification code sent to your phone via Google Firebase.');
-      } else {
-        // 2. Fallback backend route
-        const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
-        if (res.data?.token) setVerificationToken(res.data.token);
+      const appVerifier = initRecaptcha();
+      if (!appVerifier) {
+        setError('reCAPTCHA security check failed to initialize. Please refresh the page.');
+        setLoading(false);
+        return;
       }
+
+      // Dispatch real SMS using Google Firebase Phone Auth
+      const confirmation = await signInWithPhoneNumber(auth, `+91${clean}`, appVerifier);
+      setConfirmationResult(confirmation);
+      window.confirmationResult = confirmation;
+
       setStep('otp');
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
+      setSuccessMsg(`SMS verification code sent to +91 ${clean}`);
     } catch (err: any) {
-      console.warn('[Firebase Auth fallback]:', err);
-      // Fallback to backend route if Firebase client reCAPTCHA was blocked
-      try {
-        const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
-        if (res.data?.token) setVerificationToken(res.data.token);
-        setStep('otp');
-        setResendTimer(30);
-        setCanResend(false);
-        setOtp('');
-        setSuccessMsg('Verification code requested for your phone number.');
-      } catch (backendErr: any) {
-        const msg =
-          err.message?.includes('auth/quota-exceeded')
-            ? 'Daily SMS quota reached. Please try again shortly.'
-            : err.message?.includes('auth/invalid-phone-number')
-            ? 'Invalid phone number format.'
-            : 'Failed to send SMS OTP. Please check your number.';
-        setError(msg);
-      }
+      console.error('[Firebase Send SMS Error]:', err);
+      setError(parseFirebaseError(err));
     } finally {
       setLoading(false);
     }
@@ -135,21 +143,22 @@ export default function LoginPage() {
     setSuccessMsg('');
     try {
       const clean = phone.replace(/\D/g, '').slice(-10);
-      const appVerifier = getOrCreateRecaptchaVerifier();
-      if (appVerifier) {
-        const confirmation = await signInWithPhoneNumber(auth, `+91${clean}`, appVerifier);
-        setConfirmationResult(confirmation);
-        window.confirmationResult = confirmation;
-        setSuccessMsg('A new SMS verification code has been sent to your phone.');
-      } else {
-        const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
-        if (res.data?.token) setVerificationToken(res.data.token);
+      const appVerifier = initRecaptcha();
+      if (!appVerifier) {
+        setError('reCAPTCHA security check failed. Please refresh the page.');
+        setLoading(false);
+        return;
       }
+      const confirmation = await signInWithPhoneNumber(auth, `+91${clean}`, appVerifier);
+      setConfirmationResult(confirmation);
+      window.confirmationResult = confirmation;
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
+      setSuccessMsg(`A fresh SMS verification code has been sent to +91 ${clean}`);
     } catch (err: any) {
-      setError('Failed to resend OTP. Please wait and try again.');
+      console.error('[Firebase Resend SMS Error]:', err);
+      setError(parseFirebaseError(err));
     } finally {
       setLoading(false);
     }
@@ -158,7 +167,7 @@ export default function LoginPage() {
   const handleVerifyOtp = async () => {
     const cleanOtp = otp.trim();
     if (cleanOtp.length !== 6) {
-      setError('Please enter the complete 6-digit OTP code sent to your phone');
+      setError('Please enter the complete 6-digit OTP code received on your phone');
       return;
     }
     setLoading(true);
@@ -167,28 +176,22 @@ export default function LoginPage() {
     const clean = phone.replace(/\D/g, '').slice(-10);
 
     try {
-      let isFirebaseVerified = false;
-      let firebaseUid = '';
-
-      // 1. Confirm with Firebase if confirmationResult is active
       const activeConfirmation = confirmationResult || window.confirmationResult;
-      if (activeConfirmation) {
-        try {
-          const userCredential = await activeConfirmation.confirm(cleanOtp);
-          isFirebaseVerified = true;
-          firebaseUid = userCredential.user.uid;
-        } catch (fbErr: any) {
-          console.warn('[Firebase code confirm err]:', fbErr);
-        }
+      if (!activeConfirmation) {
+        setError('Verification session expired. Please click "Change Mobile Number" and request a new code.');
+        setLoading(false);
+        return;
       }
+
+      // 1. Verify code with Google Firebase Phone Auth
+      const userCredential = await activeConfirmation.confirm(cleanOtp);
+      const firebaseUser = userCredential.user;
 
       // 2. Query Supabase backend for student profile or registration
       const res = await api.post('/api/auth/student/verify-otp', {
         phoneNumber: clean,
-        otp: cleanOtp,
-        token: verificationToken,
-        isFirebaseVerified,
-        firebaseUid,
+        isFirebaseVerified: true,
+        firebaseUid: firebaseUser.uid,
       });
 
       if (res.data?.success) {
@@ -206,13 +209,18 @@ export default function LoginPage() {
           router.push('/home');
         }
       } else {
-        setError(res.data?.message || 'Invalid OTP code. Please enter the correct code.');
+        setError(res.data?.message || 'Verification failed. Please try again.');
       }
     } catch (err: any) {
-      const msg =
-        err.response?.data?.message ||
-        'Invalid verification code. Please check the SMS and enter the correct code.';
-      setError(msg);
+      console.error('[Firebase Confirm Error]:', err);
+      const code = err?.code || '';
+      if (code === 'auth/invalid-verification-code') {
+        setError('Invalid OTP code. Please enter the correct 6-digit code received on your phone.');
+      } else if (code === 'auth/code-expired') {
+        setError('The verification code has expired. Please request a new code.');
+      } else {
+        setError(err?.message || 'Invalid verification code. Please check and try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -305,14 +313,14 @@ export default function LoginPage() {
                 />
               </div>
               <p className="text-[11px] text-gray-500 mt-1.5">
-                We will send an SMS with a 6-digit OTP code to verify your mobile number.
+                We will send an SMS with a 6-digit OTP code to authenticate your student account.
               </p>
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-center gap-2">
-                <span>⚠️</span>
-                <span>{error}</span>
+              <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-start gap-2">
+                <span className="text-base leading-none">⚠️</span>
+                <span className="leading-snug">{error}</span>
               </div>
             )}
 
@@ -321,7 +329,7 @@ export default function LoginPage() {
               disabled={loading || phone.length !== 10}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'Sending SMS OTP...' : 'Send OTP to Phone ➔'}
+              {loading ? 'Sending SMS OTP via Google...' : 'Send OTP to Phone ➔'}
             </button>
           </div>
         )}
@@ -337,6 +345,7 @@ export default function LoginPage() {
                 onClick={() => {
                   setStep('phone');
                   setError('');
+                  setSuccessMsg('');
                 }}
                 className="block mx-auto text-[11px] font-black text-orange-600 underline mt-1"
               >
@@ -378,9 +387,9 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-center gap-2">
-                <span>⚠️</span>
-                <span>{error}</span>
+              <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-start gap-2">
+                <span className="text-base leading-none">⚠️</span>
+                <span className="leading-snug">{error}</span>
               </div>
             )}
 
@@ -469,9 +478,9 @@ export default function LoginPage() {
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-center gap-2">
-                <span>⚠️</span>
-                <span>{error}</span>
+              <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-start gap-2">
+                <span className="text-base leading-none">⚠️</span>
+                <span className="leading-snug">{error}</span>
               </div>
             )}
 
