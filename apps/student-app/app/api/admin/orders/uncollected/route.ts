@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
+import { corsResponse, handleCorsOptions } from '@/lib/cors';
 
 export const dynamic = 'force-dynamic';
+
+export async function OPTIONS() {
+  return handleCorsOptions();
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -17,8 +22,8 @@ export async function GET(request: NextRequest) {
     }
 
     const { data } = await query.limit(50);
-    return NextResponse.json({ success: true, data: data || [] });
+    return corsResponse({ success: true, data: data || [] });
   } catch (error) {
-    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    return corsResponse({ success: false, message: 'Server error' }, { status: 500 });
   }
 }

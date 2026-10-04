@@ -21,7 +21,7 @@ export default function DashboardPage() {
     uncollectedOrdersCount: 1,
   });
   const [loading, setLoading] = useState(false);
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '' });
+  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://campusbite-amber.vercel.app' });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -29,10 +29,15 @@ export default function DashboardPage() {
         localStorage.setItem('adminId', 'admin-master');
       }
       fetchDashboard();
+      const interval = setInterval(() => {
+        fetchDashboard(true);
+      }, 5000);
+      return () => clearInterval(interval);
     }
   }, []);
 
-  const fetchDashboard = async () => {
+  const fetchDashboard = async (isPolling = false) => {
+    if (!isPolling) setLoading(true);
     try {
       const res = await api.get('/api/admin/dashboard');
       if (res.data?.data) {
@@ -53,7 +58,7 @@ export default function DashboardPage() {
         } catch {}
       }
     } finally {
-      setLoading(false);
+      if (!isPolling) setLoading(false);
     }
   };
 

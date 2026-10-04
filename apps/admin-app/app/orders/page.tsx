@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import axios from 'axios';
 
 interface OrderItem {
   name?: string;
@@ -36,17 +37,38 @@ export default function AdminOrdersPage() {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
+  const api = axios.create({
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://campusbite-amber.vercel.app',
+  });
+
   useEffect(() => {
     loadOrders();
+    const interval = setInterval(() => {
+      loadOrders(true);
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
-  const loadOrders = () => {
-    setLoading(true);
-    if (typeof window !== 'undefined') {
+  const loadOrders = async (isPolling = false) => {
+    if (!isPolling) setLoading(true);
+    let fetched = false;
+    let list: Order[] = [];
+
+    try {
+      const res = await api.get('/api/orders');
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        list = res.data.data;
+        fetched = true;
+      }
+    } catch (e) {
+      // API fallback
+    }
+
+    if (!fetched && typeof window !== 'undefined') {
       try {
         const local = localStorage.getItem('cb_orders');
         if (local) {
-          setOrders(JSON.parse(local));
+          list = JSON.parse(local);
         } else {
           const sample: Order[] = [
             {
@@ -77,44 +99,20 @@ export default function AdminOrdersPage() {
               restaurantName: 'South Mess & Food Court',
               items: [{ name: 'Chicken Biryani Bowl', quantity: 2, price: 160 }],
             },
-            {
-              id: 'ord-303',
-              orderNumber: 'CB-9401',
-              totalAmount: 120,
-              orderStatus: 'READY_FOR_DELIVERY',
-              placedAt: new Date(Date.now() - 40 * 60000).toISOString(),
-              deliverySlot: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
-              studentName: 'Aman Patel',
-              studentPhone: '9876543212',
-              hostelName: 'Ramanujan Hostel',
-              roomNumber: '208',
-              restaurantName: 'Night Canteen & Snacks Hub',
-              items: [{ name: 'Chicken 65 (6 pcs)', quantity: 1, price: 120 }],
-            },
-            {
-              id: 'ord-304',
-              orderNumber: 'CB-8890',
-              totalAmount: 165,
-              orderStatus: 'UNCOLLECTED',
-              placedAt: new Date(Date.now() - 120 * 60000).toISOString(),
-              deliverySlot: 'Lunch Slot (12:00 PM – 1:00 PM)',
-              studentName: 'Vikram Singh',
-              studentPhone: '9876543219',
-              hostelName: 'Tagore Hostel Block B',
-              roomNumber: '102',
-              restaurantName: 'North Campus Central Canteen',
-              items: [{ name: 'Thali Special', quantity: 1, price: 150 }],
-            },
           ];
-          setOrders(sample);
-          localStorage.setItem('cb_orders', JSON.stringify(sample));
+          list = sample;
         }
       } catch {}
     }
-    setLoading(false);
+
+    setOrders(list);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cb_orders', JSON.stringify(list));
+    }
+    if (!isPolling) setLoading(false);
   };
 
-  const updateOrderStatus = (orderId: string, newStatus: string) => {
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
     const updated = orders.map((o) =>
       o.id === orderId ? { ...o, orderStatus: newStatus, order_status: newStatus } : o
     );
@@ -122,6 +120,9 @@ export default function AdminOrdersPage() {
     if (typeof window !== 'undefined') {
       localStorage.setItem('cb_orders', JSON.stringify(updated));
     }
+    try {
+      await api.patch(`/api/orders/${orderId}/status`, { orderStatus: newStatus });
+    } catch {}
   };
 
   const filteredOrders = orders.filter((ord) => {
@@ -203,7 +204,7 @@ export default function AdminOrdersPage() {
         <div className="bg-white rounded-3xl p-6 border shadow-sm space-y-4">
           <div className="flex justify-between items-center border-b pb-3">
             <h2 className="font-bold text-base text-gray-900">Orders Stream ({filteredOrders.length})</h2>
-            <button onClick={loadOrders} className="text-xs text-orange-600 font-bold hover:underline">
+            <button onClick={() => loadOrders(false)} className="text-xs text-orange-600 font-bold hover:underline">
               🔄 Refresh List
             </button>
           </div>

@@ -54,24 +54,28 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
   const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || '',
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://campusbite-amber.vercel.app',
   });
 
   useEffect(() => {
     fetchOrders();
+    const interval = setInterval(() => {
+      fetchOrders(true);
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchOrders = async () => {
-    setLoading(true);
+  const fetchOrders = async (isPolling = false) => {
+    if (!isPolling) setLoading(true);
     let fetchedFromApi = false;
     try {
       const res = await api.get('/api/orders');
-      if (res.data?.data && res.data.data.length > 0) {
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
         setOrders(res.data.data);
         fetchedFromApi = true;
       }
     } catch (e) {
-      console.log('Using local order storage fallback');
+      // Fallback
     }
 
     if (!fetchedFromApi && typeof window !== 'undefined') {

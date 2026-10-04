@@ -81,7 +81,7 @@ export default function RestaurantDashboardPage() {
     description: '',
   });
 
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '' });
+  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://campusbite-amber.vercel.app' });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -97,6 +97,12 @@ export default function RestaurantDashboardPage() {
       setRestaurantId(id);
       setRestaurantName(name);
       fetchOrders(id);
+
+      // Auto-poll for new student orders every 4 seconds
+      const interval = setInterval(() => {
+        fetchOrders(id, true);
+      }, 4000);
+      return () => clearInterval(interval);
     }
   }, []);
 
@@ -107,11 +113,22 @@ export default function RestaurantDashboardPage() {
     }
   };
 
-  const fetchOrders = async (id: string) => {
-    setLoading(true);
+  const fetchOrders = async (id: string, isPolling = false) => {
+    if (!isPolling) setLoading(true);
     let loadedOrders: Order[] = [];
+    let fetched = false;
 
-    if (typeof window !== 'undefined') {
+    try {
+      const res = await api.get('/api/orders');
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        loadedOrders = res.data.data;
+        fetched = true;
+      }
+    } catch (e) {
+      // API call error fallback
+    }
+
+    if (!fetched && typeof window !== 'undefined') {
       try {
         const local = localStorage.getItem('cb_orders');
         if (local) {
@@ -153,29 +170,14 @@ export default function RestaurantDashboardPage() {
             { name: 'Chicken Biryani Bowl', quantity: 2, price: 160 },
           ],
         },
-        {
-          id: 'ord-303',
-          orderNumber: 'CB-9401',
-          totalAmount: 120,
-          orderStatus: 'READY_FOR_DELIVERY',
-          placedAt: new Date(Date.now() - 40 * 60000).toISOString(),
-          deliverySlot: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
-          studentName: 'Aman Patel',
-          studentPhone: '9876543212',
-          hostelName: 'Ramanujan Hostel',
-          roomNumber: '208',
-          items: [
-            { name: 'Chicken 65 (6 pcs)', quantity: 1, price: 120 },
-          ],
-        },
       ];
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('cb_orders', JSON.stringify(loadedOrders));
-      }
     }
 
     setOrders(loadedOrders);
-    setLoading(false);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cb_orders', JSON.stringify(loadedOrders));
+    }
+    if (!isPolling) setLoading(false);
   };
 
   const toggleStatus = async () => {
@@ -190,7 +192,7 @@ export default function RestaurantDashboardPage() {
     setStatus(newStatus);
   };
 
-  const updateOrderStatus = (orderId: string, newStatus: string) => {
+  const updateOrderStatus = async (orderId: string, newStatus: string) => {
     const updated = orders.map((o) =>
       o.id === orderId ? { ...o, orderStatus: newStatus, order_status: newStatus } : o
     );
@@ -199,7 +201,7 @@ export default function RestaurantDashboardPage() {
       localStorage.setItem('cb_orders', JSON.stringify(updated));
     }
     try {
-      api.patch(`/api/orders/${orderId}/status`, { orderStatus: newStatus });
+      await api.patch(`/api/orders/${orderId}/status`, { orderStatus: newStatus });
     } catch {}
   };
 
