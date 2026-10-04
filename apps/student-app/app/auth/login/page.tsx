@@ -11,6 +11,8 @@ export default function LoginPage() {
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
+  const [receivedOtp, setReceivedOtp] = useState('');
+  const [smsSent, setSmsSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resendTimer, setResendTimer] = useState(30);
@@ -18,7 +20,7 @@ export default function LoginPage() {
 
   const [signup, setSignup] = useState({
     fullName: '',
-    collegeName: 'National Institute of Technology',
+    collegeName: '',
     hostelName: '',
     roomNumber: '',
     email: '',
@@ -43,16 +45,23 @@ export default function LoginPage() {
   }, [step, resendTimer]);
 
   const handleSendOtp = async () => {
-    if (!/^[0-9]{10}$/.test(phone)) {
+    const clean = phone.replace(/\D/g, '').slice(-10);
+    if (clean.length !== 10) {
       setError('Please enter a valid 10-digit Indian mobile number');
       return;
     }
     setLoading(true);
     setError('');
     try {
-      await api.post('/api/auth/student/send-otp', { phoneNumber: phone });
+      const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
+      if (res.data?.success) {
+        setSmsSent(!!res.data.smsSent);
+        if (res.data.otpCode) {
+          setReceivedOtp(res.data.otpCode);
+        }
+      }
     } catch (err: any) {
-      console.log('OTP dispatched to phone');
+      console.log('OTP dispatched');
     } finally {
       setStep('otp');
       setResendTimer(30);
@@ -66,7 +75,11 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      await api.post('/api/auth/student/send-otp', { phoneNumber: phone });
+      const clean = phone.replace(/\D/g, '').slice(-10);
+      const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
+      if (res.data?.otpCode) {
+        setReceivedOtp(res.data.otpCode);
+      }
       setResendTimer(30);
       setCanResend(false);
     } catch (err: any) {
@@ -77,26 +90,28 @@ export default function LoginPage() {
   };
 
   const handleVerifyOtp = async () => {
-    if (otp.length < 6) {
-      setError('Please enter the 6-digit verification code');
+    if (otp.length < 4) {
+      setError('Please enter the verification code');
       return;
     }
     setLoading(true);
     setError('');
     try {
-      const res = await api.post('/api/auth/student/verify-otp', { phoneNumber: phone, otp });
+      const clean = phone.replace(/\D/g, '').slice(-10);
+      const res = await api.post('/api/auth/student/verify-otp', { phoneNumber: clean, otp });
       if (res.data?.isNewUser) {
         setStep('signup');
       } else {
-        localStorage.setItem('userId', res.data?.userId || 'student-' + phone);
-        localStorage.setItem('userPhone', phone);
+        localStorage.setItem('userId', res.data?.userId || 'student-' + clean);
+        localStorage.setItem('userPhone', clean);
         if (res.data?.student?.fullName) localStorage.setItem('userName', res.data.student.fullName);
         if (res.data?.student?.hostelName) localStorage.setItem('userHostel', res.data.student.hostelName);
         if (res.data?.student?.roomNumber) localStorage.setItem('userRoom', res.data.student.roomNumber);
+        if (res.data?.student?.collegeName) localStorage.setItem('userCollege', res.data.student.collegeName);
+        if (res.data?.student?.email) localStorage.setItem('userEmail', res.data.student.email);
         router.push('/home');
       }
     } catch (err: any) {
-      // Direct registration for first-time students
       setStep('signup');
     } finally {
       setLoading(false);
@@ -119,19 +134,20 @@ export default function LoginPage() {
 
     setLoading(true);
     setError('');
+    const clean = phone.replace(/\D/g, '').slice(-10);
     try {
       const res = await api.post('/api/auth/student/signup', {
-        phoneNumber: phone,
+        phoneNumber: clean,
         ...signup,
       });
-      const sId = res.data?.student?.id || 'student-' + phone;
+      const sId = res.data?.student?.id || 'student-' + clean;
       localStorage.setItem('userId', sId);
     } catch (err: any) {
-      localStorage.setItem('userId', 'student-' + phone);
+      localStorage.setItem('userId', 'student-' + clean);
     } finally {
       localStorage.setItem('userName', signup.fullName.trim());
-      localStorage.setItem('userPhone', phone);
-      localStorage.setItem('userCollege', signup.collegeName.trim());
+      localStorage.setItem('userPhone', clean);
+      localStorage.setItem('userCollege', (signup.collegeName || 'Campus').trim());
       localStorage.setItem('userHostel', signup.hostelName.trim());
       localStorage.setItem('userRoom', signup.roomNumber.trim());
       localStorage.setItem('userEmail', signup.email.trim());
@@ -186,7 +202,7 @@ export default function LoginPage() {
                 />
               </div>
               <p className="text-[11px] text-gray-500 mt-1.5">
-                We will send an OTP to authenticate your student account.
+                Enter your Indian phone number to receive your login code.
               </p>
             </div>
 
@@ -210,7 +226,9 @@ export default function LoginPage() {
         {step === 'otp' && (
           <div className="space-y-4">
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 text-center">
-              <span className="text-[11px] font-bold text-orange-900">Verification code sent to +91 {phone}</span>
+              <span className="text-[11px] font-bold text-orange-900">
+                {smsSent ? `SMS verification sent to +91 ${phone}` : `Verification code for +91 ${phone}`}
+              </span>
               <button
                 onClick={() => setStep('phone')}
                 className="block mx-auto text-[11px] font-black text-orange-600 underline mt-1"
@@ -218,6 +236,15 @@ export default function LoginPage() {
                 Change Mobile Number
               </button>
             </div>
+
+            {/* If SMS Gateway is not active, display the live generated OTP */}
+            {receivedOtp && (
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-900 rounded-2xl p-3.5 text-center shadow-sm">
+                <p className="text-[11px] font-semibold text-green-800">Your Verification Code:</p>
+                <p className="text-xl font-black tracking-widest text-green-950 my-1">{receivedOtp}</p>
+                <p className="text-[10px] text-green-700">Enter this 6-digit code below to authenticate</p>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1.5 text-center">
@@ -259,7 +286,7 @@ export default function LoginPage() {
 
             <button
               onClick={handleVerifyOtp}
-              disabled={loading || otp.length !== 6}
+              disabled={loading || otp.length < 4}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50"
             >
               {loading ? 'Verifying...' : 'Verify & Continue ➔'}
@@ -281,19 +308,19 @@ export default function LoginPage() {
                 type="text"
                 value={signup.fullName}
                 onChange={(e) => setSignup({ ...signup, fullName: e.target.value })}
-                placeholder="e.g. Rahul Sharma"
+                placeholder="Enter your full name"
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Hostel Name</label>
+                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Hostel Name / Block</label>
                 <input
                   type="text"
                   value={signup.hostelName}
                   onChange={(e) => setSignup({ ...signup, hostelName: e.target.value })}
-                  placeholder="e.g. Tagore Hostel Block A"
+                  placeholder="e.g. Block A / Hostel 4"
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
@@ -303,7 +330,7 @@ export default function LoginPage() {
                   type="text"
                   value={signup.roomNumber}
                   onChange={(e) => setSignup({ ...signup, roomNumber: e.target.value })}
-                  placeholder="e.g. Room 304"
+                  placeholder="e.g. 304"
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
@@ -315,7 +342,7 @@ export default function LoginPage() {
                 type="text"
                 value={signup.collegeName}
                 onChange={(e) => setSignup({ ...signup, collegeName: e.target.value })}
-                placeholder="e.g. National Institute of Technology"
+                placeholder="Enter your college / campus name"
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -326,7 +353,7 @@ export default function LoginPage() {
                 type="email"
                 value={signup.email}
                 onChange={(e) => setSignup({ ...signup, email: e.target.value })}
-                placeholder="e.g. student@college.edu"
+                placeholder="your.email@college.edu"
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -342,7 +369,7 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98]"
             >
-              {loading ? 'Setting up Profile...' : 'Complete Setup & Enter CampusBite ➔'}
+              {loading ? 'Saving Profile...' : 'Complete Profile & Enter CampusBite ➔'}
             </button>
           </div>
         )}

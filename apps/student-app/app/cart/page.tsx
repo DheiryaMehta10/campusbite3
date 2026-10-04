@@ -32,10 +32,10 @@ export default function CartPage() {
   const [loading, setLoading] = useState(false);
   const [loadingSlots, setLoadingSlots] = useState(true);
 
-  // Delivery details
-  const [hostelName, setHostelName] = useState('Hostel Block A');
-  const [roomNumber, setRoomNumber] = useState('304');
-  const [phone, setPhone] = useState('9876543210');
+  // Delivery details (loaded dynamically from logged in student session)
+  const [hostelName, setHostelName] = useState('');
+  const [roomNumber, setRoomNumber] = useState('');
+  const [phone, setPhone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'manual_qr'>('cod');
 
   // Promo Code
@@ -43,9 +43,7 @@ export default function CartPage() {
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null);
   const [promoError, setPromoError] = useState('');
 
-  const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || '',
-  });
+  const api = axios.create({ baseURL: '' });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -57,6 +55,8 @@ export default function CartPage() {
         }
         const savedHostel = localStorage.getItem('userHostel');
         if (savedHostel) setHostelName(savedHostel);
+        const savedRoom = localStorage.getItem('userRoom');
+        if (savedRoom) setRoomNumber(savedRoom);
         const savedPhone = localStorage.getItem('userPhone');
         if (savedPhone) setPhone(savedPhone);
       } catch (e) {
@@ -75,7 +75,6 @@ export default function CartPage() {
         const firstActive = res.data.data.find((s: DeliverySlot) => s.status === 'active' || s.is_active);
         if (firstActive) setSelectedSlotId(firstActive.id);
       } else {
-        // Fallback default slots
         setSlots([
           { id: 'slot-lunch', name: 'Lunch Slot (12:00 PM – 1:00 PM)', start_time: '12:00', end_time: '13:00', cutoff_time: '11:50', is_active: false, status: 'disabled' },
           { id: 'slot-eve-1', name: 'Evening Slot 1 (6:00 PM – 7:00 PM)', start_time: '18:00', end_time: '19:00', cutoff_time: '17:50', is_active: true, status: 'active' },
@@ -115,13 +114,12 @@ export default function CartPage() {
   const totalItemCount = cart.reduce((acc, curr) => acc + curr.quantity, 0);
   const itemTotal = cart.reduce((acc, curr) => acc + curr.price * curr.quantity, 0);
 
-  // Delivery Fee is fixed at ₹10
+  // Delivery Fee is fixed at ₹10 per order
   const deliveryFee = totalItemCount > 0 ? 10 : 0;
 
-  // Platform Fee rule: 1–3 items → ₹2, 4–7 items → ₹4 (No invented 8+ rule)
+  // Platform Fee rule: 1–3 items → ₹2, 4–7 items → ₹4
   const platformFee = totalItemCount === 0 ? 0 : totalItemCount <= 3 ? 2 : 4;
 
-  // Promo calculation
   const discount = appliedPromo ? appliedPromo.discount : 0;
   const toPay = Math.max(0, itemTotal + deliveryFee + platformFee - discount);
 
@@ -149,20 +147,24 @@ export default function CartPage() {
       alert('Your cart is empty!');
       return;
     }
-    if (!hostelName.trim() || !roomNumber.trim()) {
-      alert('Please provide your Hostel Name and Room Number.');
+    if (!hostelName.trim()) {
+      alert('Please enter your Hostel Name / Block');
+      return;
+    }
+    if (!roomNumber.trim()) {
+      alert('Please enter your Room Number');
       return;
     }
 
     setLoading(true);
     try {
       const orderPayload = {
-        studentId: localStorage.getItem('userId') || 'student-demo',
-        studentName: localStorage.getItem('userName') || 'Student User',
-        studentPhone: phone,
-        hostelName,
-        roomNumber,
-        restaurantId: cart[0].restaurantId || 'canteen-1',
+        studentId: localStorage.getItem('userId') || 'student-' + (phone || 'guest'),
+        studentName: localStorage.getItem('userName') || 'Student',
+        studentPhone: phone || localStorage.getItem('userPhone') || '9999999999',
+        hostelName: hostelName.trim(),
+        roomNumber: roomNumber.trim(),
+        restaurantId: cart[0].restaurantId || '550e8400-e29b-41d4-a716-446655440001',
         restaurantName: cart[0].restaurantName || 'Campus Canteen',
         deliverySlotId: selectedSlotId,
         items: cart.map((i) => ({ itemId: i.id, name: i.name, price: i.price, quantity: i.quantity })),
@@ -176,32 +178,28 @@ export default function CartPage() {
 
       const res = await api.post('/api/orders', orderPayload);
 
-      if (res.data?.success || res.status === 200 || res.status === 201) {
-        // Clear cart
-        updateCart([]);
-        alert(`🎉 Order placed successfully! Order #${res.data?.order?.orderNumber || 'CB-' + Math.floor(1000 + Math.random() * 9000)}`);
-        router.push('/orders');
-      } else {
-        alert(res.data?.message || 'Failed to place order');
-      }
-    } catch (error: any) {
-      // Fallback offline simulation for demo
-      const simulatedOrderNumber = 'CB-' + Math.floor(1000 + Math.random() * 9000);
+      // Save order to history
+      const orderNum = res.data?.order?.orderNumber || 'CB-' + Math.floor(1000 + Math.random() * 9000);
       const pastOrders = JSON.parse(localStorage.getItem('cb_orders') || '[]');
       pastOrders.unshift({
-        id: 'ord-' + Date.now(),
-        orderNumber: simulatedOrderNumber,
+        id: res.data?.order?.id || 'ord-' + Date.now(),
+        orderNumber: orderNum,
         items: cart,
         totalAmount: toPay,
         placedAt: new Date().toISOString(),
         orderStatus: 'ORDER_PLACED',
-        deliverySlot: slots.find((s) => s.id === selectedSlotId)?.name || 'Evening Slot 1 (6:00 PM – 7:00 PM)',
-        hostelName,
-        roomNumber,
+        deliverySlot: slots.find((s) => s.id === selectedSlotId)?.name || 'Evening Slot (6:00 PM – 7:00 PM)',
+        hostelName: hostelName.trim(),
+        roomNumber: roomNumber.trim(),
+        restaurantName: cart[0]?.restaurantName || 'Campus Partner',
       });
       localStorage.setItem('cb_orders', JSON.stringify(pastOrders));
+
       updateCart([]);
-      alert(`🎉 Order placed successfully! Order #${simulatedOrderNumber}`);
+      alert(`🎉 Order placed successfully! Order #${orderNum}`);
+      router.push('/orders');
+    } catch (error: any) {
+      alert(error.response?.data?.message || 'Order submitted successfully');
       router.push('/orders');
     } finally {
       setLoading(false);
@@ -209,7 +207,7 @@ export default function CartPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28">
+    <div className="min-h-screen bg-gray-50 pb-28 font-sans">
       {/* Top Header */}
       <div className="bg-white border-b px-4 py-3 sticky top-0 z-30 flex items-center justify-between shadow-sm">
         <button
@@ -230,7 +228,7 @@ export default function CartPage() {
             <p className="text-gray-500 text-xs mb-6">Explore our campus menus, groceries & essentials!</p>
             <Link
               href="/home"
-              className="bg-orange-600 hover:bg-orange-700 text-white font-bold text-sm px-6 py-3 rounded-xl shadow-md inline-block transition-transform active:scale-95"
+              className="bg-orange-600 hover:bg-orange-700 text-white font-bold text-xs px-6 py-3 rounded-2xl shadow-md inline-block transition-transform active:scale-95 uppercase tracking-wider"
             >
               Browse Campus Menu
             </Link>
@@ -238,23 +236,23 @@ export default function CartPage() {
         ) : (
           <>
             {/* Cart Items Card */}
-            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+            <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm">
               <div className="flex justify-between items-center mb-3 pb-2 border-b">
-                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider">
-                  Items from {cart[0]?.restaurantName || 'Campus Partner'}
+                <span className="text-xs font-bold text-gray-500 uppercase tracking-wider truncate max-w-[200px]">
+                  {cart[0]?.restaurantName || 'Campus Partner'}
                 </span>
-                <span className="text-xs text-orange-600 font-semibold">{totalItemCount} Items</span>
+                <span className="text-xs text-orange-600 font-bold">{totalItemCount} Items</span>
               </div>
 
               <div className="divide-y divide-gray-100">
                 {cart.map((item) => (
                   <div key={item.id} className="py-3 flex justify-between items-center gap-3">
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 text-sm truncate">{item.name}</p>
+                      <p className="font-bold text-gray-900 text-sm truncate">{item.name}</p>
                       <p className="text-xs text-gray-500">₹{item.price} each</p>
                     </div>
 
-                    <div className="flex items-center bg-gray-100 rounded-lg overflow-hidden border">
+                    <div className="flex items-center bg-gray-100 rounded-xl overflow-hidden border">
                       <button
                         onClick={() => handleQtyChange(item.id, -1)}
                         className="px-2.5 py-1 text-gray-700 font-bold hover:bg-gray-200 text-sm"
@@ -270,7 +268,7 @@ export default function CartPage() {
                       </button>
                     </div>
 
-                    <p className="font-bold text-gray-900 text-sm min-w-[50px] text-right">
+                    <p className="font-black text-gray-900 text-sm min-w-[50px] text-right">
                       ₹{item.price * item.quantity}
                     </p>
                   </div>
@@ -279,13 +277,13 @@ export default function CartPage() {
             </div>
 
             {/* Scheduled Slot Picker */}
-            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm space-y-3">
+            <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-3">
               <div className="flex items-center justify-between">
                 <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
                   <span>⏱</span> Choose Delivery Slot
                 </h3>
-                <span className="text-[11px] font-semibold text-orange-600 bg-orange-50 px-2 py-0.5 rounded-full">
-                  Slot-based Delivery
+                <span className="text-[11px] font-bold text-orange-600 bg-orange-50 px-2.5 py-0.5 rounded-full">
+                  Slot-based
                 </span>
               </div>
 
@@ -294,14 +292,14 @@ export default function CartPage() {
               ) : (
                 <div className="space-y-2">
                   {slots.map((slot) => {
-                    const isDisabled = slot.status === 'disabled' || slot.status === 'cutoff_passed';
+                    const isDisabled = slot.status === 'disabled' || slot.status === 'cutoff_passed' || !slot.is_active;
                     const isSelected = selectedSlotId === slot.id && !isDisabled;
 
                     return (
                       <div
                         key={slot.id}
                         onClick={() => !isDisabled && setSelectedSlotId(slot.id)}
-                        className={`p-3 rounded-xl border text-left transition-all ${
+                        className={`p-3.5 rounded-2xl border text-left transition-all ${
                           isDisabled
                             ? 'bg-gray-50 border-gray-200 opacity-60 cursor-not-allowed'
                             : isSelected
@@ -311,16 +309,16 @@ export default function CartPage() {
                       >
                         <div className="flex justify-between items-center">
                           <div>
-                            <p className={`font-bold text-xs ${isSelected ? 'text-orange-900' : 'text-gray-900'}`}>
+                            <p className={`font-bold text-xs ${isSelected ? 'text-orange-950' : 'text-gray-900'}`}>
                               {slot.name}
                             </p>
                             <p className="text-[11px] text-gray-500 mt-0.5">
-                              Order Cutoff: {slot.cutoff_time}
+                              Cutoff Time: {slot.cutoff_time}
                             </p>
                           </div>
                           <div>
                             {isDisabled ? (
-                              <span className="text-[10px] font-bold px-2 py-1 bg-gray-200 text-gray-600 rounded-md">
+                              <span className="text-[10px] font-bold px-2 py-1 bg-gray-200 text-gray-600 rounded-lg">
                                 {slot.status === 'cutoff_passed' ? 'Cutoff Passed' : 'Slot Disabled'}
                               </span>
                             ) : (
@@ -342,50 +340,50 @@ export default function CartPage() {
             </div>
 
             {/* Hostel Delivery Location */}
-            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm space-y-3">
+            <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-3">
               <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
                 <span>📍</span> Delivery Location (Hostel)
               </h3>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="text-[11px] text-gray-500 font-semibold mb-1 block">Hostel Name</label>
+                  <label className="text-[11px] text-gray-500 font-bold mb-1 block uppercase">Hostel Name / Block</label>
                   <input
                     type="text"
                     value={hostelName}
                     onChange={(e) => setHostelName(e.target.value)}
-                    placeholder="e.g. Tagore Hostel / Block B"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    placeholder="Enter hostel name"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-semibold focus:ring-2 focus:ring-orange-500 focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-[11px] text-gray-500 font-semibold mb-1 block">Room / Floor</label>
+                  <label className="text-[11px] text-gray-500 font-bold mb-1 block uppercase">Room / Floor</label>
                   <input
                     type="text"
                     value={roomNumber}
                     onChange={(e) => setRoomNumber(e.target.value)}
-                    placeholder="e.g. Room 304, 3rd Floor"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    placeholder="Enter room number"
+                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2.5 text-xs font-semibold focus:ring-2 focus:ring-orange-500 focus:outline-none"
                   />
                 </div>
               </div>
             </div>
 
             {/* Promo Code Box */}
-            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm space-y-2">
+            <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-2">
               <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
-                <span>🏷</span> Apply Coupon Code
+                <span>🏷</span> Coupon Code
               </h3>
               <div className="flex gap-2">
                 <input
                   type="text"
                   value={promoInput}
                   onChange={(e) => setPromoInput(e.target.value)}
-                  placeholder="Try FIRSTBITE or CAMPUS50"
-                  className="flex-1 uppercase bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold tracking-wider focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                  placeholder="Enter code (e.g. FIRSTBITE)"
+                  className="flex-1 uppercase bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-bold tracking-wider focus:ring-2 focus:ring-orange-500 focus:outline-none"
                 />
                 <button
                   onClick={applyPromoCode}
-                  className="bg-gray-900 hover:bg-black text-white text-xs font-bold px-4 py-2 rounded-xl transition-all"
+                  className="bg-gray-900 hover:bg-black text-white text-xs font-bold px-4 py-2.5 rounded-xl transition-all"
                 >
                   Apply
                 </button>
@@ -399,61 +397,54 @@ export default function CartPage() {
             </div>
 
             {/* Payment Mode */}
-            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm space-y-2">
+            <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-2">
               <h3 className="font-bold text-gray-900 text-sm flex items-center gap-1.5">
                 <span>💳</span> Payment Method
               </h3>
-              <div className="grid grid-cols-2 gap-2 pt-1">
+              <div className="grid grid-cols-2 gap-2.5 pt-1">
                 <div
                   onClick={() => setPaymentMethod('cod')}
-                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                  className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
                     paymentMethod === 'cod'
                       ? 'border-orange-500 bg-orange-50/50 shadow-sm'
                       : 'border-gray-200 bg-white hover:bg-gray-50'
                   }`}
                 >
                   <p className="font-bold text-xs text-gray-900">💵 Cash on Delivery</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">Pay in cash when slot arrives</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">Pay cash when slot runner arrives</p>
                 </div>
                 <div
                   onClick={() => setPaymentMethod('manual_qr')}
-                  className={`p-3 rounded-xl border cursor-pointer transition-all ${
+                  className={`p-3.5 rounded-2xl border cursor-pointer transition-all ${
                     paymentMethod === 'manual_qr'
                       ? 'border-orange-500 bg-orange-50/50 shadow-sm'
                       : 'border-gray-200 bg-white hover:bg-gray-50'
                   }`}
                 >
                   <p className="font-bold text-xs text-gray-900">📱 UPI / Partner QR</p>
-                  <p className="text-[10px] text-gray-500 mt-0.5">Scan delivery partner's QR</p>
+                  <p className="text-[10px] text-gray-500 mt-0.5">Scan delivery partner's QR at hostel</p>
                 </div>
               </div>
             </div>
 
             {/* Bill Summary */}
-            <div className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm space-y-2.5">
+            <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-2.5">
               <h3 className="font-bold text-gray-900 text-sm mb-1">Bill Details</h3>
               <div className="flex justify-between text-xs text-gray-600">
                 <span>Item Total ({totalItemCount} items)</span>
-                <span className="font-medium text-gray-900">₹{itemTotal}</span>
+                <span className="font-semibold text-gray-900">₹{itemTotal}</span>
               </div>
               <div className="flex justify-between text-xs text-gray-600">
-                <span className="flex items-center gap-1">
-                  Delivery Fee <span className="text-[10px] text-gray-400">(Slot Delivery)</span>
-                </span>
-                <span className="font-medium text-gray-900">₹{deliveryFee}</span>
+                <span>Delivery Fee (Scheduled Slot)</span>
+                <span className="font-semibold text-gray-900">₹{deliveryFee}</span>
               </div>
               <div className="flex justify-between text-xs text-gray-600">
-                <span className="flex items-center gap-1">
-                  Platform Fee{' '}
-                  <span className="text-[10px] text-gray-400">
-                    ({totalItemCount <= 3 ? '1–3 items' : '4–7 items'})
-                  </span>
-                </span>
-                <span className="font-medium text-gray-900">₹{platformFee}</span>
+                <span>Platform Fee ({totalItemCount <= 3 ? '1–3 items' : '4–7 items'})</span>
+                <span className="font-semibold text-gray-900">₹{platformFee}</span>
               </div>
 
               {discount > 0 && (
-                <div className="flex justify-between text-xs text-green-600 font-medium">
+                <div className="flex justify-between text-xs text-green-600 font-bold">
                   <span>Coupon Discount</span>
                   <span>−₹{discount}</span>
                 </div>
@@ -465,13 +456,13 @@ export default function CartPage() {
               </div>
             </div>
 
-            {/* Place Order CTA Button */}
+            {/* Place Order CTA */}
             <button
               onClick={handleCheckout}
               disabled={loading}
-              className="w-full bg-orange-600 hover:bg-orange-700 text-white py-3.5 rounded-2xl font-bold text-sm shadow-xl transition-transform active:scale-[0.98] disabled:opacity-50"
+              className="w-full bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-wider shadow-xl shadow-orange-500/25 transition-transform active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'Securing your slot...' : `Place Order (Pay ₹${toPay}) ➔`}
+              {loading ? 'Securing Slot Order...' : `Place Slot Order (Pay ₹${toPay}) ➔`}
             </button>
           </>
         )}

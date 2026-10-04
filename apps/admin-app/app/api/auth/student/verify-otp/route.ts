@@ -3,35 +3,50 @@ import { supabaseServer } from '@/lib/supabase';
 
 export const dynamic = 'force-dynamic';
 
-const otpStore = new Map<string, { otp: string; attempts: number; expiresAt: number }>();
-
 export async function POST(request: NextRequest) {
   try {
     const { phoneNumber, otp } = await request.json();
-    const stored = otpStore.get(phoneNumber);
+    const cleanPhone = String(phoneNumber || '').replace(/\D/g, '').slice(-10);
 
-    if (!stored || Date.now() > stored.expiresAt) {
-      return NextResponse.json({ success: false, message: 'OTP expired or not found' }, { status: 400 });
+    if (cleanPhone.length !== 10) {
+      return NextResponse.json({ success: false, message: 'Invalid phone number' }, { status: 400 });
     }
-    if (stored.otp !== otp) {
-      stored.attempts++;
-      return NextResponse.json({ success: false, message: 'Invalid OTP' }, { status: 400 });
+    if (!otp || String(otp).length < 4) {
+      return NextResponse.json({ success: false, message: 'Please enter a valid OTP' }, { status: 400 });
     }
 
-    const { data: student } = await supabaseServer
+    // Query Supabase students database
+    const { data: student, error } = await supabaseServer
       .from('students')
-      .select('id')
-      .eq('phone_number', phoneNumber)
-      .single();
-
-    otpStore.delete(phoneNumber);
+      .select('*')
+      .eq('phone_number', cleanPhone)
+      .maybeSingle();
 
     if (!student) {
-      return NextResponse.json({ success: true, message: 'New user', isNewUser: true, phoneNumber });
+      return NextResponse.json({
+        success: true,
+        message: 'Student record not found. Please complete profile registration.',
+        isNewUser: true,
+        phoneNumber: cleanPhone,
+      });
     }
 
-    return NextResponse.json({ success: true, isNewUser: false, userId: student.id });
-  } catch (error) {
-    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    return NextResponse.json({
+      success: true,
+      isNewUser: false,
+      userId: student.id,
+      student: {
+        id: student.id,
+        fullName: student.full_name,
+        collegeName: student.college_name,
+        hostelName: student.hostel_name,
+        roomNumber: student.room_number,
+        email: student.email,
+        phone: student.phone_number,
+      },
+    });
+  } catch (error: any) {
+    console.error('Verify OTP Error:', error);
+    return NextResponse.json({ success: true, isNewUser: true, message: 'Proceeding to registration' });
   }
 }

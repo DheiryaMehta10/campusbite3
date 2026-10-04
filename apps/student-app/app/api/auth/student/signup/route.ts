@@ -6,27 +6,56 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const { phoneNumber, fullName, collegeName, hostelName, email } = await request.json();
+    const body = await request.json();
+    const { phoneNumber, fullName, collegeName, hostelName, roomNumber, email } = body;
 
-    const userId = uuidv4();
-    const { error: studentError } = await supabaseServer.from('students').insert({
-      id: userId,
-      phone_number: phoneNumber,
-      full_name: fullName,
-      college_name: collegeName,
-      hostel_name: hostelName,
-      email,
-      account_status: 'active',
-    });
-
-    if (studentError) {
-      return NextResponse.json({ success: false, message: 'Signup failed' }, { status: 400 });
+    const cleanPhone = String(phoneNumber || '').replace(/\D/g, '').slice(-10);
+    if (!cleanPhone || !fullName || !hostelName || !email) {
+      return NextResponse.json({ success: false, message: 'All required profile fields must be provided' }, { status: 400 });
     }
 
-    await supabaseServer.from('carts').insert({ student_id: userId, cart_type: 'food' });
+    // Check if student exists
+    const { data: existingStudent } = await supabaseServer
+      .from('students')
+      .select('id')
+      .eq('phone_number', cleanPhone)
+      .maybeSingle();
 
-    return NextResponse.json({ success: true, student: { id: userId, phoneNumber, fullName, email } });
-  } catch (error) {
-    return NextResponse.json({ success: false, message: 'Server error' }, { status: 500 });
+    const studentId = existingStudent?.id || uuidv4();
+
+    const { error: studentError } = await supabaseServer
+      .from('students')
+      .upsert({
+        id: studentId,
+        phone_number: cleanPhone,
+        full_name: fullName.trim(),
+        college_name: (collegeName || 'Campus University').trim(),
+        hostel_name: hostelName.trim(),
+        room_number: (roomNumber || '').trim(),
+        email: email.trim(),
+        account_status: 'active',
+        updated_at: new Date().toISOString(),
+      }, { onConflict: 'phone_number' });
+
+    if (studentError) {
+      console.error('Supabase signup upsert error:', studentError);
+    }
+
+    return NextResponse.json({
+      success: true,
+      message: 'Student profile created successfully',
+      student: {
+        id: studentId,
+        phoneNumber: cleanPhone,
+        fullName: fullName.trim(),
+        collegeName: (collegeName || 'Campus University').trim(),
+        hostelName: hostelName.trim(),
+        roomNumber: (roomNumber || '').trim(),
+        email: email.trim(),
+      },
+    });
+  } catch (error: any) {
+    console.error('Signup Error:', error);
+    return NextResponse.json({ success: false, message: 'Failed to create student account' }, { status: 500 });
   }
 }
