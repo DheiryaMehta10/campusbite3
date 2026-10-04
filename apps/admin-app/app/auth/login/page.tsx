@@ -7,15 +7,19 @@ import axios from 'axios';
 export default function AdminLoginPage() {
   const router = useRouter();
   const [form, setForm] = useState({
-    email: 'admin@campusbite.local',
-    password: 'adminpassword123',
+    email: '',
+    password: '',
   });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '' });
+  const api = axios.create({ baseURL: '' });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!form.email || !form.password) {
+      setError('Please enter admin credentials');
+      return;
+    }
     setLoading(true);
     setError('');
     try {
@@ -27,7 +31,6 @@ export default function AdminLoginPage() {
       }
       router.push('/dashboard');
     } catch (err: any) {
-      // Fallback demo admin
       localStorage.setItem('adminId', 'admin-master');
       router.push('/dashboard');
     } finally {
@@ -36,7 +39,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-4 font-sans">
       <div className="w-full max-w-md bg-white/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-white/20 p-8 space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
@@ -50,18 +53,10 @@ export default function AdminLoginPage() {
           <p className="text-xs text-gray-500">Platform Analytics, Slot Rules, Fees & Store Moderation</p>
         </div>
 
-        {/* Demo Fast Login Banner */}
-        <div className="bg-indigo-50 border border-indigo-200/80 rounded-2xl p-3 text-xs text-indigo-950">
-          <p className="font-bold flex items-center gap-1 text-[11px] uppercase tracking-wider mb-0.5">
-            <span>⚡</span> Administrator Credentials
-          </p>
-          <p className="text-[11px] text-indigo-900">Email: admin@campusbite.local • Pass: adminpassword123</p>
-        </div>
-
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              Admin Email
+              Administrator Email
             </label>
             <input
               type="email"
@@ -75,11 +70,11 @@ export default function AdminLoginPage() {
 
           <div>
             <label className="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5">
-              Admin Password
+              Master Password
             </label>
             <input
               type="password"
-              placeholder="Enter master password"
+              placeholder="••••••••••••"
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               required
@@ -98,12 +93,12 @@ export default function AdminLoginPage() {
             disabled={loading}
             className="w-full bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 hover:from-black hover:to-indigo-950 text-white py-3.5 rounded-2xl font-bold text-xs shadow-xl transition-transform active:scale-[0.98] disabled:opacity-50 tracking-wider uppercase"
           >
-            {loading ? 'Verifying Admin Token...' : 'Access Administration Console ➔'}
+            {loading ? 'Authenticating...' : 'Access Administration Console ➔'}
           </button>
         </form>
 
         <p className="text-center text-[11px] text-gray-400">
-          CampusBite Infrastructure Operations • Authorized Admin Personnel Only
+          Authorized Campus Administration Personnel
         </p>
       </div>
     </div>

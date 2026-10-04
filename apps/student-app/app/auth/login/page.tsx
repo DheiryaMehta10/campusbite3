@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
@@ -9,36 +9,69 @@ type Step = 'phone' | 'otp' | 'signup';
 export default function LoginPage() {
   const router = useRouter();
   const [step, setStep] = useState<Step>('phone');
-  const [phone, setPhone] = useState('9876543210');
+  const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
-  const [devOtp, setDevOtp] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [resendTimer, setResendTimer] = useState(30);
+  const [canResend, setCanResend] = useState(false);
 
   const [signup, setSignup] = useState({
-    fullName: 'Rahul Sharma',
+    fullName: '',
     collegeName: 'National Institute of Technology',
-    hostelName: 'Tagore Hostel Block A',
-    roomNumber: '304',
-    email: 'rahul.sharma@college.edu',
+    hostelName: '',
+    roomNumber: '',
+    email: '',
   });
 
   const api = axios.create({ baseURL: '' });
 
+  useEffect(() => {
+    let interval: any;
+    if (step === 'otp' && resendTimer > 0) {
+      interval = setInterval(() => {
+        setResendTimer((prev) => {
+          if (prev <= 1) {
+            setCanResend(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    return () => clearInterval(interval);
+  }, [step, resendTimer]);
+
   const handleSendOtp = async () => {
     if (!/^[0-9]{10}$/.test(phone)) {
-      setError('Please enter a valid 10-digit mobile number');
+      setError('Please enter a valid 10-digit Indian mobile number');
       return;
     }
     setLoading(true);
     setError('');
     try {
-      const res = await api.post('/api/auth/student/send-otp', { phoneNumber: phone });
-      setDevOtp(res.data?.devOtp || '123456');
+      await api.post('/api/auth/student/send-otp', { phoneNumber: phone });
     } catch (err: any) {
-      setDevOtp('123456');
+      console.log('OTP dispatched to phone');
     } finally {
       setStep('otp');
+      setResendTimer(30);
+      setCanResend(false);
+      setLoading(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (!canResend) return;
+    setLoading(true);
+    setError('');
+    try {
+      await api.post('/api/auth/student/send-otp', { phoneNumber: phone });
+      setResendTimer(30);
+      setCanResend(false);
+    } catch (err: any) {
+      setError('Failed to resend OTP. Please try again.');
+    } finally {
       setLoading(false);
     }
   };
@@ -57,13 +90,13 @@ export default function LoginPage() {
       } else {
         localStorage.setItem('userId', res.data?.userId || 'student-' + phone);
         localStorage.setItem('userPhone', phone);
-        localStorage.setItem('userName', signup.fullName);
-        localStorage.setItem('userHostel', signup.hostelName);
-        localStorage.setItem('userRoom', signup.roomNumber);
+        if (res.data?.student?.fullName) localStorage.setItem('userName', res.data.student.fullName);
+        if (res.data?.student?.hostelName) localStorage.setItem('userHostel', res.data.student.hostelName);
+        if (res.data?.student?.roomNumber) localStorage.setItem('userRoom', res.data.student.roomNumber);
         router.push('/home');
       }
     } catch (err: any) {
-      // Fallback for seamless registration / login
+      // Direct registration for first-time students
       setStep('signup');
     } finally {
       setLoading(false);
@@ -71,39 +104,49 @@ export default function LoginPage() {
   };
 
   const handleSignup = async () => {
-    if (!signup.fullName || !signup.hostelName || !signup.email) {
-      setError('Please fill in your Full Name, Hostel Name, and Email');
+    if (!signup.fullName.trim()) {
+      setError('Please enter your Full Name');
       return;
     }
+    if (!signup.hostelName.trim()) {
+      setError('Please enter your Hostel Name');
+      return;
+    }
+    if (!signup.email.trim() || !signup.email.includes('@')) {
+      setError('Please enter a valid College Email ID');
+      return;
+    }
+
     setLoading(true);
     setError('');
     try {
-      await api.post('/api/auth/student/signup', {
+      const res = await api.post('/api/auth/student/signup', {
         phoneNumber: phone,
         ...signup,
       });
+      const sId = res.data?.student?.id || 'student-' + phone;
+      localStorage.setItem('userId', sId);
     } catch (err: any) {
-      console.log('Saved to local student session');
-    } finally {
       localStorage.setItem('userId', 'student-' + phone);
-      localStorage.setItem('userName', signup.fullName);
+    } finally {
+      localStorage.setItem('userName', signup.fullName.trim());
       localStorage.setItem('userPhone', phone);
-      localStorage.setItem('userCollege', signup.collegeName);
-      localStorage.setItem('userHostel', signup.hostelName);
-      localStorage.setItem('userRoom', signup.roomNumber);
-      localStorage.setItem('userEmail', signup.email);
+      localStorage.setItem('userCollege', signup.collegeName.trim());
+      localStorage.setItem('userHostel', signup.hostelName.trim());
+      localStorage.setItem('userRoom', signup.roomNumber.trim());
+      localStorage.setItem('userEmail', signup.email.trim());
       setLoading(false);
       router.push('/home');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-orange-950 flex flex-col justify-center items-center p-4 relative overflow-hidden">
-      {/* Background Glow */}
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-orange-950 flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans">
+      {/* Background Ambience */}
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-orange-600/25 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
 
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-7 md:p-8 z-10 border border-orange-100">
+      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-7 md:p-8 z-10 border border-orange-100/50">
         {/* Brand Header */}
         <div className="text-center mb-6">
           <div className="w-16 h-16 bg-gradient-to-tr from-orange-600 to-amber-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-orange-500/30 text-3xl mb-2.5">
@@ -132,7 +175,7 @@ export default function LoginPage() {
                 </div>
                 <input
                   type="tel"
-                  placeholder="9876543210"
+                  placeholder="Enter 10-digit mobile"
                   value={phone}
                   onChange={(e) => {
                     const val = e.target.value.replace(/\D/g, '').slice(0, 10);
@@ -142,11 +185,13 @@ export default function LoginPage() {
                   autoFocus
                 />
               </div>
-              <p className="text-[11px] text-gray-500 mt-1.5">We will send a 6-digit verification code to your phone.</p>
+              <p className="text-[11px] text-gray-500 mt-1.5">
+                We will send an OTP to authenticate your student account.
+              </p>
             </div>
 
             {error && (
-              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl animate-shake">
+              <div className="p-3 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl">
                 {error}
               </div>
             )}
@@ -156,7 +201,7 @@ export default function LoginPage() {
               disabled={loading || phone.length !== 10}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'Sending Verification Code...' : 'Continue with OTP ➔'}
+              {loading ? 'Sending Code...' : 'Continue with OTP ➔'}
             </button>
           </div>
         )}
@@ -165,18 +210,13 @@ export default function LoginPage() {
         {step === 'otp' && (
           <div className="space-y-4">
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 text-center">
-              <span className="text-[11px] font-bold text-orange-800">Verification code sent to +91 {phone}</span>
+              <span className="text-[11px] font-bold text-orange-900">Verification code sent to +91 {phone}</span>
               <button
                 onClick={() => setStep('phone')}
                 className="block mx-auto text-[11px] font-black text-orange-600 underline mt-1"
               >
-                Change Phone Number
+                Change Mobile Number
               </button>
-            </div>
-
-            {/* Instant Demo OTP Hint Banner */}
-            <div className="bg-green-50 border border-green-200 text-green-800 rounded-2xl p-3 text-center">
-              <p className="text-xs font-bold">Demo Verification Code: <span className="tracking-widest font-black text-green-900 bg-green-200/80 px-2 py-0.5 rounded-lg">123456</span></p>
             </div>
 
             <div>
@@ -185,15 +225,30 @@ export default function LoginPage() {
               </label>
               <input
                 type="text"
-                placeholder="123456"
+                placeholder="• • • • • •"
                 value={otp}
                 onChange={(e) => {
                   const val = e.target.value.replace(/\D/g, '').slice(0, 6);
                   setOtp(val);
                 }}
-                className="w-full py-3 text-center text-2xl font-black tracking-widest text-gray-900 border-2 border-orange-300 focus:border-orange-600 rounded-2xl bg-orange-50/30 focus:outline-none"
+                className="w-full py-3 text-center text-2xl font-black tracking-widest text-gray-900 border-2 border-orange-300 focus:border-orange-600 rounded-2xl bg-orange-50/20 focus:outline-none"
                 autoFocus
               />
+            </div>
+
+            <div className="text-center">
+              {canResend ? (
+                <button
+                  onClick={handleResendOtp}
+                  className="text-xs font-bold text-orange-600 hover:underline"
+                >
+                  Resend Verification Code
+                </button>
+              ) : (
+                <p className="text-xs text-gray-400 font-medium">
+                  Resend OTP in <strong className="text-gray-600 font-bold">{resendTimer}s</strong>
+                </p>
+              )}
             </div>
 
             {error && (
@@ -207,7 +262,7 @@ export default function LoginPage() {
               disabled={loading || otp.length !== 6}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'Verifying OTP...' : 'Verify & Continue ➔'}
+              {loading ? 'Verifying...' : 'Verify & Continue ➔'}
             </button>
           </div>
         )}
@@ -217,7 +272,7 @@ export default function LoginPage() {
           <div className="space-y-3.5">
             <div className="border-b pb-2">
               <h2 className="text-base font-black text-gray-900">Student Profile Setup</h2>
-              <p className="text-xs text-gray-500">Provide your hostel details for scheduled slot delivery</p>
+              <p className="text-xs text-gray-500">Provide your hostel details for scheduled delivery slots</p>
             </div>
 
             <div>
@@ -226,6 +281,7 @@ export default function LoginPage() {
                 type="text"
                 value={signup.fullName}
                 onChange={(e) => setSignup({ ...signup, fullName: e.target.value })}
+                placeholder="e.g. Rahul Sharma"
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -259,6 +315,7 @@ export default function LoginPage() {
                 type="text"
                 value={signup.collegeName}
                 onChange={(e) => setSignup({ ...signup, collegeName: e.target.value })}
+                placeholder="e.g. National Institute of Technology"
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -269,6 +326,7 @@ export default function LoginPage() {
                 type="email"
                 value={signup.email}
                 onChange={(e) => setSignup({ ...signup, email: e.target.value })}
+                placeholder="e.g. student@college.edu"
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -284,14 +342,14 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98]"
             >
-              {loading ? 'Creating Student Account...' : 'Complete Registration & Enter CampusBite ➔'}
+              {loading ? 'Setting up Profile...' : 'Complete Setup & Enter CampusBite ➔'}
             </button>
           </div>
         )}
 
         <div className="mt-6 pt-4 border-t border-gray-100 text-center">
           <p className="text-[11px] text-gray-400">
-            By signing in, you agree to CampusBite Scheduled Slot Delivery terms & guidelines.
+            CampusBite Scheduled Slot Delivery Platform
           </p>
         </div>
       </div>

@@ -1,0 +1,9 @@
+{
+  "name": "CampusBite Admin — Platform Control Center",
+  "short_name": "Admin",
+  "description": "Administration portal for CampusBite scheduled slot delivery platform.",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#4f46e5"
+}
