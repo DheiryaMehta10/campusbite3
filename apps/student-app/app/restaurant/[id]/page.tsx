@@ -81,18 +81,32 @@ export default function RestaurantPage() {
 
   const fetchMenu = async () => {
     setLoading(true);
-    try {
-      const res = await api.get(`/api/restaurants/${restaurantId}/menu`);
-      if (res.data?.data && res.data.data.length > 0) {
-        setItems(res.data.data);
-      } else {
-        setItems(SAMPLE_ITEMS[restaurantId] || SAMPLE_ITEMS.default);
-      }
-    } catch (error) {
-      setItems(SAMPLE_ITEMS[restaurantId] || SAMPLE_ITEMS.default);
-    } finally {
-      setLoading(false);
+    let menuLoaded: FoodItem[] = [];
+
+    if (typeof window !== 'undefined') {
+      try {
+        const savedMenu = localStorage.getItem('cb_restaurant_menu');
+        if (savedMenu) {
+          menuLoaded = JSON.parse(savedMenu);
+        }
+      } catch {}
     }
+
+    if (menuLoaded.length === 0) {
+      try {
+        const res = await api.get(`/api/restaurants/${restaurantId}/menu`);
+        if (res.data?.data && res.data.data.length > 0) {
+          menuLoaded = res.data.data;
+        } else {
+          menuLoaded = SAMPLE_ITEMS[restaurantId] || SAMPLE_ITEMS.default;
+        }
+      } catch (error) {
+        menuLoaded = SAMPLE_ITEMS[restaurantId] || SAMPLE_ITEMS.default;
+      }
+    }
+
+    setItems(menuLoaded);
+    setLoading(false);
   };
 
   const updateCartStorage = (newCart: CartItem[]) => {

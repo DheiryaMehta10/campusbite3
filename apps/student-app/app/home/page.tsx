@@ -166,6 +166,21 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen bg-slate-50 pb-28">
+      {/* Universal Quick Portal Switcher */}
+      <div className="bg-slate-900 text-slate-300 text-xs py-1.5 px-4 border-b border-slate-800">
+        <div className="max-w-lg mx-auto flex justify-between items-center text-[11px]">
+          <div className="flex items-center space-x-2">
+            <span className="font-bold text-orange-400">Portals:</span>
+            <Link href="/home" className="text-orange-400 font-bold underline">📱 Student</Link>
+            <span className="text-slate-600">|</span>
+            <Link href="/restaurant-portal" className="hover:text-white font-medium">🍳 Kitchen</Link>
+            <span className="text-slate-600">|</span>
+            <Link href="/admin" className="hover:text-white font-medium">⚙️ Admin</Link>
+          </div>
+          <span className="text-[10px] text-slate-400 font-bold">Slot Delivery Hub</span>
+        </div>
+      </div>
+
       {/* Top Mobile Bar */}
       <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm px-4 py-3">
         <div className="max-w-lg mx-auto flex items-center justify-between">
