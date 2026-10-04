@@ -11,8 +11,6 @@ export default function LoginPage() {
   const [step, setStep] = useState<Step>('phone');
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
-  const [receivedOtp, setReceivedOtp] = useState('');
-  const [smsSent, setSmsSent] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [resendTimer, setResendTimer] = useState(30);
@@ -53,15 +51,9 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     try {
-      const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
-      if (res.data?.success) {
-        setSmsSent(!!res.data.smsSent);
-        if (res.data.otpCode) {
-          setReceivedOtp(res.data.otpCode);
-        }
-      }
+      await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
     } catch (err: any) {
-      console.log('OTP dispatched');
+      console.log('OTP dispatched to phone');
     } finally {
       setStep('otp');
       setResendTimer(30);
@@ -76,10 +68,7 @@ export default function LoginPage() {
     setError('');
     try {
       const clean = phone.replace(/\D/g, '').slice(-10);
-      const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
-      if (res.data?.otpCode) {
-        setReceivedOtp(res.data.otpCode);
-      }
+      await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
       setResendTimer(30);
       setCanResend(false);
     } catch (err: any) {
@@ -91,7 +80,7 @@ export default function LoginPage() {
 
   const handleVerifyOtp = async () => {
     if (otp.length < 4) {
-      setError('Please enter the verification code');
+      setError('Please enter the 6-digit verification code sent to your phone');
       return;
     }
     setLoading(true);
@@ -124,7 +113,7 @@ export default function LoginPage() {
       return;
     }
     if (!signup.hostelName.trim()) {
-      setError('Please enter your Hostel Name');
+      setError('Please enter your Hostel Name / Block');
       return;
     }
     if (!signup.email.trim() || !signup.email.includes('@')) {
@@ -202,7 +191,7 @@ export default function LoginPage() {
                 />
               </div>
               <p className="text-[11px] text-gray-500 mt-1.5">
-                Enter your Indian phone number to receive your login code.
+                We will send an SMS with a 6-digit OTP to authenticate your student account.
               </p>
             </div>
 
@@ -217,17 +206,17 @@ export default function LoginPage() {
               disabled={loading || phone.length !== 10}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'Sending Code...' : 'Continue with OTP ➔'}
+              {loading ? 'Sending SMS OTP...' : 'Send OTP to Phone ➔'}
             </button>
           </div>
         )}
 
-        {/* STEP 2: OTP VERIFICATION */}
+        {/* STEP 2: OTP VERIFICATION (NO ON-SCREEN OTP DISPLAY) */}
         {step === 'otp' && (
           <div className="space-y-4">
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 text-center">
-              <span className="text-[11px] font-bold text-orange-900">
-                {smsSent ? `SMS verification sent to +91 ${phone}` : `Verification code for +91 ${phone}`}
+              <span className="text-[11px] font-bold text-orange-950">
+                SMS verification code sent to <strong>+91 {phone}</strong>
               </span>
               <button
                 onClick={() => setStep('phone')}
@@ -237,18 +226,9 @@ export default function LoginPage() {
               </button>
             </div>
 
-            {/* If SMS Gateway is not active, display the live generated OTP */}
-            {receivedOtp && (
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 text-green-900 rounded-2xl p-3.5 text-center shadow-sm">
-                <p className="text-[11px] font-semibold text-green-800">Your Verification Code:</p>
-                <p className="text-xl font-black tracking-widest text-green-950 my-1">{receivedOtp}</p>
-                <p className="text-[10px] text-green-700">Enter this 6-digit code below to authenticate</p>
-              </div>
-            )}
-
             <div>
               <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1.5 text-center">
-                Enter 6-Digit OTP
+                Enter 6-Digit SMS OTP
               </label>
               <input
                 type="text"
@@ -269,7 +249,7 @@ export default function LoginPage() {
                   onClick={handleResendOtp}
                   className="text-xs font-bold text-orange-600 hover:underline"
                 >
-                  Resend Verification Code
+                  Resend SMS OTP
                 </button>
               ) : (
                 <p className="text-xs text-gray-400 font-medium">
@@ -289,7 +269,7 @@ export default function LoginPage() {
               disabled={loading || otp.length < 4}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'Verifying...' : 'Verify & Continue ➔'}
+              {loading ? 'Verifying SMS...' : 'Verify & Continue ➔'}
             </button>
           </div>
         )}
@@ -342,7 +322,7 @@ export default function LoginPage() {
                 type="text"
                 value={signup.collegeName}
                 onChange={(e) => setSignup({ ...signup, collegeName: e.target.value })}
-                placeholder="Enter your college / campus name"
+                placeholder="Enter your college name"
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
