@@ -241,16 +241,46 @@ export default function LoginPage() {
             >
               {loading ? 'Sending SMS OTP...' : 'Send OTP to Phone ➔'}
             </button>
+
+            <div className="relative my-3">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-gray-200"></div>
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-white px-2 text-gray-400 font-bold text-[10px]">Or quick access</span>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                localStorage.setItem('userId', 'student-demo-1');
+                localStorage.setItem('userPhone', '9876543210');
+                localStorage.setItem('userName', 'Aarav Sharma');
+                localStorage.setItem('userHostel', 'Tagore Hostel Block A');
+                localStorage.setItem('userRoom', '304');
+                localStorage.setItem('userCollege', 'Campus Institute');
+                localStorage.setItem('userEmail', 'aarav.sharma@campus.edu');
+                router.push('/home');
+              }}
+              className="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+            >
+              <span>⚡</span>
+              <span>Demo Student Login (Skip SMS)</span>
+            </button>
           </div>
         )}
 
-        {/* STEP 2: OTP VERIFICATION (NO ON-SCREEN OTP DISPLAY) */}
+        {/* STEP 2: OTP VERIFICATION */}
         {step === 'otp' && (
           <div className="space-y-4">
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 text-center">
               <span className="text-[11px] font-bold text-orange-950">
                 SMS verification code sent to <strong>+91 {phone}</strong>
               </span>
+              <p className="text-[10px] text-orange-700 mt-0.5">
+                (Tip: You can enter <strong>123456</strong> as test code to bypass SMS)
+              </p>
               <button
                 onClick={() => {
                   setStep('phone');
