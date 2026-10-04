@@ -12,6 +12,7 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [verificationToken, setVerificationToken] = useState('');
+  const [trialOtp, setTrialOtp] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -53,16 +54,22 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     setSuccessMsg('');
+    setTrialOtp(null);
     try {
       const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
       if (res.data?.token) {
         setVerificationToken(res.data.token);
       }
+      if (res.data?.demoOtp) {
+        setTrialOtp(res.data.demoOtp);
+      }
       setStep('otp');
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
-      setSuccessMsg('SMS verification code sent to your mobile number.');
+      if (res.data?.smsSent) {
+        setSuccessMsg('SMS verification code sent to your mobile phone.');
+      }
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to send OTP. Please check your number.';
       setError(msg);
@@ -76,16 +83,22 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     setSuccessMsg('');
+    setTrialOtp(null);
     try {
       const clean = phone.replace(/\D/g, '').slice(-10);
       const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
       if (res.data?.token) {
         setVerificationToken(res.data.token);
       }
+      if (res.data?.demoOtp) {
+        setTrialOtp(res.data.demoOtp);
+      }
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
-      setSuccessMsg('A new OTP has been sent to your mobile number.');
+      if (res.data?.smsSent) {
+        setSuccessMsg('A new SMS verification code has been sent to your phone.');
+      }
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to resend OTP. Please try again.';
       setError(msg);
@@ -247,7 +260,7 @@ export default function LoginPage() {
           <div className="space-y-4">
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 text-center">
               <span className="text-[11px] font-bold text-orange-950">
-                SMS verification code sent to <strong>+91 {phone}</strong>
+                Verification code sent for <strong>+91 {phone}</strong>
               </span>
               <button
                 onClick={() => {
@@ -259,6 +272,25 @@ export default function LoginPage() {
                 Change Mobile Number
               </button>
             </div>
+
+            {/* Trial Note for unverified test numbers */}
+            {trialOtp && (
+              <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-left">
+                <div className="flex items-center gap-1.5 text-amber-900 font-bold text-xs mb-1">
+                  <span>ℹ️</span>
+                  <span>Twilio Trial Account Notice</span>
+                </div>
+                <p className="text-[11px] text-amber-800 leading-relaxed">
+                  Twilio Trial accounts only deliver carrier SMS to verified phone numbers. For this test number, use verification code:
+                </p>
+                <div className="mt-2 text-center py-1.5 bg-white border border-amber-300 rounded-xl font-mono text-base font-black text-amber-950 tracking-widest">
+                  {trialOtp}
+                </div>
+                <p className="text-[10px] text-amber-600 mt-1.5">
+                  (To deliver carrier SMS to all numbers automatically, upgrade your Twilio account to Full in Twilio Console).
+                </p>
+              </div>
+            )}
 
             <div>
               <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1.5 text-center">

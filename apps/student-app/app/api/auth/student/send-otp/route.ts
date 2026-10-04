@@ -21,6 +21,7 @@ export async function POST(request: NextRequest) {
 
     const e164Phone = `+91${cleanPhone}`;
     let smsSent = false;
+    let trialRestricted = false;
     let fallbackOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
     // 1. Send real SMS OTP via Twilio Verify API
@@ -44,12 +45,16 @@ export async function POST(request: NextRequest) {
         );
 
         const twData = await twRes.json();
-        console.log('[Twilio Verify] Dispatch response:', twData.status, twData.sid);
+        console.log('[Twilio Verify] Dispatch response:', twData.status, twData.code || twData.sid);
 
         if (twData.status === 'pending' || twData.sid) {
           smsSent = true;
+        } else if (twData.code === 21608) {
+          // Twilio Trial account restriction for unverified numbers
+          trialRestricted = true;
+          console.warn('[Twilio Notice] Unverified number on trial account:', cleanPhone);
         } else if (twData.message) {
-          console.warn('[Twilio Verify Notice]:', twData.message);
+          console.warn('[Twilio Notice]:', twData.message);
         }
       } catch (err) {
         console.error('[Twilio Verify Error]:', err);
@@ -63,8 +68,12 @@ export async function POST(request: NextRequest) {
       success: true,
       message: smsSent
         ? `SMS OTP sent successfully to +91 ${cleanPhone}`
+        : trialRestricted
+        ? 'Twilio Trial mode: Real SMS is active for verified numbers. For unverified numbers, test code is provided.'
         : 'OTP verification code requested.',
       smsSent,
+      trialRestricted,
+      demoOtp: trialRestricted ? fallbackOtp : undefined,
       token,
       expiresAt,
       phone: cleanPhone,
