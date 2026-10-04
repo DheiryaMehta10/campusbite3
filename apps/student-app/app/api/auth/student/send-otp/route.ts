@@ -3,6 +3,10 @@ import { generateOtpToken } from '@/lib/otp';
 
 export const dynamic = 'force-dynamic';
 
+const TWILIO_KEY_SID = process.env.TWILIO_API_KEY_SID || 'SK786c3fa401e29701f89337eca5c42866';
+const TWILIO_SECRET = process.env.TWILIO_API_KEY_SECRET || 'YJ1DohTnhZHh1mXeKZKBdO3AivEJS88T';
+const TWILIO_VERIFY_SID = process.env.TWILIO_VERIFY_SERVICE_SID || 'VA1eb73e93dd31a7152a3280181ab9d0c3';
+
 export async function POST(request: NextRequest) {
   try {
     const { phoneNumber } = await request.json();
@@ -15,70 +19,20 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate secure 6-digit OTP
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
-    const { token, expiresAt } = generateOtpToken(cleanPhone, otp, 10);
-
+    const e164Phone = `+91${cleanPhone}`;
     let smsSent = false;
-    let gatewayMessage = '';
+    let fallbackOtp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // 1. Try Fast2SMS (Indian SMS Gateway)
-    const fast2smsKey = process.env.FAST2SMS_API_KEY;
-    if (fast2smsKey) {
+    // 1. Send real SMS OTP via Twilio Verify API
+    if (TWILIO_KEY_SID && TWILIO_SECRET && TWILIO_VERIFY_SID) {
       try {
-        const smsRes = await fetch('https://www.fast2sms.com/dev/bulkV2', {
-          method: 'POST',
-          headers: {
-            authorization: fast2smsKey,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            variables_values: otp,
-            route: 'otp',
-            numbers: cleanPhone,
-          }),
-        });
-        const smsData = await smsRes.json();
-        if (smsData.return) {
-          smsSent = true;
-          gatewayMessage = 'SMS delivered to mobile via Fast2SMS';
-        }
-      } catch (err) {
-        console.error('Fast2SMS Error:', err);
-      }
-    }
-
-    // 2. Try 2Factor.in SMS Gateway
-    const twoFactorKey = process.env.TWOFACTOR_API_KEY;
-    if (!smsSent && twoFactorKey) {
-      try {
-        const tfRes = await fetch(
-          `https://2factor.in/v3/API/V1/${twoFactorKey}/SMS/+91${cleanPhone}/${otp}/CampusBite_OTP`
-        );
-        const tfData = await tfRes.json();
-        if (tfData.Status === 'Success') {
-          smsSent = true;
-          gatewayMessage = 'SMS delivered via 2Factor';
-        }
-      } catch (err) {
-        console.error('2Factor Error:', err);
-      }
-    }
-
-    // 3. Try Twilio if configured
-    const twilioSid = process.env.TWILIO_ACCOUNT_SID;
-    const twilioToken = process.env.TWILIO_AUTH_TOKEN;
-    const twilioFrom = process.env.TWILIO_PHONE_NUMBER;
-    if (!smsSent && twilioSid && twilioToken && twilioFrom) {
-      try {
-        const authHeader = 'Basic ' + Buffer.from(`${twilioSid}:${twilioToken}`).toString('base64');
+        const authHeader = 'Basic ' + Buffer.from(`${TWILIO_KEY_SID}:${TWILIO_SECRET}`).toString('base64');
         const params = new URLSearchParams();
-        params.append('To', `+91${cleanPhone}`);
-        params.append('From', twilioFrom);
-        params.append('Body', `Your CampusBite login verification code is ${otp}. Valid for 10 minutes.`);
+        params.append('To', e164Phone);
+        params.append('Channel', 'sms');
 
         const twRes = await fetch(
-          `https://api.twilio.com/2010-04-01/Accounts/${twilioSid}/Messages.json`,
+          `https://verify.twilio.com/v2/Services/${TWILIO_VERIFY_SID}/Verifications`,
           {
             method: 'POST',
             headers: {
@@ -88,21 +42,28 @@ export async function POST(request: NextRequest) {
             body: params.toString(),
           }
         );
-        if (twRes.ok) {
+
+        const twData = await twRes.json();
+        console.log('[Twilio Verify] Dispatch response:', twData.status, twData.sid);
+
+        if (twData.status === 'pending' || twData.sid) {
           smsSent = true;
-          gatewayMessage = 'SMS delivered via Twilio';
+        } else if (twData.message) {
+          console.warn('[Twilio Verify Notice]:', twData.message);
         }
       } catch (err) {
-        console.error('Twilio Error:', err);
+        console.error('[Twilio Verify Error]:', err);
       }
     }
 
-    // Log securely in server console
-    console.log(`[CampusBite Auth] OTP generated for +91${cleanPhone}. SMS Sent: ${smsSent}`);
+    // Generate cryptographic token
+    const { token, expiresAt } = generateOtpToken(cleanPhone, fallbackOtp, 10);
 
     return NextResponse.json({
       success: true,
-      message: smsSent ? 'OTP sent successfully to your mobile number' : 'OTP generated and sent',
+      message: smsSent
+        ? `SMS OTP sent successfully to +91 ${cleanPhone}`
+        : 'OTP verification code requested.',
       smsSent,
       token,
       expiresAt,
@@ -110,6 +71,9 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Send OTP Error:', error);
-    return NextResponse.json({ success: false, message: 'Failed to send OTP. Please try again.' }, { status: 500 });
+    return NextResponse.json(
+      { success: false, message: 'Failed to send OTP. Please check the number and try again.' },
+      { status: 500 }
+    );
   }
 }
