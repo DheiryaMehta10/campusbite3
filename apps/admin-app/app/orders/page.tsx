@@ -126,14 +126,21 @@ export default function AdminOrdersPage() {
   };
 
   const filteredOrders = orders.filter((ord) => {
-    const status = ord.orderStatus || ord.order_status || 'ORDER_PLACED';
-    if (filterStatus !== 'ALL' && status !== filterStatus) return false;
+    let status = String(ord.orderStatus || ord.order_status || 'ORDER_PLACED').toUpperCase();
+    if (status === 'PLACED') status = 'ORDER_PLACED';
+
+    if (filterStatus !== 'ALL') {
+      let f = filterStatus.toUpperCase();
+      if (f === 'PLACED') f = 'ORDER_PLACED';
+      if (status !== f) return false;
+    }
+
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const num = (ord.orderNumber || ord.id).toLowerCase();
-      const name = (ord.studentName || '').toLowerCase();
-      const phone = (ord.studentPhone || '').toLowerCase();
-      const hostel = (ord.hostelName || '').toLowerCase();
+      const num = String(ord.orderNumber || ord.order_number || ord.id).toLowerCase();
+      const name = String(ord.studentName || '').toLowerCase();
+      const phone = String(ord.studentPhone || '').toLowerCase();
+      const hostel = String(ord.hostelName || '').toLowerCase();
       if (!num.includes(q) && !name.includes(q) && !phone.includes(q) && !hostel.includes(q)) {
         return false;
       }

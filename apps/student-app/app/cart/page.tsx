@@ -43,7 +43,7 @@ export default function CartPage() {
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null);
   const [promoError, setPromoError] = useState('');
 
-  const api = axios.create({ baseURL: '' });
+  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '' });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

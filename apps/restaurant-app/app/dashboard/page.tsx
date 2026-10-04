@@ -254,9 +254,19 @@ export default function RestaurantDashboardPage() {
     alert(`✓ "${created.name}" has been added to the menu!`);
   };
 
-  const incomingOrders = orders.filter((o) => (o.orderStatus || o.order_status) === 'ORDER_PLACED');
-  const preparingOrders = orders.filter((o) => (o.orderStatus || o.order_status) === 'PREPARING' || (o.orderStatus || o.order_status) === 'RESTAURANT_ACCEPTED');
-  const readyOrders = orders.filter((o) => (o.orderStatus || o.order_status) === 'READY_FOR_DELIVERY' || (o.orderStatus || o.order_status) === 'OUT_FOR_DELIVERY' || (o.orderStatus || o.order_status) === 'DELIVERED');
+  const getNormStatus = (o: Order) => String(o.orderStatus || o.order_status || '').toUpperCase();
+  const incomingOrders = orders.filter((o) => {
+    const s = getNormStatus(o);
+    return s === 'ORDER_PLACED' || s === 'PLACED';
+  });
+  const preparingOrders = orders.filter((o) => {
+    const s = getNormStatus(o);
+    return s === 'PREPARING' || s === 'RESTAURANT_ACCEPTED';
+  });
+  const readyOrders = orders.filter((o) => {
+    const s = getNormStatus(o);
+    return s === 'READY_FOR_DELIVERY' || s === 'OUT_FOR_DELIVERY' || s === 'DELIVERED' || s === 'ARRIVED';
+  });
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20 font-sans">

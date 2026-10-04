@@ -20,6 +20,7 @@ const DEFAULT_SLOTS_MAP: Record<string, string> = {
   'slot-eve-1': 'Evening Slot 1 (6:00 PM – 7:00 PM)',
   'slot-eve-2': 'Evening Slot 2 (7:00 PM – 8:00 PM)',
   'slot-night': 'Night Canteen Slot (9:30 PM – 10:30 PM)',
+  '4a7cabf4-a40e-4fa8-92f2-d12586ca69f1': 'Lunch Slot (12:00 PM – 1:00 PM)',
 };
 
 function formatOrder(dbOrder: any) {
@@ -36,7 +37,7 @@ function formatOrder(dbOrder: any) {
   const studentName = dbOrder.students?.full_name || dbOrder.studentName || dbOrder.student_name || 'Student';
   const studentPhone = dbOrder.students?.phone_number || dbOrder.studentPhone || dbOrder.student_phone || '9876543210';
   const hostelName = dbOrder.students?.hostel_name || dbOrder.hostelName || dbOrder.hostel_name || 'Tagore Hostel Block A';
-  const roomNumber = dbOrder.students?.room_number || dbOrder.roomNumber || dbOrder.room_number || '304';
+  const roomNumber = dbOrder.roomNumber || dbOrder.room_number || '304';
   const restaurantName = dbOrder.restaurants?.name || dbOrder.restaurantName || dbOrder.restaurant_name || 'North Campus Central Canteen';
   const deliverySlot = dbOrder.delivery_slots?.name || dbOrder.deliverySlot || (typeof dbOrder.delivery_slot === 'object' ? dbOrder.delivery_slot?.name : dbOrder.delivery_slot) || 'Evening Slot 1 (6:00 PM – 7:00 PM)';
 
@@ -114,11 +115,7 @@ export async function POST(request: NextRequest) {
       totalAmount: customTotalAmount,
     } = body;
 
-    let student_id = studentId || body.userId;
-    // Ensure valid UUID format for student_id
-    if (!student_id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(student_id)) {
-      student_id = uuidv4();
-    }
+    const normalizedPhone = String(studentPhone || '9876543210').replace(/\D/g, '').slice(-10) || '9876543210';
 
     if (!items || items.length === 0) {
       return corsResponse({ success: false, message: 'Order must contain at least one item' }, { status: 400 });
@@ -167,25 +164,75 @@ export async function POST(request: NextRequest) {
     const orderNumber = `CB-${Math.floor(1000 + Math.random() * 9000)}`;
     const slotName = DEFAULT_SLOTS_MAP[deliverySlotId] || 'Evening Slot 1 (6:00 PM – 7:00 PM)';
 
+    // 1. Upsert Student in database
+    let dbStudentId: string = uuidv4();
+    try {
+      const { data: existingStudent } = await supabaseServer
+        .from('students')
+        .select('id')
+        .eq('phone_number', normalizedPhone)
+        .maybeSingle();
+
+      if (existingStudent?.id) {
+        dbStudentId = existingStudent.id;
+        // update profile details
+        await supabaseServer.from('students').update({
+          full_name: studentName || 'Student',
+          hostel_name: hostelName || 'Tagore Hostel Block A',
+        }).eq('id', dbStudentId);
+      } else {
+        const { data: createdStudent } = await supabaseServer.from('students').insert({
+          id: dbStudentId,
+          phone_number: normalizedPhone,
+          full_name: studentName || 'Student',
+          college_name: 'Campus University',
+          hostel_name: hostelName || 'Tagore Hostel Block A',
+          email: `${normalizedPhone}@campus.edu`,
+        }).select().single();
+        if (createdStudent?.id) dbStudentId = createdStudent.id;
+      }
+    } catch (sErr) {
+      console.warn('Student upsert notice:', sErr);
+    }
+
+    // 2. Fetch valid restaurant and slot IDs from DB
+    let validRestId = restaurantId;
+    try {
+      const { data: rList } = await supabaseServer.from('restaurants').select('id');
+      if (rList && rList.length > 0) {
+        const match = rList.find((r) => r.id === restaurantId);
+        validRestId = match ? match.id : rList[0].id;
+      }
+    } catch {}
+
+    let validSlotId = deliverySlotId;
+    try {
+      const { data: sList } = await supabaseServer.from('delivery_slots').select('id');
+      if (sList && sList.length > 0) {
+        const match = sList.find((s) => s.id === deliverySlotId);
+        validSlotId = match ? match.id : sList[0].id;
+      }
+    } catch {}
+
     const newOrderObj = {
       id: orderId,
       orderNumber,
       order_number: orderNumber,
-      studentId: student_id,
-      student_id,
+      studentId: dbStudentId,
+      student_id: dbStudentId,
       studentName,
       student_name: studentName,
-      studentPhone,
-      student_phone: studentPhone,
+      studentPhone: normalizedPhone,
+      student_phone: normalizedPhone,
       hostelName,
       hostel_name: hostelName,
       roomNumber,
       room_number: roomNumber,
-      restaurantId,
-      restaurant_id: restaurantId,
+      restaurantId: validRestId,
+      restaurant_id: validRestId,
       restaurantName,
-      deliverySlotId,
-      delivery_slot_id: deliverySlotId,
+      deliverySlotId: validSlotId,
+      delivery_slot_id: validSlotId,
       deliverySlot: slotName,
       delivery_slot: { name: slotName },
       catalogType,
@@ -210,37 +257,12 @@ export async function POST(request: NextRequest) {
 
     MEMORY_ORDERS.unshift(newOrderObj);
 
-    // Save persistently to Supabase
+    // 3. Save persistently to Supabase
     try {
-      // 1. Ensure student exists
-      await supabaseServer.from('students').upsert({
-        id: student_id,
-        phone_number: studentPhone || '9876543210',
-        full_name: studentName || 'Student',
-        college_name: 'Campus University',
-        hostel_name: hostelName || 'Tagore Block A',
-        room_number: roomNumber || '304',
-        email: `${studentPhone || 'student'}@campus.edu`,
-      }, { onConflict: 'id' });
-
-      // 2. Fetch valid restaurant and slot IDs from DB
-      let validRestId = restaurantId;
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(validRestId)) {
-        const { data: rList } = await supabaseServer.from('restaurants').select('id').limit(1);
-        if (rList && rList.length > 0) validRestId = rList[0].id;
-      }
-
-      let validSlotId = deliverySlotId;
-      if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(validSlotId)) {
-        const { data: sList } = await supabaseServer.from('delivery_slots').select('id').limit(1);
-        if (sList && sList.length > 0) validSlotId = sList[0].id;
-      }
-
-      // 3. Insert order
       await supabaseServer.from('orders').insert({
         id: orderId,
         order_number: orderNumber,
-        student_id,
+        student_id: dbStudentId,
         restaurant_id: validRestId,
         delivery_slot_id: validSlotId,
         order_type: catalogType || 'food',
@@ -253,19 +275,18 @@ export async function POST(request: NextRequest) {
         order_status: 'placed',
       });
 
-      // 4. Insert items
       if (validatedItems.length > 0) {
         const itemsToInsert = validatedItems.map((itm: any) => ({
           order_id: orderId,
+          item_type: 'food',
           item_name: itm.name,
           quantity: itm.quantity,
           unit_price: itm.price,
-          total_price: itm.price * itm.quantity,
         }));
         await supabaseServer.from('order_items').insert(itemsToInsert);
       }
     } catch (dbErr) {
-      console.warn('Supabase order insert warning (falling back to memory):', dbErr);
+      console.warn('Supabase order insert warning:', dbErr);
     }
 
     return corsResponse({
@@ -290,7 +311,6 @@ export async function GET(request: NextRequest) {
     const restaurantId = searchParams.get('restaurantId');
     const orderId = searchParams.get('orderId');
 
-    // 1. Fetch from Supabase
     let dbOrders: any[] = [];
     try {
       const { data, error } = await supabaseServer
@@ -305,21 +325,17 @@ export async function GET(request: NextRequest) {
       console.warn('Error fetching orders from Supabase:', e);
     }
 
-    // 2. Merge with Memory Orders (deduplicating by ID)
     const combinedMap = new Map<string, any>();
-    // Add memory orders first
     for (const mem of MEMORY_ORDERS) {
       combinedMap.set(mem.id, formatOrder(mem));
       if (mem.orderNumber) combinedMap.set(mem.orderNumber, formatOrder(mem));
     }
-    // Overlay database orders
     for (const dbo of dbOrders) {
       combinedMap.set(dbo.id, dbo);
       if (dbo.orderNumber) combinedMap.set(dbo.orderNumber, dbo);
     }
 
     const uniqueOrders = Array.from(new Set(Array.from(combinedMap.values())));
-    // Sort descending by placedAt
     uniqueOrders.sort((a, b) => new Date(b.placedAt || 0).getTime() - new Date(a.placedAt || 0).getTime());
 
     let result = uniqueOrders;
@@ -330,7 +346,7 @@ export async function GET(request: NextRequest) {
     }
 
     if (studentId) {
-      result = result.filter((o) => o.studentId === studentId || o.student_id === studentId);
+      result = result.filter((o) => o.studentId === studentId || o.student_id === studentId || o.studentPhone === studentId || o.student_phone === studentId);
     } else if (restaurantId) {
       result = result.filter((o) => o.restaurantId === restaurantId || o.restaurant_id === restaurantId);
     }
