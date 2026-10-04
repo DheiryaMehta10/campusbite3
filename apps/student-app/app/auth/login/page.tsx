@@ -12,7 +12,6 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [verificationToken, setVerificationToken] = useState('');
-  const [demoCode, setDemoCode] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -54,23 +53,17 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     setSuccessMsg('');
-    setDemoCode(null);
 
     try {
       const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
       if (res.data?.token) {
         setVerificationToken(res.data.token);
       }
-      if (res.data?.demoOtp) {
-        setDemoCode(res.data.demoOtp);
-      }
       setStep('otp');
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
-      if (res.data?.smsSent) {
-        setSuccessMsg(`SMS verification code sent to +91 ${clean}`);
-      }
+      setSuccessMsg(`SMS verification code sent to +91 ${clean}`);
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to send OTP. Please check your number.';
       setError(msg);
@@ -84,22 +77,16 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     setSuccessMsg('');
-    setDemoCode(null);
     try {
       const clean = phone.replace(/\D/g, '').slice(-10);
       const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
       if (res.data?.token) {
         setVerificationToken(res.data.token);
       }
-      if (res.data?.demoOtp) {
-        setDemoCode(res.data.demoOtp);
-      }
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
-      if (res.data?.smsSent) {
-        setSuccessMsg(`A fresh SMS OTP has been sent to +91 ${clean}`);
-      }
+      setSuccessMsg(`A fresh SMS OTP has been sent to +91 ${clean}`);
     } catch (err: any) {
       setError('Failed to resend OTP. Please try again.');
     } finally {
@@ -110,7 +97,7 @@ export default function LoginPage() {
   const handleVerifyOtp = async () => {
     const cleanOtp = otp.trim();
     if (cleanOtp.length !== 6) {
-      setError('Please enter the complete 6-digit OTP code');
+      setError('Please enter the 6-digit OTP code sent to your phone');
       return;
     }
     setLoading(true);
@@ -145,7 +132,7 @@ export default function LoginPage() {
     } catch (err: any) {
       const msg =
         err.response?.data?.message ||
-        'Invalid OTP code. Please check and enter the correct 6-digit code.';
+        'Invalid OTP code. Please enter the correct 6-digit code sent to your phone.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -257,41 +244,24 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* STEP 2: OTP VERIFICATION */}
+        {/* STEP 2: OTP VERIFICATION (NO ON-SCREEN OTP DISPLAY) */}
         {step === 'otp' && (
           <div className="space-y-4">
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 text-center">
               <span className="text-[11px] font-bold text-orange-950">
-                Verification code sent for <strong>+91 {phone}</strong>
+                SMS verification code sent to <strong>+91 {phone}</strong>
               </span>
               <button
                 onClick={() => {
                   setStep('phone');
                   setError('');
                   setSuccessMsg('');
-                  setDemoCode(null);
                 }}
                 className="block mx-auto text-[11px] font-black text-orange-600 underline mt-1"
               >
                 Change Mobile Number
               </button>
             </div>
-
-            {/* Test Helper Notice */}
-            {demoCode && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-left">
-                <div className="flex items-center gap-1.5 text-amber-900 font-bold text-xs mb-1">
-                  <span>ℹ️</span>
-                  <span>Fast2SMS OTP Verification</span>
-                </div>
-                <p className="text-[11px] text-amber-800 leading-relaxed">
-                  For instant verification, use your 6-digit code:
-                </p>
-                <div className="mt-2 text-center py-1.5 bg-white border border-amber-300 rounded-xl font-mono text-lg font-black text-amber-950 tracking-widest">
-                  {demoCode}
-                </div>
-              </div>
-            )}
 
             <div>
               <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1.5 text-center">

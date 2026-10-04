@@ -59,7 +59,6 @@ export async function POST(request: NextRequest) {
         ? `SMS OTP sent successfully to +91 ${cleanPhone}`
         : 'OTP verification code initialized.',
       smsSent,
-      demoOtp: !smsSent ? otp : undefined,
       notice: fast2smsNotice,
       token,
       expiresAt,
