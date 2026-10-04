@@ -6,41 +6,40 @@ export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
   try {
-    const { phoneNumber, otp, token, isFirebaseVerified, firebaseUid } = await request.json();
+    const { phoneNumber, otp, token } = await request.json();
     const cleanPhone = String(phoneNumber || '').replace(/\D/g, '').slice(-10);
 
     if (cleanPhone.length !== 10) {
       return NextResponse.json({ success: false, message: 'Invalid phone number' }, { status: 400 });
     }
 
-    let isApproved = false;
-    let failureReason = '';
-
-    if (isFirebaseVerified && (firebaseUid || cleanPhone)) {
-      // Confirmed via Google Firebase Phone Auth
-      isApproved = true;
-    } else if (otp && token) {
-      const fallbackCheck = verifyOtpToken(cleanPhone, String(otp).trim(), token);
-      if (fallbackCheck.valid) {
-        isApproved = true;
-      } else {
-        failureReason = fallbackCheck.reason || 'Invalid OTP code.';
-      }
-    } else {
-      failureReason = 'Please enter a valid 6-digit verification code';
+    const cleanOtp = String(otp || '').trim();
+    if (!cleanOtp || cleanOtp.length !== 6) {
+      return NextResponse.json(
+        { success: false, message: 'Please enter the complete 6-digit OTP code' },
+        { status: 400 }
+      );
     }
 
-    if (!isApproved) {
+    if (!token) {
+      return NextResponse.json(
+        { success: false, message: 'Verification session expired. Please request a new OTP.' },
+        { status: 400 }
+      );
+    }
+
+    const verification = verifyOtpToken(cleanPhone, cleanOtp, token);
+    if (!verification.valid) {
       return NextResponse.json(
         {
           success: false,
-          message: failureReason || 'Invalid OTP code. Please enter the correct code sent to your phone.',
+          message: verification.reason || 'Invalid OTP code. Please enter the correct code.',
         },
         { status: 400 }
       );
     }
 
-    // Check if student is already registered in Supabase
+    // Check if student is already registered in Supabase database
     try {
       const { data: student, error } = await supabaseServer
         .from('students')
