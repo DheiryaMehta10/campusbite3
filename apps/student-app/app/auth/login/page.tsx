@@ -1,10 +1,23 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import { auth } from '@/lib/firebase';
+import {
+  RecaptchaVerifier,
+  signInWithPhoneNumber,
+  ConfirmationResult,
+} from 'firebase/auth';
 
 type Step = 'phone' | 'otp' | 'signup';
+
+declare global {
+  interface Window {
+    recaptchaVerifier?: RecaptchaVerifier;
+    confirmationResult?: ConfirmationResult;
+  }
+}
 
 export default function LoginPage() {
   const router = useRouter();
@@ -12,7 +25,7 @@ export default function LoginPage() {
   const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [verificationToken, setVerificationToken] = useState('');
-  const [trialOtp, setTrialOtp] = useState<string | null>(null);
+  const [confirmationResult, setConfirmationResult] = useState<ConfirmationResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
@@ -28,6 +41,7 @@ export default function LoginPage() {
   });
 
   const api = axios.create({ baseURL: '' });
+  const recaptchaContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let interval: any;
@@ -45,6 +59,23 @@ export default function LoginPage() {
     return () => clearInterval(interval);
   }, [step, resendTimer]);
 
+  // Setup Firebase invisible reCAPTCHA verifier
+  const getOrCreateRecaptchaVerifier = () => {
+    if (typeof window === 'undefined') return null;
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        size: 'invisible',
+        callback: () => {
+          console.log('[Firebase Auth] reCAPTCHA verified');
+        },
+        'expired-callback': () => {
+          console.warn('[Firebase Auth] reCAPTCHA expired');
+        },
+      });
+    }
+    return window.recaptchaVerifier;
+  };
+
   const handleSendOtp = async () => {
     const clean = phone.replace(/\D/g, '').slice(-10);
     if (clean.length !== 10) {
@@ -54,25 +85,44 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     setSuccessMsg('');
-    setTrialOtp(null);
+
     try {
-      const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
-      if (res.data?.token) {
-        setVerificationToken(res.data.token);
-      }
-      if (res.data?.demoOtp) {
-        setTrialOtp(res.data.demoOtp);
+      const appVerifier = getOrCreateRecaptchaVerifier();
+      if (appVerifier) {
+        // 1. Dispatch SMS using Google Firebase Phone Auth
+        const confirmation = await signInWithPhoneNumber(auth, `+91${clean}`, appVerifier);
+        setConfirmationResult(confirmation);
+        window.confirmationResult = confirmation;
+        setSuccessMsg('SMS verification code sent to your phone via Google Firebase.');
+      } else {
+        // 2. Fallback backend route
+        const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
+        if (res.data?.token) setVerificationToken(res.data.token);
       }
       setStep('otp');
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
-      if (res.data?.smsSent) {
-        setSuccessMsg('SMS verification code sent to your mobile phone.');
-      }
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to send OTP. Please check your number.';
-      setError(msg);
+      console.warn('[Firebase Auth fallback]:', err);
+      // Fallback to backend route if Firebase client reCAPTCHA was blocked
+      try {
+        const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
+        if (res.data?.token) setVerificationToken(res.data.token);
+        setStep('otp');
+        setResendTimer(30);
+        setCanResend(false);
+        setOtp('');
+        setSuccessMsg('Verification code requested for your phone number.');
+      } catch (backendErr: any) {
+        const msg =
+          err.message?.includes('auth/quota-exceeded')
+            ? 'Daily SMS quota reached. Please try again shortly.'
+            : err.message?.includes('auth/invalid-phone-number')
+            ? 'Invalid phone number format.'
+            : 'Failed to send SMS OTP. Please check your number.';
+        setError(msg);
+      }
     } finally {
       setLoading(false);
     }
@@ -83,25 +133,23 @@ export default function LoginPage() {
     setLoading(true);
     setError('');
     setSuccessMsg('');
-    setTrialOtp(null);
     try {
       const clean = phone.replace(/\D/g, '').slice(-10);
-      const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
-      if (res.data?.token) {
-        setVerificationToken(res.data.token);
-      }
-      if (res.data?.demoOtp) {
-        setTrialOtp(res.data.demoOtp);
+      const appVerifier = getOrCreateRecaptchaVerifier();
+      if (appVerifier) {
+        const confirmation = await signInWithPhoneNumber(auth, `+91${clean}`, appVerifier);
+        setConfirmationResult(confirmation);
+        window.confirmationResult = confirmation;
+        setSuccessMsg('A new SMS verification code has been sent to your phone.');
+      } else {
+        const res = await api.post('/api/auth/student/send-otp', { phoneNumber: clean });
+        if (res.data?.token) setVerificationToken(res.data.token);
       }
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
-      if (res.data?.smsSent) {
-        setSuccessMsg('A new SMS verification code has been sent to your phone.');
-      }
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to resend OTP. Please try again.';
-      setError(msg);
+      setError('Failed to resend OTP. Please wait and try again.');
     } finally {
       setLoading(false);
     }
@@ -110,26 +158,44 @@ export default function LoginPage() {
   const handleVerifyOtp = async () => {
     const cleanOtp = otp.trim();
     if (cleanOtp.length !== 6) {
-      setError('Please enter the complete 6-digit OTP code sent to your mobile');
+      setError('Please enter the complete 6-digit OTP code sent to your phone');
       return;
     }
     setLoading(true);
     setError('');
+
+    const clean = phone.replace(/\D/g, '').slice(-10);
+
     try {
-      const clean = phone.replace(/\D/g, '').slice(-10);
+      let isFirebaseVerified = false;
+      let firebaseUid = '';
+
+      // 1. Confirm with Firebase if confirmationResult is active
+      const activeConfirmation = confirmationResult || window.confirmationResult;
+      if (activeConfirmation) {
+        try {
+          const userCredential = await activeConfirmation.confirm(cleanOtp);
+          isFirebaseVerified = true;
+          firebaseUid = userCredential.user.uid;
+        } catch (fbErr: any) {
+          console.warn('[Firebase code confirm err]:', fbErr);
+        }
+      }
+
+      // 2. Query Supabase backend for student profile or registration
       const res = await api.post('/api/auth/student/verify-otp', {
         phoneNumber: clean,
         otp: cleanOtp,
         token: verificationToken,
+        isFirebaseVerified,
+        firebaseUid,
       });
 
       if (res.data?.success) {
         if (res.data?.isNewUser) {
-          // Validated OTP -> Proceed to registration
           setStep('signup');
           setError('');
         } else {
-          // Existing student -> Direct login
           localStorage.setItem('userId', res.data?.userId || 'student-' + clean);
           localStorage.setItem('userPhone', clean);
           if (res.data?.student?.fullName) localStorage.setItem('userName', res.data.student.fullName);
@@ -143,7 +209,9 @@ export default function LoginPage() {
         setError(res.data?.message || 'Invalid OTP code. Please enter the correct code.');
       }
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Invalid OTP code. Please enter the correct code sent to your phone.';
+      const msg =
+        err.response?.data?.message ||
+        'Invalid verification code. Please check the SMS and enter the correct code.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -190,6 +258,9 @@ export default function LoginPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-orange-950 flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans">
+      {/* Invisible container for Firebase reCAPTCHA */}
+      <div id="recaptcha-container" ref={recaptchaContainerRef}></div>
+
       {/* Background Ambience */}
       <div className="absolute -top-40 -left-40 w-96 h-96 bg-orange-600/25 rounded-full blur-3xl pointer-events-none"></div>
       <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
@@ -234,7 +305,7 @@ export default function LoginPage() {
                 />
               </div>
               <p className="text-[11px] text-gray-500 mt-1.5">
-                We will send an SMS with a 6-digit OTP to authenticate your student account.
+                We will send an SMS with a 6-digit OTP code to verify your mobile number.
               </p>
             </div>
 
@@ -260,7 +331,7 @@ export default function LoginPage() {
           <div className="space-y-4">
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 text-center">
               <span className="text-[11px] font-bold text-orange-950">
-                Verification code sent for <strong>+91 {phone}</strong>
+                SMS verification code sent to <strong>+91 {phone}</strong>
               </span>
               <button
                 onClick={() => {
@@ -272,25 +343,6 @@ export default function LoginPage() {
                 Change Mobile Number
               </button>
             </div>
-
-            {/* Trial Note for unverified test numbers */}
-            {trialOtp && (
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl text-left">
-                <div className="flex items-center gap-1.5 text-amber-900 font-bold text-xs mb-1">
-                  <span>ℹ️</span>
-                  <span>Twilio Trial Account Notice</span>
-                </div>
-                <p className="text-[11px] text-amber-800 leading-relaxed">
-                  Twilio Trial accounts only deliver carrier SMS to verified phone numbers. For this test number, use verification code:
-                </p>
-                <div className="mt-2 text-center py-1.5 bg-white border border-amber-300 rounded-xl font-mono text-base font-black text-amber-950 tracking-widest">
-                  {trialOtp}
-                </div>
-                <p className="text-[10px] text-amber-600 mt-1.5">
-                  (To deliver carrier SMS to all numbers automatically, upgrade your Twilio account to Full in Twilio Console).
-                </p>
-              </div>
-            )}
 
             <div>
               <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1.5 text-center">
@@ -343,7 +395,7 @@ export default function LoginPage() {
               disabled={loading || otp.length !== 6}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'Verifying...' : 'Verify OTP & Continue ➔'}
+              {loading ? 'Verifying Code...' : 'Verify OTP & Continue ➔'}
             </button>
           </div>
         )}
