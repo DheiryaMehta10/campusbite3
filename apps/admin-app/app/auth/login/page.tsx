@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import axios from 'axios';
 
 export default function AdminLoginPage() {
@@ -118,9 +119,17 @@ export default function AdminLoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-[11px] text-gray-400">
-          Authorized Campus Administration Personnel
-        </p>
+        <div className="pt-2 text-center space-y-1.5 border-t border-gray-100">
+          <p className="text-[10px] text-gray-400">
+            Admin console subject to{' '}
+            <Link href="/terms" className="text-indigo-600 font-bold hover:underline">Terms</Link>
+            {' '}&{' '}
+            <Link href="/privacy" className="text-indigo-600 font-bold hover:underline">Privacy Policy</Link>
+          </p>
+          <p className="text-[10px] font-medium text-gray-400">
+            CampusBite Admin HQ v2.4 • Authorized Access
+          </p>
+        </div>
       </div>
     </div>
   );

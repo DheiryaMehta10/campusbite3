@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import axios from 'axios';
 
 export default function RestaurantLoginPage() {
@@ -141,9 +142,17 @@ export default function RestaurantLoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-[11px] text-gray-400">
-          CampusBite Partner Operations
-        </p>
+        <div className="pt-2 text-center space-y-1.5 border-t border-gray-100">
+          <p className="text-[10px] text-gray-400">
+            By signing in, you agree to CampusBite Partner{' '}
+            <Link href="/terms" className="text-orange-600 font-bold hover:underline">Terms</Link>
+            {' '}&{' '}
+            <Link href="/privacy" className="text-orange-600 font-bold hover:underline">Privacy Policy</Link>
+          </p>
+          <p className="text-[10px] font-medium text-gray-400">
+            CampusBite Kitchen POS v2.4 • Play Store Certified
+          </p>
+        </div>
       </div>
     </div>
   );

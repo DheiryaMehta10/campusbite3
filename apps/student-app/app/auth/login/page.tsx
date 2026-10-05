@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import axios from 'axios';
 
 type Step = 'email' | 'otp' | 'signup';
@@ -466,10 +467,24 @@ export default function LoginPage() {
           </div>
         )}
 
-        <div className="mt-6 pt-4 border-t border-gray-100 text-center">
-          <p className="text-[11px] text-gray-400 font-medium">
-            CampusBite Scheduled Slot Delivery Platform
+        <div className="mt-6 pt-4 border-t border-gray-100 text-center space-y-2">
+          <p className="text-[10px] text-gray-400 font-medium">
+            By continuing, you agree to CampusBite&apos;s{' '}
+            <Link href="/terms" className="text-orange-600 font-bold hover:underline">
+              Terms of Service
+            </Link>{' '}
+            &{' '}
+            <Link href="/privacy" className="text-orange-600 font-bold hover:underline">
+              Privacy Policy
+            </Link>
           </p>
+          <div className="flex items-center justify-center gap-3 text-[10px] font-bold text-gray-400">
+            <Link href="/account/delete" className="hover:text-red-600 hover:underline">
+              Data Deletion
+            </Link>
+            <span>•</span>
+            <span>CampusBite v2.4</span>
+          </div>
         </div>
       </div>
     </div>

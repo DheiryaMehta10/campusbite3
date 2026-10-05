@@ -227,7 +227,52 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* 5. LOGOUT & APP VERSION */}
+        {/* 5. PLAY STORE LEGAL & PRIVACY */}
+        <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-3">
+          <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
+            Legal & Privacy Settings
+          </h3>
+
+          <div className="space-y-1.5 text-xs">
+            <Link
+              href="/privacy"
+              className="p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 flex items-center justify-between transition-all group"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-base">🛡️</span>
+                <span className="font-bold text-gray-800 group-hover:text-orange-600">Privacy Policy</span>
+              </div>
+              <span className="text-gray-400 font-bold text-sm">➔</span>
+            </Link>
+
+            <Link
+              href="/terms"
+              className="p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 flex items-center justify-between transition-all group"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-base">📜</span>
+                <span className="font-bold text-gray-800 group-hover:text-orange-600">Terms & Conditions</span>
+              </div>
+              <span className="text-gray-400 font-bold text-sm">➔</span>
+            </Link>
+
+            <Link
+              href="/account/delete"
+              className="p-3 rounded-2xl bg-red-50/60 hover:bg-red-50 flex items-center justify-between transition-all group border border-red-100"
+            >
+              <div className="flex items-center gap-2.5">
+                <span className="text-base">⚠️</span>
+                <div>
+                  <span className="font-bold text-red-600 block">Delete Account & Data</span>
+                  <span className="text-[10px] text-red-400">Google Play Compliant Deletion</span>
+                </div>
+              </div>
+              <span className="text-red-400 font-bold text-sm">➔</span>
+            </Link>
+          </div>
+        </div>
+
+        {/* 6. LOGOUT & APP VERSION */}
         <div className="pt-2 text-center space-y-3">
           <button
             onClick={handleLogout}

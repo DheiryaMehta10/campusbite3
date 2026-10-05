@@ -4,6 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'CampusBite Admin — Platform Control Center',
   description: 'Administration portal for CampusBite scheduled slot delivery platform.',
+  manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {

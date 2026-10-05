@@ -4,6 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'CampusBite Restaurant — Kitchen Dashboard',
   description: 'Live order management and kitchen operations for campus partners.',
+  manifest: '/manifest.json',
 };
 
 export const viewport: Viewport = {
