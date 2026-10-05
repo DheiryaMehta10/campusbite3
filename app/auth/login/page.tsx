@@ -203,11 +203,11 @@ export default function LoginPage() {
         {/* Brand Header */}
         <div className="text-center mb-6">
           <div className="relative inline-flex items-center justify-center mb-3">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl shadow-orange-500/25 border-2 border-orange-100 bg-white flex items-center justify-center p-1">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl shadow-orange-500/25 border-2 border-orange-500/30 bg-slate-950 flex items-center justify-center">
               <img
                 src="/logo-icon.png"
                 alt="CampusBite Logo"
-                className="w-full h-full object-contain rounded-xl"
+                className="w-full h-full object-cover rounded-xl"
               />
             </div>
             <span className="absolute -bottom-1 -right-1 bg-white text-orange-600 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-md border border-orange-100">

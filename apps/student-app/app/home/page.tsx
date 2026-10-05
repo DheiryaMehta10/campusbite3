@@ -307,8 +307,8 @@ export default function HomePage() {
           <div className="flex items-center justify-between gap-3">
             {/* Location Pill & Brand Emblem */}
             <div className="flex items-center gap-2.5">
-              <Link href="/home" className="h-9 w-9 rounded-2xl overflow-hidden border border-orange-200 shadow-sm bg-white flex-shrink-0 flex items-center justify-center p-0.5 hover:scale-105 transition-transform">
-                <img src="/logo-icon.png" alt="CampusBite" className="w-full h-full object-contain" />
+              <Link href="/home" className="h-9 w-9 rounded-2xl overflow-hidden border border-orange-500/30 shadow-md shadow-orange-500/10 bg-slate-950 flex-shrink-0 flex items-center justify-center hover:scale-105 transition-transform">
+                <img src="/logo-icon.png" alt="CampusBite" className="w-full h-full object-cover" />
               </Link>
               <Link href="/profile" className="cursor-pointer group">
                 <div className="flex items-center gap-1">
