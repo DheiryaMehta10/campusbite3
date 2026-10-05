@@ -57,13 +57,14 @@ export async function POST(request: NextRequest) {
       userId: student.id,
       student: {
         id: student.id,
-        fullName: student.full_name,
-        collegeName: student.college_name,
-        hostelName: student.hostel_name,
-        email: student.email,
-        phone: student.phone_number,
+        fullName: student.full_name || '',
+        collegeName: student.college_name || '',
+        hostelName: student.hostel_name || '',
+        roomNumber: student.room_number || '',
+        email: student.email || targetKey,
+        phone: student.phone_number || '',
       },
-      message: `Welcome back, ${student.full_name}!`,
+      message: `Welcome back, ${student.full_name || 'Student'}!`,
     });
   } catch (error: any) {
     console.error('Verify OTP Error:', error);

@@ -186,8 +186,8 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [vegOnly, setVegOnly] = useState(false);
-  const [userHostel, setUserHostel] = useState('Tagore Hostel Block A');
-  const [userRoom, setUserRoom] = useState('304');
+  const [userHostel, setUserHostel] = useState('');
+  const [userRoom, setUserRoom] = useState('');
   const [userName, setUserName] = useState('Student');
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
 
@@ -195,8 +195,8 @@ export default function HomePage() {
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const hostel = localStorage.getItem('userHostel') || 'Tagore Hostel Block A';
-      const room = localStorage.getItem('userRoom') || '304';
+      const hostel = localStorage.getItem('userHostel') || '';
+      const room = localStorage.getItem('userRoom') || '';
       const name = localStorage.getItem('userName') || 'Student';
       setUserHostel(hostel);
       setUserRoom(room);
@@ -306,22 +306,22 @@ export default function HomePage() {
         <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             {/* Location Pill */}
-            <div className="flex items-center gap-2.5 cursor-pointer">
-              <div className="h-9 w-9 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-white text-base shadow-md shadow-orange-500/20">
+            <Link href="/profile" className="flex items-center gap-2.5 cursor-pointer group">
+              <div className="h-9 w-9 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-white text-base shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
                 📍
               </div>
               <div>
                 <div className="flex items-center gap-1">
-                  <span className="text-xs font-black text-gray-900 tracking-tight flex items-center gap-1">
-                    {userHostel}
+                  <span className="text-xs font-black text-gray-900 tracking-tight flex items-center gap-1 group-hover:text-orange-600 transition-colors">
+                    {userHostel || 'Set Delivery Hostel'}
                     <span className="text-[10px] text-orange-600">▾</span>
                   </span>
                 </div>
                 <p className="text-[11px] font-semibold text-gray-500 truncate max-w-[200px]">
-                  Room {userRoom} • Scheduled Delivery Active
+                  {userRoom ? `Room ${userRoom} • Scheduled Delivery` : 'Tap to configure hostel & room'}
                 </p>
               </div>
-            </div>
+            </Link>
 
             {/* Profile Avatar / Quick Link */}
             <Link

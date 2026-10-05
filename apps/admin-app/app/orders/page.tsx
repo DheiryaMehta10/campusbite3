@@ -258,9 +258,9 @@ export default function AdminOrdersPage() {
                         👤 {ord.studentName || ord.student_name || 'Student'}
                       </span>
                       <span className="text-gray-400"> • </span>
-                      <span>📍 {ord.hostelName || ord.hostel_name || 'Hostel'}, Room {ord.roomNumber || ord.room_number || '304'}</span>
+                      <span>📍 {ord.hostelName || ord.hostel_name || 'Campus Hostel'}{ord.roomNumber || ord.room_number ? `, Room ${ord.roomNumber || ord.room_number}` : ''}</span>
                       <span className="text-gray-400"> • </span>
-                      <span>📞 +91 {ord.studentPhone || ord.student_phone || '9876543210'}</span>
+                      <span>📞 {ord.studentPhone || ord.student_phone ? `+91 ${ord.studentPhone || ord.student_phone}` : 'No phone'}</span>
                     </div>
 
                     <div className="text-xs text-slate-500 pt-0.5">

@@ -63,9 +63,19 @@ export default function OrdersPage() {
 
   const fetchOrders = async (isPolling = false) => {
     if (!isPolling) setLoading(true);
+
+    const userEmail = (typeof window !== 'undefined' && localStorage.getItem('userEmail')?.toLowerCase()) || '';
+    const userPhone = (typeof window !== 'undefined' && localStorage.getItem('userPhone')?.replace(/\D/g, '').slice(-10)) || '';
+    const userId = (typeof window !== 'undefined' && localStorage.getItem('userId')) || '';
+
     let apiOrders: Order[] = [];
     try {
-      const res = await api.get('/api/orders');
+      const params = new URLSearchParams();
+      if (userEmail) params.set('studentEmail', userEmail);
+      if (userPhone) params.set('studentPhone', userPhone);
+      if (userId) params.set('studentId', userId);
+
+      const res = await api.get(`/api/orders?${params.toString()}`);
       if (res.data?.data && Array.isArray(res.data.data)) {
         apiOrders = res.data.data;
       }
@@ -78,12 +88,42 @@ export default function OrdersPage() {
       } catch {}
     }
 
-    let localOrders: Order[] = [];
+    let localOrders: any[] = [];
     if (typeof window !== 'undefined') {
       try {
         const local = localStorage.getItem('cb_orders');
         if (local) localOrders = JSON.parse(local);
       } catch (e) {}
+    }
+
+    // Filter local orders to match current student session
+    if (userEmail || userPhone || userId) {
+      localOrders = localOrders.filter((ord: any) => {
+        const oEmail = (ord.studentEmail || ord.student_email || '').toLowerCase();
+        const oPhone = (ord.studentPhone || ord.student_phone || '').replace(/\D/g, '').slice(-10);
+        const oId = ord.studentId || ord.student_id || '';
+        const matchEmail = userEmail && oEmail && oEmail === userEmail;
+        const matchPhone = userPhone && oPhone && oPhone === userPhone;
+        const matchId = userId && oId && oId === userId;
+        // If order has student info, require match. If legacy without student info, show only if no other orders
+        if (oEmail || oPhone || oId) {
+          return matchEmail || matchPhone || matchId;
+        }
+        return true;
+      });
+
+      apiOrders = apiOrders.filter((ord: any) => {
+        const oEmail = (ord.studentEmail || ord.student_email || '').toLowerCase();
+        const oPhone = (ord.studentPhone || ord.student_phone || '').replace(/\D/g, '').slice(-10);
+        const oId = ord.studentId || ord.student_id || '';
+        const matchEmail = userEmail && oEmail && oEmail === userEmail;
+        const matchPhone = userPhone && oPhone && oPhone === userPhone;
+        const matchId = userId && oId && oId === userId;
+        if (oEmail || oPhone || oId) {
+          return matchEmail || matchPhone || matchId;
+        }
+        return true;
+      });
     }
 
     const mergedMap = new Map<string, Order>();
@@ -257,7 +297,7 @@ export default function OrdersPage() {
                         <div>
                           <p className="font-bold text-orange-950">{slotName}</p>
                           <p className="text-[10px] text-orange-700 font-medium">
-                            Delivery to: {order.hostelName || order.hostel_name || 'Hostel'}, Room {order.roomNumber || order.room_number || '304'}
+                            Delivery to: {order.hostelName || order.hostel_name || 'Designated Hostel'}{order.roomNumber || order.room_number ? `, Room ${order.roomNumber || order.room_number}` : ''}
                           </p>
                         </div>
                       </div>

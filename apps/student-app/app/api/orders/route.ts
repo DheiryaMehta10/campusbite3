@@ -37,10 +37,11 @@ function formatOrder(dbOrder: any) {
   }));
 
   const studentName = dbOrder.students?.full_name || dbOrder.studentName || dbOrder.student_name || 'Student';
-  const studentPhone = dbOrder.students?.phone_number || dbOrder.studentPhone || dbOrder.student_phone || '9876543210';
-  const hostelName = dbOrder.students?.hostel_name || dbOrder.hostelName || dbOrder.hostel_name || 'Tagore Hostel Block A';
-  const roomNumber = dbOrder.roomNumber || dbOrder.room_number || '304';
-  const restaurantName = dbOrder.restaurants?.name || dbOrder.restaurantName || dbOrder.restaurant_name || 'North Campus Central Canteen';
+  const studentPhone = dbOrder.students?.phone_number || dbOrder.studentPhone || dbOrder.student_phone || '';
+  const studentEmail = dbOrder.students?.email || dbOrder.studentEmail || dbOrder.student_email || '';
+  const hostelName = dbOrder.students?.hostel_name || dbOrder.hostelName || dbOrder.hostel_name || '';
+  const roomNumber = dbOrder.students?.room_number || dbOrder.roomNumber || dbOrder.room_number || '';
+  const restaurantName = dbOrder.restaurants?.name || dbOrder.restaurantName || dbOrder.restaurant_name || 'Campus Canteen';
   const deliverySlot = dbOrder.delivery_slots?.name || dbOrder.deliverySlot || (typeof dbOrder.delivery_slot === 'object' ? dbOrder.delivery_slot?.name : dbOrder.delivery_slot) || 'Evening Slot 1 (6:00 PM – 7:00 PM)';
 
   let orderStatus = dbOrder.order_status || dbOrder.orderStatus || 'ORDER_PLACED';
@@ -63,6 +64,8 @@ function formatOrder(dbOrder: any) {
     student_id: dbOrder.student_id || dbOrder.studentId,
     studentName,
     student_name: studentName,
+    studentEmail,
+    student_email: studentEmail,
     studentPhone,
     student_phone: studentPhone,
     hostelName,
@@ -100,16 +103,17 @@ export async function POST(request: NextRequest) {
     const {
       studentId,
       studentName = 'Student',
-      studentPhone = '9876543210',
+      studentPhone = '',
+      studentEmail = '',
       restaurantId = '550e8400-e29b-41d4-a716-446655440000',
-      restaurantName = 'North Campus Central Canteen',
+      restaurantName = 'Campus Canteen',
       catalogType = 'food',
       deliverySlotId = '4a511603-db68-4dee-b602-0478566adedd',
       items = [],
       promoCode,
       paymentMethod = 'cod',
-      hostelName = 'Tagore Hostel Block A',
-      roomNumber = '304',
+      hostelName = '',
+      roomNumber = '',
       itemTotal,
       deliveryFee: customDeliveryFee,
       platformFee: customPlatformFee,
@@ -117,7 +121,8 @@ export async function POST(request: NextRequest) {
       totalAmount: customTotalAmount,
     } = body;
 
-    const normalizedPhone = String(studentPhone || '9876543210').replace(/\D/g, '').slice(-10) || '9876543210';
+    const normalizedPhone = String(studentPhone || '').replace(/\D/g, '').slice(-10);
+    const cleanEmail = String(studentEmail || body.email || '').trim().toLowerCase();
 
     if (!items || items.length === 0) {
       return corsResponse({ success: false, message: 'Order must contain at least one item' }, { status: 400 });
@@ -161,20 +166,24 @@ export async function POST(request: NextRequest) {
     const slotName = DEFAULT_SLOTS_MAP[deliverySlotId] || 'Evening Slot 1 (6:00 PM – 7:00 PM)';
 
     // 1. Ensure student exists in Supabase
-    let dbStudentId: string = uuidv4();
+    let dbStudentId: string = studentId || uuidv4();
     try {
-      const { data: existingStudent } = await supabaseServer
-        .from('students')
-        .select('id')
-        .eq('phone_number', normalizedPhone)
-        .maybeSingle();
+      let existingStudent = null;
+      if (cleanEmail) {
+        const { data } = await supabaseServer.from('students').select('id').eq('email', cleanEmail).maybeSingle();
+        existingStudent = data;
+      } else if (normalizedPhone) {
+        const { data } = await supabaseServer.from('students').select('id').eq('phone_number', normalizedPhone).maybeSingle();
+        existingStudent = data;
+      }
 
       if (existingStudent?.id) {
         dbStudentId = existingStudent.id;
         await supabaseServer.from('students').update({
           full_name: studentName || 'Student',
-          hostel_name: hostelName || 'Tagore Hostel Block A',
-          room_number: roomNumber || '304',
+          hostel_name: hostelName || '',
+          room_number: roomNumber || '',
+          phone_number: normalizedPhone || undefined,
         }).eq('id', dbStudentId);
       } else {
         const { data: createdStudent } = await supabaseServer.from('students').insert({
@@ -182,9 +191,9 @@ export async function POST(request: NextRequest) {
           phone_number: normalizedPhone,
           full_name: studentName || 'Student',
           college_name: 'Campus University',
-          hostel_name: hostelName || 'Tagore Hostel Block A',
-          room_number: roomNumber || '304',
-          email: `${normalizedPhone}@campus.edu`,
+          hostel_name: hostelName || '',
+          room_number: roomNumber || '',
+          email: cleanEmail || `${normalizedPhone || 'student'}@campus.edu`,
         }).select().single();
         if (createdStudent?.id) dbStudentId = createdStudent.id;
       }
@@ -219,6 +228,8 @@ export async function POST(request: NextRequest) {
       student_id: dbStudentId,
       studentName,
       student_name: studentName,
+      studentEmail: cleanEmail,
+      student_email: cleanEmail,
       studentPhone: normalizedPhone,
       student_phone: normalizedPhone,
       hostelName,
@@ -313,6 +324,8 @@ export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
     const studentId = searchParams.get('studentId');
+    const studentEmail = searchParams.get('studentEmail')?.toLowerCase();
+    const studentPhone = searchParams.get('studentPhone');
     const restaurantId = searchParams.get('restaurantId');
     const orderId = searchParams.get('orderId');
 
@@ -350,8 +363,19 @@ export async function GET(request: NextRequest) {
       return corsResponse({ success: true, data: found || uniqueOrders[0] || null });
     }
 
-    if (studentId) {
-      result = result.filter((o) => o.studentId === studentId || o.student_id === studentId || o.studentPhone === studentId || o.student_phone === studentId);
+    if (studentId || studentEmail || studentPhone) {
+      result = result.filter((o) => {
+        const matchId = studentId && (o.studentId === studentId || o.student_id === studentId);
+        const matchEmail = studentEmail && (
+          (o.studentEmail && o.studentEmail.toLowerCase() === studentEmail) ||
+          (o.student_email && o.student_email.toLowerCase() === studentEmail)
+        );
+        const matchPhone = studentPhone && (
+          (o.studentPhone && o.studentPhone.replace(/\D/g, '').slice(-10) === studentPhone.replace(/\D/g, '').slice(-10)) ||
+          (o.student_phone && o.student_phone.replace(/\D/g, '').slice(-10) === studentPhone.replace(/\D/g, '').slice(-10))
+        );
+        return matchId || matchEmail || matchPhone;
+      });
     } else if (restaurantId) {
       result = result.filter((o) => o.restaurantId === restaurantId || o.restaurant_id === restaurantId);
     }

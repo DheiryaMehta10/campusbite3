@@ -26,7 +26,7 @@ export default function LoginPage() {
     hostelName: '',
     roomNumber: '',
     email: '',
-    phoneNumber: '9876543210',
+    phoneNumber: '',
   });
 
   const api = axios.create({ baseURL: '' });
@@ -121,6 +121,15 @@ export default function LoginPage() {
       });
 
       if (res.data?.success) {
+        // Clear previous session storage if user email changed
+        if (typeof window !== 'undefined') {
+          const prevEmail = localStorage.getItem('userEmail');
+          if (prevEmail && prevEmail !== cleanEmail) {
+            localStorage.removeItem('cb_orders');
+            localStorage.removeItem('cb_cart');
+          }
+        }
+
         if (res.data?.isNewUser) {
           setSignup((prev) => ({ ...prev, email: cleanEmail }));
           setStep('signup');
@@ -130,11 +139,11 @@ export default function LoginPage() {
           const uId = res.data?.userId || s.id || `student-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '')}`;
           localStorage.setItem('userId', uId);
           localStorage.setItem('userEmail', cleanEmail);
-          localStorage.setItem('userPhone', s.phone || '9876543210');
-          if (s.fullName) localStorage.setItem('userName', s.fullName);
-          if (s.hostelName) localStorage.setItem('userHostel', s.hostelName);
-          if (s.roomNumber) localStorage.setItem('userRoom', s.roomNumber);
-          if (s.collegeName) localStorage.setItem('userCollege', s.collegeName);
+          localStorage.setItem('userName', s.fullName || 'Student');
+          localStorage.setItem('userPhone', s.phone || s.phoneNumber || '');
+          localStorage.setItem('userHostel', s.hostelName || '');
+          localStorage.setItem('userRoom', s.roomNumber || '');
+          localStorage.setItem('userCollege', s.collegeName || 'Campus University');
           router.push('/home');
         }
       } else {
@@ -153,8 +162,17 @@ export default function LoginPage() {
       setError('Please enter your Full Name');
       return;
     }
+    const cleanPhone = signup.phoneNumber.replace(/\D/g, '').slice(-10);
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setError('Please enter your 10-digit Mobile Phone Number');
+      return;
+    }
     if (!signup.hostelName.trim()) {
       setError('Please enter your Hostel Name / Block');
+      return;
+    }
+    if (!signup.roomNumber.trim()) {
+      setError('Please enter your Room Number');
       return;
     }
 
@@ -164,18 +182,24 @@ export default function LoginPage() {
     try {
       const res = await api.post('/api/auth/student/signup', {
         ...signup,
+        phoneNumber: cleanPhone,
         email: cleanEmail,
-        phoneNumber: signup.phoneNumber || '9876543210',
       });
 
       const sId = res.data?.student?.id || `student-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '')}`;
+      
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('cb_orders');
+        localStorage.removeItem('cb_cart');
+      }
+
       localStorage.setItem('userId', sId);
       localStorage.setItem('userName', signup.fullName.trim());
       localStorage.setItem('userEmail', cleanEmail);
-      localStorage.setItem('userPhone', signup.phoneNumber || '9876543210');
-      localStorage.setItem('userCollege', (signup.collegeName || 'Campus').trim());
+      localStorage.setItem('userPhone', cleanPhone);
+      localStorage.setItem('userCollege', (signup.collegeName || 'Campus University').trim());
       localStorage.setItem('userHostel', signup.hostelName.trim());
-      localStorage.setItem('userRoom', (signup.roomNumber || '').trim());
+      localStorage.setItem('userRoom', signup.roomNumber.trim());
       router.push('/home');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to complete registration. Please try again.');
@@ -411,7 +435,18 @@ export default function LoginPage() {
                 type="text"
                 value={signup.fullName}
                 onChange={(e) => setSignup({ ...signup, fullName: e.target.value })}
-                placeholder="e.g. Aarav Sharma"
+                placeholder="Enter your full name"
+                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Mobile Phone Number *</label>
+              <input
+                type="tel"
+                value={signup.phoneNumber}
+                onChange={(e) => setSignup({ ...signup, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
+                placeholder="10-digit mobile number for delivery updates"
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
@@ -423,17 +458,17 @@ export default function LoginPage() {
                   type="text"
                   value={signup.hostelName}
                   onChange={(e) => setSignup({ ...signup, hostelName: e.target.value })}
-                  placeholder="e.g. Tagore Hostel A"
+                  placeholder="e.g. Block C / Ganga"
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Room Number</label>
+                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Room Number *</label>
                 <input
                   type="text"
                   value={signup.roomNumber}
                   onChange={(e) => setSignup({ ...signup, roomNumber: e.target.value })}
-                  placeholder="e.g. 304"
+                  placeholder="e.g. 204"
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
                 />
               </div>

@@ -7,20 +7,20 @@ import Link from 'next/link';
 export default function ProfilePage() {
   const router = useRouter();
   const [userName, setUserName] = useState('Student');
-  const [userEmail, setUserEmail] = useState('student@campus.edu');
-  const [userPhone, setUserPhone] = useState('9876543210');
-  const [userHostel, setUserHostel] = useState('Tagore Hostel Block A');
-  const [userRoom, setUserRoom] = useState('304');
+  const [userEmail, setUserEmail] = useState('');
+  const [userPhone, setUserPhone] = useState('');
+  const [userHostel, setUserHostel] = useState('');
+  const [userRoom, setUserRoom] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const name = localStorage.getItem('userName') || 'Student';
-      const email = localStorage.getItem('userEmail') || 'student@campus.edu';
-      const phone = localStorage.getItem('userPhone') || '9876543210';
-      const hostel = localStorage.getItem('userHostel') || 'Tagore Hostel Block A';
-      const room = localStorage.getItem('userRoom') || '304';
+      const email = localStorage.getItem('userEmail') || '';
+      const phone = localStorage.getItem('userPhone') || '';
+      const hostel = localStorage.getItem('userHostel') || '';
+      const room = localStorage.getItem('userRoom') || '';
 
       setUserName(name);
       setUserEmail(email);
@@ -50,7 +50,11 @@ export default function ProfilePage() {
         localStorage.removeItem('userName');
         localStorage.removeItem('userEmail');
         localStorage.removeItem('userPhone');
+        localStorage.removeItem('userHostel');
+        localStorage.removeItem('userRoom');
+        localStorage.removeItem('userCollege');
         localStorage.removeItem('cb_cart');
+        localStorage.removeItem('cb_orders');
       }
       router.push('/auth/login');
     }
@@ -87,7 +91,7 @@ export default function ProfilePage() {
               <h2 className="text-lg font-black tracking-tight truncate">{userName}</h2>
               <p className="text-xs text-gray-300 font-medium truncate">{userEmail}</p>
               <p className="text-[11px] text-orange-400 font-bold mt-1">
-                📍 {userHostel}, Room {userRoom}
+                📍 {userHostel ? `${userHostel}${userRoom ? `, Room ${userRoom}` : ''}` : 'Hostel location not set yet'}
               </p>
             </div>
           </div>
@@ -126,6 +130,7 @@ export default function ProfilePage() {
                   type="text"
                   value={userName}
                   onChange={(e) => setUserName(e.target.value)}
+                  placeholder="Your full name"
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:border-orange-500 outline-none"
                   required
                 />
@@ -140,6 +145,7 @@ export default function ProfilePage() {
                     type="text"
                     value={userHostel}
                     onChange={(e) => setUserHostel(e.target.value)}
+                    placeholder="e.g. Block C / Ganga"
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:border-orange-500 outline-none"
                     required
                   />
@@ -153,6 +159,7 @@ export default function ProfilePage() {
                     type="text"
                     value={userRoom}
                     onChange={(e) => setUserRoom(e.target.value)}
+                    placeholder="e.g. 204"
                     className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:border-orange-500 outline-none"
                     required
                   />
@@ -166,7 +173,8 @@ export default function ProfilePage() {
                 <input
                   type="tel"
                   value={userPhone}
-                  onChange={(e) => setUserPhone(e.target.value)}
+                  onChange={(e) => setUserPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                  placeholder="10-digit mobile number"
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:border-orange-500 outline-none"
                   required
                 />
@@ -183,15 +191,15 @@ export default function ProfilePage() {
             <div className="space-y-2.5 text-xs">
               <div className="flex justify-between py-1 border-b border-gray-50">
                 <span className="text-gray-500 font-medium">Hostel:</span>
-                <span className="font-bold text-gray-900">{userHostel}</span>
+                <span className="font-bold text-gray-900">{userHostel || 'Not set'}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-gray-50">
                 <span className="text-gray-500 font-medium">Room Number:</span>
-                <span className="font-bold text-gray-900">{userRoom}</span>
+                <span className="font-bold text-gray-900">{userRoom || 'Not set'}</span>
               </div>
               <div className="flex justify-between py-1 border-b border-gray-50">
                 <span className="text-gray-500 font-medium">Contact Phone:</span>
-                <span className="font-bold text-gray-900">+91 {userPhone}</span>
+                <span className="font-bold text-gray-900">{userPhone ? `+91 ${userPhone}` : 'Not set'}</span>
               </div>
             </div>
           )}

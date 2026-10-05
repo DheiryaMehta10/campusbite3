@@ -9,36 +9,67 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { phoneNumber, fullName, collegeName, hostelName, roomNumber, email } = body;
 
+    const cleanEmail = String(email || '').trim().toLowerCase();
     const cleanPhone = String(phoneNumber || '').replace(/\D/g, '').slice(-10);
-    if (!cleanPhone || !fullName || !hostelName || !email) {
-      return NextResponse.json({ success: false, message: 'All required profile fields must be provided' }, { status: 400 });
+
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      return NextResponse.json({ success: false, message: 'A valid email address is required' }, { status: 400 });
+    }
+    if (!fullName || !fullName.trim()) {
+      return NextResponse.json({ success: false, message: 'Full name is required' }, { status: 400 });
+    }
+    if (!hostelName || !hostelName.trim()) {
+      return NextResponse.json({ success: false, message: 'Hostel Name / Block is required' }, { status: 400 });
     }
 
-    // Check if student exists
-    const { data: existingStudent } = await supabaseServer
+    // 1. Check if student already exists by email
+    let studentId = '';
+    const { data: existingStudentByEmail } = await supabaseServer
       .from('students')
       .select('id')
-      .eq('phone_number', cleanPhone)
+      .eq('email', cleanEmail)
       .maybeSingle();
 
-    const studentId = existingStudent?.id || uuidv4();
+    if (existingStudentByEmail?.id) {
+      studentId = existingStudentByEmail.id;
+    } else if (cleanPhone) {
+      const { data: existingStudentByPhone } = await supabaseServer
+        .from('students')
+        .select('id')
+        .eq('phone_number', cleanPhone)
+        .maybeSingle();
+      if (existingStudentByPhone?.id) {
+        studentId = existingStudentByPhone.id;
+      }
+    }
 
-    const { error: studentError } = await supabaseServer
-      .from('students')
-      .upsert({
-        id: studentId,
-        phone_number: cleanPhone,
-        full_name: fullName.trim(),
-        college_name: (collegeName || 'Campus University').trim(),
-        hostel_name: hostelName.trim(),
-        room_number: (roomNumber || '').trim(),
-        email: email.trim(),
-        account_status: 'active',
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'phone_number' });
+    if (!studentId) {
+      studentId = uuidv4();
+    }
 
-    if (studentError) {
-      console.error('Supabase signup upsert error:', studentError);
+    const studentRecord = {
+      id: studentId,
+      email: cleanEmail,
+      phone_number: cleanPhone || '',
+      full_name: fullName.trim(),
+      college_name: (collegeName || 'Campus University').trim(),
+      hostel_name: hostelName.trim(),
+      room_number: (roomNumber || '').trim(),
+      account_status: 'active',
+      updated_at: new Date().toISOString(),
+    };
+
+    // Save to Supabase
+    try {
+      const { error: studentError } = await supabaseServer
+        .from('students')
+        .upsert(studentRecord, { onConflict: 'id' });
+
+      if (studentError) {
+        console.warn('Supabase signup upsert error:', studentError);
+      }
+    } catch (dbErr) {
+      console.warn('Supabase DB error on student signup:', dbErr);
     }
 
     return NextResponse.json({
@@ -46,12 +77,13 @@ export async function POST(request: NextRequest) {
       message: 'Student profile created successfully',
       student: {
         id: studentId,
+        email: cleanEmail,
         phoneNumber: cleanPhone,
+        phone: cleanPhone,
         fullName: fullName.trim(),
         collegeName: (collegeName || 'Campus University').trim(),
         hostelName: hostelName.trim(),
         roomNumber: (roomNumber || '').trim(),
-        email: email.trim(),
       },
     });
   } catch (error: any) {

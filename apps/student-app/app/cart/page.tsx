@@ -63,9 +63,9 @@ export default function CartPage() {
   const [loading, setLoading] = useState(false);
 
   // Delivery details (loaded dynamically from logged in student session)
-  const [hostelName, setHostelName] = useState('Tagore Hostel Block A');
-  const [roomNumber, setRoomNumber] = useState('304');
-  const [phone, setPhone] = useState('9876543210');
+  const [hostelName, setHostelName] = useState('');
+  const [roomNumber, setRoomNumber] = useState('');
+  const [phone, setPhone] = useState('');
   const [paymentMethod, setPaymentMethod] = useState<'cod' | 'manual_qr'>('cod');
   const [cookingInstructions, setCookingInstructions] = useState('');
   const [optOutCutlery, setOptOutCutlery] = useState(true);
@@ -83,11 +83,11 @@ export default function CartPage() {
       try {
         const saved = localStorage.getItem('cb_cart');
         if (saved) setCart(JSON.parse(saved));
-        const savedHostel = localStorage.getItem('userHostel');
+        const savedHostel = localStorage.getItem('userHostel') || '';
         if (savedHostel) setHostelName(savedHostel);
-        const savedRoom = localStorage.getItem('userRoom');
+        const savedRoom = localStorage.getItem('userRoom') || '';
         if (savedRoom) setRoomNumber(savedRoom);
-        const savedPhone = localStorage.getItem('userPhone');
+        const savedPhone = localStorage.getItem('userPhone') || '';
         if (savedPhone) setPhone(savedPhone);
       } catch (e) {}
     }
@@ -164,8 +164,25 @@ export default function CartPage() {
       alert('Please enter your Room Number');
       return;
     }
+    const cleanPhone = phone.replace(/\D/g, '').slice(-10);
+    if (!cleanPhone || cleanPhone.length < 10) {
+      alert('Please enter a valid 10-digit Contact Phone Number for delivery updates');
+      return;
+    }
 
     setLoading(true);
+
+    const studentEmail = (typeof window !== 'undefined' && localStorage.getItem('userEmail')) || '';
+    const studentName = (typeof window !== 'undefined' && localStorage.getItem('userName')) || 'Student';
+    const studentPhone = cleanPhone;
+    const studentId = (typeof window !== 'undefined' && localStorage.getItem('userId')) || `student-${studentEmail.replace(/[^a-zA-Z0-9]/g, '') || cleanPhone}`;
+
+    // Persist address changes locally for this student
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('userHostel', hostelName.trim());
+      localStorage.setItem('userRoom', roomNumber.trim());
+      localStorage.setItem('userPhone', cleanPhone);
+    }
 
     const orderNum = `CB-${Math.floor(1000 + Math.random() * 9000)}`;
     const slotObj = slots.find((s) => s.id === selectedSlotId);
@@ -175,6 +192,14 @@ export default function CartPage() {
       id: 'ord-' + Date.now(),
       orderNumber: orderNum,
       order_number: orderNum,
+      studentId,
+      student_id: studentId,
+      studentEmail,
+      student_email: studentEmail,
+      studentPhone,
+      student_phone: studentPhone,
+      studentName,
+      student_name: studentName,
       items: cart.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
       order_items: cart.map((i) => ({ item_name: i.name, quantity: i.quantity, unit_price: i.price })),
       totalAmount: toPay,
@@ -195,9 +220,10 @@ export default function CartPage() {
 
     try {
       const orderPayload = {
-        studentId: localStorage.getItem('userId') || 'student-' + (phone || 'guest'),
-        studentName: localStorage.getItem('userName') || 'Student',
-        studentPhone: phone || localStorage.getItem('userPhone') || '9876543210',
+        studentId,
+        studentName,
+        studentPhone,
+        studentEmail,
         hostelName: hostelName.trim(),
         roomNumber: roomNumber.trim(),
         restaurantId: cart[0]?.restaurantId || '550e8400-e29b-41d4-a716-446655440001',

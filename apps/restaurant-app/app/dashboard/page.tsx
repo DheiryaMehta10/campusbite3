@@ -447,10 +447,10 @@ export default function RestaurantDashboardPage() {
                           👤 {ord.studentName || ord.student_name || 'Student'}
                         </p>
                         <p className="text-slate-400">
-                          📍 {ord.hostelName || ord.hostel_name || 'Hostel'}, Room {ord.roomNumber || ord.room_number || '304'}
+                          📍 {ord.hostelName || ord.hostel_name || 'Campus Hostel'}{ord.roomNumber || ord.room_number ? `, Room ${ord.roomNumber || ord.room_number}` : ''}
                         </p>
                         <p className="text-slate-400">
-                          📞 +91 {ord.studentPhone || ord.student_phone || '9876543210'}
+                          📞 {ord.studentPhone || ord.student_phone ? `+91 ${ord.studentPhone || ord.student_phone}` : 'No phone provided'}
                         </p>
                       </div>
 
