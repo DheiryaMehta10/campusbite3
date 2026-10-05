@@ -1,37 +1,57 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
+import { corsResponse, handleCorsOptions } from '@/lib/cors';
+import { verifyOtpToken } from '@/lib/otp';
 
 export const dynamic = 'force-dynamic';
 
+export async function OPTIONS() {
+  return handleCorsOptions();
+}
+
 export async function POST(request: NextRequest) {
   try {
-    const { phoneNumber, otp } = await request.json();
-    const cleanPhone = String(phoneNumber || '').replace(/\D/g, '').slice(-10);
+    const body = await request.json();
+    const identifier = String(body.email || body.phoneNumber || body.phone || '').trim();
+    const inputOtp = String(body.otp || '').trim();
+    const token = body.token ? String(body.token).trim() : undefined;
 
-    if (cleanPhone.length !== 10) {
-      return NextResponse.json({ success: false, message: 'Invalid phone number' }, { status: 400 });
+    if (!identifier) {
+      return corsResponse({ success: false, message: 'Invalid identifier' }, { status: 400 });
     }
-    if (!otp || String(otp).length < 4) {
-      return NextResponse.json({ success: false, message: 'Please enter a valid OTP' }, { status: 400 });
+    if (!inputOtp || inputOtp.length < 4) {
+      return corsResponse({ success: false, message: 'Please enter the 6-digit OTP' }, { status: 400 });
     }
 
-    // Query Supabase students database
-    const { data: student, error } = await supabaseServer
-      .from('students')
-      .select('*')
-      .eq('phone_number', cleanPhone)
-      .maybeSingle();
+    const isEmail = identifier.includes('@');
+    const targetKey = isEmail ? identifier.toLowerCase() : identifier.replace(/\D/g, '').slice(-10);
+
+    const verification = verifyOtpToken(targetKey, inputOtp, token);
+    if (!verification.valid) {
+      return corsResponse({ success: false, message: verification.reason || 'Invalid verification code. Please try again.' }, { status: 400 });
+    }
+
+    // Query Supabase for student record
+    let query = supabaseServer.from('students').select('*');
+    if (isEmail) {
+      query = query.eq('email', targetKey);
+    } else {
+      query = query.eq('phone_number', targetKey);
+    }
+
+    const { data: student } = await query.maybeSingle();
 
     if (!student) {
-      return NextResponse.json({
+      return corsResponse({
         success: true,
-        message: 'Student record not found. Please complete profile registration.',
+        message: 'Verification successful. Please complete your hostel details.',
         isNewUser: true,
-        phoneNumber: cleanPhone,
+        identifier: targetKey,
+        isEmail,
       });
     }
 
-    return NextResponse.json({
+    return corsResponse({
       success: true,
       isNewUser: false,
       userId: student.id,
@@ -40,13 +60,13 @@ export async function POST(request: NextRequest) {
         fullName: student.full_name,
         collegeName: student.college_name,
         hostelName: student.hostel_name,
-        roomNumber: student.room_number,
         email: student.email,
         phone: student.phone_number,
       },
+      message: `Welcome back, ${student.full_name}!`,
     });
   } catch (error: any) {
     console.error('Verify OTP Error:', error);
-    return NextResponse.json({ success: true, isNewUser: true, message: 'Proceeding to registration' });
+    return corsResponse({ success: true, isNewUser: true, message: 'OTP verified successfully' });
   }
 }
