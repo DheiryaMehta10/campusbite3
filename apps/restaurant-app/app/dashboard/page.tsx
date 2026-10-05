@@ -68,6 +68,9 @@ export default function RestaurantDashboardPage() {
   const [restaurantName, setRestaurantName] = useState('North Campus Central Canteen');
   const [currentTab, setCurrentTab] = useState<'incoming' | 'preparing' | 'ready' | 'menu'>('incoming');
 
+  // Checked items checklist for chefs
+  const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
+
   // Menu items state
   const [menuItems, setMenuItems] = useState<MenuItem[]>(DEFAULT_MENU_ITEMS);
 
@@ -89,11 +92,10 @@ export default function RestaurantDashboardPage() {
       const name = localStorage.getItem('restaurantName') || 'North Campus Central Canteen';
       setRestaurantId(id);
       setRestaurantName(name);
-      
+
       fetchMenu(id);
       fetchOrders(id);
 
-      // Auto-poll for new student orders and menu sync every 3 seconds
       const interval = setInterval(() => {
         fetchOrders(id, true);
       }, 3000);
@@ -257,23 +259,14 @@ export default function RestaurantDashboardPage() {
     });
 
     try {
-      const res = await api.post(`/api/restaurants/${restaurantId}/menu`, {
-        name: created.name,
-        price: created.price,
-        category: created.category,
-        isVeg: created.isVeg,
-        description: created.description,
-      });
-      if (res.data?.data) {
-        // Replace temp id with permanent DB id
-        const finalItems = updated.map((i) => (i.id === created.id ? res.data.data : i));
-        saveMenuToStorage(finalItems);
-      }
-    } catch (err) {
-      console.warn('Backend menu save note:', err);
-    }
+      await api.post(`/api/restaurants/${restaurantId}/menu`, created);
+    } catch {}
 
-    alert(`✓ "${created.name}" has been added to the live menu across all apps!`);
+    alert(`✓ "${created.name}" added to menu!`);
+  };
+
+  const toggleCheck = (itemKey: string) => {
+    setCheckedItems((prev) => ({ ...prev, [itemKey]: !prev[itemKey] }));
   };
 
   const getNormStatus = (o: Order) => String(o.orderStatus || o.order_status || '').toUpperCase();
@@ -283,291 +276,391 @@ export default function RestaurantDashboardPage() {
   });
   const preparingOrders = orders.filter((o) => {
     const s = getNormStatus(o);
-    return s === 'PREPARING' || s === 'RESTAURANT_ACCEPTED';
+    return s === 'PREPARING' || s === 'RESTAURANT_ACCEPTED' || s === 'ACCEPTED';
   });
   const readyOrders = orders.filter((o) => {
     const s = getNormStatus(o);
-    return s === 'READY_FOR_DELIVERY' || s === 'OUT_FOR_DELIVERY' || s === 'DELIVERED' || s === 'ARRIVED';
+    return s === 'READY_FOR_DELIVERY' || s === 'READY' || s === 'OUT_FOR_DELIVERY' || s === 'DELIVERED';
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
-      {/* Top Header */}
-      <div className="bg-white border-b px-6 py-4 flex flex-wrap justify-between items-center shadow-sm gap-4">
-        <div>
-          <div className="flex items-center gap-2">
-            <h1 className="text-xl font-black text-gray-900">{restaurantName}</h1>
-            <span className="text-[11px] font-bold bg-orange-100 text-orange-800 px-2.5 py-0.5 rounded-md">
-              Kitchen Partner Portal
-            </span>
+    <div className="min-h-screen bg-[#0F172A] text-slate-100 pb-20 font-sans selection:bg-orange-500 selection:text-white">
+      {/* 1. TOP SWIGGY PARTNER HIGH-CONTRAST HEADER */}
+      <header className="bg-slate-900 border-b border-slate-800 px-6 py-4 sticky top-0 z-30 shadow-xl">
+        <div className="max-w-6xl mx-auto flex flex-wrap justify-between items-center gap-4">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 flex items-center justify-center text-xl shadow-lg shadow-orange-500/20">
+              👨‍🍳
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-base font-black text-white tracking-tight">{restaurantName}</h1>
+                <span className="text-[10px] font-extrabold bg-orange-500/20 text-orange-400 border border-orange-500/30 px-2 py-0.5 rounded-md">
+                  Kitchen POS
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-400">Live Campus Orders & Batch Slot Fulfillment</p>
+            </div>
           </div>
-          <p className="text-xs text-gray-500 mt-0.5">Live Scheduled Slot Kitchen Operations & Menu Management</p>
-        </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={toggleStatus}
-            disabled={closedByAdmin}
-            className={`px-4 py-2 rounded-xl text-white font-bold text-xs shadow-sm transition-all ${
-              status === 'open' ? 'bg-green-600 hover:bg-green-700' : 'bg-red-600 hover:bg-red-700'
-            }`}
-          >
-            {status === 'open' ? '✓ Accepting Orders (OPEN)' : '✕ Temporarily Closed'}
-          </button>
-          <button
-            onClick={() => {
-              if (confirm('Log out from restaurant portal?')) {
-                localStorage.clear();
-                router.push('/auth/login');
-              }
-            }}
-            className="text-xs text-gray-500 hover:text-red-600 font-semibold border px-3.5 py-2 rounded-xl bg-white hover:bg-red-50"
-          >
-            Logout
-          </button>
-        </div>
-      </div>
+          {/* Store Acceptance Toggle & Logout */}
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleStatus}
+              disabled={closedByAdmin}
+              className={`px-4 py-2 rounded-2xl font-black text-xs shadow-md transition-all flex items-center gap-2 ${
+                status === 'open'
+                  ? 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/20'
+                  : 'bg-rose-600 hover:bg-rose-500 text-white'
+              }`}
+            >
+              <span className={`h-2.5 w-2.5 rounded-full ${status === 'open' ? 'bg-white animate-ping' : 'bg-slate-300'}`}></span>
+              <span>{status === 'open' ? 'ACCEPTING ORDERS (OPEN)' : 'PAUSED (CLOSED)'}</span>
+            </button>
 
+            <button
+              onClick={() => {
+                if (confirm('Log out from restaurant portal?')) {
+                  localStorage.clear();
+                  router.push('/auth/login');
+                }
+              }}
+              className="text-xs text-slate-400 hover:text-white font-bold border border-slate-700 px-3.5 py-2 rounded-2xl bg-slate-800/80 hover:bg-slate-800 transition-all"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </header>
+
+      {/* 2. NAVIGATION TABS */}
       <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
-        {/* Navigation Tabs */}
-        <div className="flex bg-white p-1.5 rounded-2xl border shadow-sm gap-1 overflow-x-auto">
+        <div className="bg-slate-900/90 border border-slate-800 p-1.5 rounded-2xl shadow-xl flex gap-1 overflow-x-auto no-scrollbar">
           <button
             onClick={() => setCurrentTab('incoming')}
-            className={`flex-1 py-2.5 px-4 text-xs font-bold rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2 ${
-              currentTab === 'incoming' ? 'bg-orange-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'
+            className={`flex-1 py-3 px-4 text-xs font-black rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2 ${
+              currentTab === 'incoming'
+                ? 'bg-orange-600 text-white shadow-lg shadow-orange-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
             <span>🔔 New Orders</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${currentTab === 'incoming' ? 'bg-white text-orange-600' : 'bg-gray-200 text-gray-800'}`}>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+              currentTab === 'incoming' ? 'bg-white text-orange-600' : 'bg-slate-800 text-slate-300'
+            }`}>
               {incomingOrders.length}
             </span>
           </button>
 
           <button
             onClick={() => setCurrentTab('preparing')}
-            className={`flex-1 py-2.5 px-4 text-xs font-bold rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2 ${
-              currentTab === 'preparing' ? 'bg-amber-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'
+            className={`flex-1 py-3 px-4 text-xs font-black rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2 ${
+              currentTab === 'preparing'
+                ? 'bg-amber-600 text-white shadow-lg shadow-amber-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
             <span>🍳 In Cooking</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${currentTab === 'preparing' ? 'bg-white text-amber-600' : 'bg-gray-200 text-gray-800'}`}>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+              currentTab === 'preparing' ? 'bg-white text-amber-600' : 'bg-slate-800 text-slate-300'
+            }`}>
               {preparingOrders.length}
             </span>
           </button>
 
           <button
             onClick={() => setCurrentTab('ready')}
-            className={`flex-1 py-2.5 px-4 text-xs font-bold rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2 ${
-              currentTab === 'ready' ? 'bg-green-600 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'
+            className={`flex-1 py-3 px-4 text-xs font-black rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2 ${
+              currentTab === 'ready'
+                ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <span>📦 Ready / Dispatched</span>
-            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${currentTab === 'ready' ? 'bg-white text-green-600' : 'bg-gray-200 text-gray-800'}`}>
+            <span>📦 Dispatched / Ready</span>
+            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+              currentTab === 'ready' ? 'bg-white text-emerald-600' : 'bg-slate-800 text-slate-300'
+            }`}>
               {readyOrders.length}
             </span>
           </button>
 
           <button
             onClick={() => setCurrentTab('menu')}
-            className={`flex-1 py-2.5 px-4 text-xs font-bold rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2 ${
-              currentTab === 'menu' ? 'bg-gray-900 text-white shadow-md' : 'text-gray-600 hover:bg-gray-100'
+            className={`flex-1 py-3 px-4 text-xs font-black rounded-xl transition-all whitespace-nowrap flex items-center justify-center gap-2 ${
+              currentTab === 'menu'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-white hover:bg-slate-800/50'
             }`}
           >
-            <span>📋 Menu & Stock Control ({menuItems.length})</span>
+            <span>📋 Menu & Stock</span>
+            <span className="text-[10px] bg-slate-800 text-slate-300 px-2 py-0.5 rounded-full">
+              {menuItems.length}
+            </span>
           </button>
         </div>
 
-        {/* Tab 1: Incoming Orders */}
+        {/* 3. TAB CONTENT: INCOMING ORDERS */}
         {currentTab === 'incoming' && (
           <div className="space-y-4">
-            <div className="flex justify-between items-center">
-              <h2 className="font-bold text-gray-800 text-sm">New Incoming Orders (Requires Kitchen Acceptance)</h2>
-              <button
-                onClick={() => fetchOrders(restaurantId)}
-                className="text-xs text-orange-600 font-bold hover:underline"
-              >
-                🔄 Refresh Feed
-              </button>
-            </div>
-
             {incomingOrders.length === 0 ? (
-              <div className="bg-white rounded-3xl p-12 text-center border shadow-sm">
-                <p className="text-4xl mb-2">🎉</p>
-                <p className="font-bold text-gray-700 text-sm">No new orders waiting</p>
-                <p className="text-gray-400 text-xs mt-1">When students place slot orders, they will appear here in real-time.</p>
+              <div className="bg-slate-900/60 rounded-3xl p-12 text-center border border-slate-800 space-y-2">
+                <p className="text-4xl">🔔</p>
+                <h3 className="text-sm font-bold text-slate-300">No new incoming orders</h3>
+                <p className="text-xs text-slate-500">Orders placed by students will ring here instantly!</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {incomingOrders.map((order) => (
-                  <div key={order.id} className="bg-white rounded-2xl p-5 border-2 border-orange-200 shadow-sm space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <span className="text-[10px] font-bold text-gray-400">ORDER NO.</span>
-                        <h3 className="font-black text-lg text-gray-900">#{order.orderNumber || order.order_number || order.id}</h3>
-                        <p className="text-xs text-orange-600 font-bold mt-0.5">⏱ {order.deliverySlot || 'Evening Slot 1 (6:00–7:00 PM)'}</p>
-                      </div>
-                      <span className="bg-orange-100 text-orange-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full animate-pulse">
-                        NEW ORDER
-                      </span>
-                    </div>
+                {incomingOrders.map((ord) => {
+                  const items = ord.items || ord.order_items || [];
+                  const orderNum = ord.orderNumber || ord.order_number || 'CB-XXXX';
+                  const slot = ord.deliverySlot || ord.delivery_slot?.name || 'Evening Slot (6-7 PM)';
 
-                    <div className="bg-gray-50 rounded-xl p-3 space-y-1.5">
-                      {(order.items || order.order_items || []).map((itm, i) => (
-                        <div key={i} className="flex justify-between text-xs font-bold text-gray-800">
-                          <span>{itm.quantity}x {itm.name || itm.itemName || itm.item_name}</span>
-                          <span>₹{(itm.price || 0) * itm.quantity}</span>
+                  return (
+                    <div
+                      key={ord.id}
+                      className="bg-slate-900 border-2 border-orange-500/80 rounded-3xl p-5 shadow-2xl space-y-4 relative overflow-hidden"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <h3 className="text-base font-black text-white">#{orderNum}</h3>
+                            <span className="bg-orange-500 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-md animate-pulse">
+                              NEW ORDER
+                            </span>
+                          </div>
+                          <p className="text-xs font-bold text-orange-400 mt-1">
+                            🕒 {slot}
+                          </p>
                         </div>
-                      ))}
-                    </div>
 
-                    <div className="flex justify-between text-xs text-gray-600 border-t pt-2">
-                      <span>Delivery: {order.hostelName} (Room {order.roomNumber})</span>
-                      <span className="font-bold text-gray-900">Total: ₹{order.totalAmount || order.total_amount}</span>
-                    </div>
+                        <div className="text-right">
+                          <p className="text-base font-black text-emerald-400">
+                            ₹{ord.totalAmount || ord.total_amount || 0}
+                          </p>
+                          <p className="text-[10px] text-slate-400 font-semibold">COD</p>
+                        </div>
+                      </div>
 
-                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      {/* Student Details */}
+                      <div className="bg-slate-800/80 rounded-2xl p-3 text-xs border border-slate-700/60 space-y-1">
+                        <p className="font-bold text-slate-200">
+                          👤 {ord.studentName || ord.student_name || 'Student'}
+                        </p>
+                        <p className="text-slate-400">
+                          📍 {ord.hostelName || ord.hostel_name || 'Hostel'}, Room {ord.roomNumber || ord.room_number || '304'}
+                        </p>
+                        <p className="text-slate-400">
+                          📞 +91 {ord.studentPhone || ord.student_phone || '9876543210'}
+                        </p>
+                      </div>
+
+                      {/* Items Checklist */}
+                      <div className="space-y-2">
+                        <p className="text-[10px] font-black text-slate-400 uppercase tracking-wider">
+                          Items to prepare ({items.length}):
+                        </p>
+                        <div className="space-y-1.5">
+                          {items.map((it: any, idx: number) => {
+                            const itemKey = `${ord.id}-${idx}`;
+                            const isChecked = checkedItems[itemKey];
+                            return (
+                              <div
+                                key={idx}
+                                onClick={() => toggleCheck(itemKey)}
+                                className={`p-2 rounded-xl flex items-center justify-between text-xs cursor-pointer border transition-all ${
+                                  isChecked
+                                    ? 'bg-emerald-950/40 border-emerald-800 text-emerald-300 line-through'
+                                    : 'bg-slate-800 border-slate-700 text-slate-200'
+                                }`}
+                              >
+                                <span className="font-bold">
+                                  {it.quantity}x {it.name || it.itemName || it.item_name || 'Food Item'}
+                                </span>
+                                <span className="text-[10px] font-black">{isChecked ? '✓' : '○'}</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Big Action Button */}
                       <button
-                        onClick={() => updateOrderStatus(order.id, 'PREPARING')}
-                        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95"
+                        onClick={() => updateOrderStatus(ord.id, 'PREPARING')}
+                        className="w-full bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg shadow-orange-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
                       >
-                        ✓ Accept & Cook
-                      </button>
-                      <button
-                        onClick={() => updateOrderStatus(order.id, 'CANCELLED')}
-                        className="w-full bg-gray-100 hover:bg-red-50 hover:text-red-600 text-gray-700 font-bold py-2.5 rounded-xl text-xs transition-all"
-                      >
-                        Reject
+                        <span>🍳 Accept & Start Cooking</span>
+                        <span>➔</span>
                       </button>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
           </div>
         )}
 
-        {/* Tab 2: In Preparation */}
+        {/* 4. TAB CONTENT: IN COOKING */}
         {currentTab === 'preparing' && (
           <div className="space-y-4">
-            <h2 className="font-bold text-gray-800 text-sm">Orders Being Cooked in Kitchen</h2>
             {preparingOrders.length === 0 ? (
-              <div className="bg-white rounded-3xl p-12 text-center border shadow-sm">
-                <p className="text-4xl mb-2">🍳</p>
-                <p className="font-bold text-gray-700 text-sm">No orders currently in preparation</p>
+              <div className="bg-slate-900/60 rounded-3xl p-12 text-center border border-slate-800 space-y-2">
+                <p className="text-4xl">🍳</p>
+                <h3 className="text-sm font-bold text-slate-300">No orders currently cooking</h3>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {preparingOrders.map((order) => (
-                  <div key={order.id} className="bg-white rounded-2xl p-5 border border-amber-200 shadow-sm space-y-4">
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="font-black text-lg text-gray-900">#{order.orderNumber || order.order_number || order.id}</h3>
-                        <p className="text-xs text-amber-600 font-bold mt-0.5">⏱ {order.deliverySlot || 'Evening Slot 1 (6:00–7:00 PM)'}</p>
-                      </div>
-                      <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full">
-                        COOKING IN PROGRESS
-                      </span>
-                    </div>
+                {preparingOrders.map((ord) => {
+                  const items = ord.items || ord.order_items || [];
+                  const orderNum = ord.orderNumber || ord.order_number || 'CB-XXXX';
+                  const slot = ord.deliverySlot || ord.delivery_slot?.name || 'Evening Slot (6-7 PM)';
 
-                    <div className="bg-amber-50/50 rounded-xl p-3 space-y-1.5">
-                      {(order.items || order.order_items || []).map((itm, i) => (
-                        <div key={i} className="flex justify-between text-xs font-bold text-gray-800">
-                          <span>{itm.quantity}x {itm.name || itm.itemName || itm.item_name}</span>
-                          <span>₹{(itm.price || 0) * itm.quantity}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <button
-                      onClick={() => updateOrderStatus(order.id, 'READY_FOR_DELIVERY')}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition-all active:scale-95 flex items-center justify-center gap-1.5"
+                  return (
+                    <div
+                      key={ord.id}
+                      className="bg-slate-900 border border-amber-500/60 rounded-3xl p-5 shadow-xl space-y-4"
                     >
-                      <span>📦</span> Mark Ready for Slot Dispatch
-                    </button>
-                  </div>
-                ))}
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-base font-black text-white">#{orderNum}</h3>
+                          <p className="text-xs font-bold text-amber-400 mt-0.5">🕒 {slot}</p>
+                        </div>
+                        <span className="bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase px-2 py-0.5 rounded-md">
+                          Cooking in Progress
+                        </span>
+                      </div>
+
+                      <div className="bg-slate-800/80 rounded-2xl p-3 text-xs border border-slate-700/60 space-y-1">
+                        <p className="font-bold text-slate-200">
+                          👤 {ord.studentName || ord.student_name} • Room {ord.roomNumber || ord.room_number}
+                        </p>
+                        <p className="text-slate-400">
+                          📍 {ord.hostelName || ord.hostel_name}
+                        </p>
+                      </div>
+
+                      {/* Items */}
+                      <div className="space-y-1.5">
+                        {items.map((it: any, idx: number) => (
+                          <div key={idx} className="bg-slate-800 p-2 rounded-xl text-xs font-bold text-slate-200">
+                            {it.quantity}x {it.name || it.itemName || it.item_name}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Mark Ready Button */}
+                      <button
+                        onClick={() => updateOrderStatus(ord.id, 'READY_FOR_DELIVERY')}
+                        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-black text-xs uppercase tracking-wider py-3.5 rounded-2xl shadow-lg shadow-emerald-600/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                      >
+                        <span>✓ Mark Ready for Slot Dispatch</span>
+                        <span>➔</span>
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </div>
         )}
 
-        {/* Tab 3: Ready for Delivery */}
+        {/* 5. TAB CONTENT: READY / DISPATCHED */}
         {currentTab === 'ready' && (
           <div className="space-y-4">
-            <h2 className="font-bold text-gray-800 text-sm">Dispatched & Completed Slot Deliveries</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {readyOrders.map((order) => (
-                <div key={order.id} className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm space-y-3">
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <h3 className="font-black text-base text-gray-900">#{order.orderNumber || order.order_number || order.id}</h3>
-                      <p className="text-xs text-gray-500">{order.deliverySlot}</p>
+            {readyOrders.length === 0 ? (
+              <div className="bg-slate-900/60 rounded-3xl p-12 text-center border border-slate-800 text-xs text-slate-500">
+                No orders ready for pickup currently.
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {readyOrders.map((ord) => {
+                  const items = ord.items || ord.order_items || [];
+                  const orderNum = ord.orderNumber || ord.order_number || 'CB-XXXX';
+                  return (
+                    <div
+                      key={ord.id}
+                      className="bg-slate-900 border border-slate-800 rounded-3xl p-5 shadow-lg space-y-3"
+                    >
+                      <div className="flex justify-between items-start">
+                        <div>
+                          <h3 className="text-sm font-black text-white">#{orderNum}</h3>
+                          <p className="text-xs text-slate-400">
+                            {ord.hostelName || ord.hostel_name}, Room {ord.roomNumber || ord.room_number}
+                          </p>
+                        </div>
+                        <span className="bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 text-[10px] font-black uppercase px-2 py-0.5 rounded-md">
+                          Packed & Ready
+                        </span>
+                      </div>
+
+                      <div className="text-xs text-slate-300">
+                        {items.map((it: any) => `${it.quantity}x ${it.name || it.item_name}`).join(', ')}
+                      </div>
+
+                      <div className="pt-2 border-t border-slate-800 flex justify-between items-center text-xs">
+                        <span className="font-bold text-emerald-400">₹{ord.totalAmount || ord.total_amount || 0}</span>
+                        <button
+                          onClick={() => updateOrderStatus(ord.id, 'DELIVERED')}
+                          className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3 py-1.5 rounded-xl font-bold transition-all text-xs"
+                        >
+                          Mark Delivered ✓
+                        </button>
+                      </div>
                     </div>
-                    <span className="bg-green-100 text-green-800 text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase">
-                      {(order.orderStatus || order.order_status || 'READY').replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                  <div className="text-xs text-gray-600">
-                    Hostel: {order.hostelName} (Room {order.roomNumber}) • Student: {order.studentName}
-                  </div>
-                </div>
-              ))}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
-        {/* Tab 4: Menu & Stock Manager */}
+        {/* 6. TAB CONTENT: MENU MANAGER */}
         {currentTab === 'menu' && (
-          <div className="bg-white rounded-3xl p-6 border shadow-sm space-y-6">
-            <div className="flex flex-wrap justify-between items-center pb-4 border-b gap-3">
+          <div className="space-y-4">
+            <div className="flex justify-between items-center bg-slate-900 p-4 rounded-3xl border border-slate-800">
               <div>
-                <h3 className="font-black text-gray-900 text-lg">Menu Catalog & Stock Control</h3>
-                <p className="text-xs text-gray-500">Manage dish offerings, prices, veg/non-veg flags, and live availability</p>
+                <h3 className="text-sm font-black text-white">Live Menu Items ({menuItems.length})</h3>
+                <p className="text-xs text-slate-400">Toggle dish stock availability or add new items</p>
               </div>
               <button
                 onClick={() => setShowAddModal(true)}
-                className="bg-orange-600 hover:bg-orange-700 text-white text-xs font-black px-5 py-2.5 rounded-2xl shadow-lg shadow-orange-500/25 transition-transform active:scale-95 flex items-center gap-1.5"
+                className="bg-orange-600 hover:bg-orange-500 text-white px-4 py-2 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-orange-600/20 active:scale-95 transition-all"
               >
-                <span>+</span> Add New Dish to Menu
+                + Add Dish
               </button>
             </div>
 
-            <div className="divide-y divide-gray-100">
-              {menuItems.map((itm) => (
-                <div key={itm.id} className="py-4 flex flex-wrap justify-between items-center gap-4">
-                  <div className="flex items-start gap-3 min-w-[200px] flex-1">
-                    <span className={`mt-1 h-4 w-4 rounded-sm border flex items-center justify-center ${itm.isVeg ? 'border-green-600' : 'border-red-600'}`}>
-                      <span className={`h-2 w-2 rounded-full ${itm.isVeg ? 'bg-green-600' : 'bg-red-600'}`}></span>
-                    </span>
-                    <div>
-                      <h4 className="font-bold text-sm text-gray-900">{itm.name}</h4>
-                      <p className="text-xs text-gray-500">{itm.description || itm.category}</p>
-                      <div className="flex items-center gap-2 mt-1">
-                        <span className="font-black text-sm text-gray-900">₹{itm.price}</span>
-                        <span className="text-[10px] font-bold bg-gray-100 text-gray-600 px-2 py-0.5 rounded">
-                          {itm.category}
-                        </span>
-                      </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {menuItems.map((dish) => (
+                <div
+                  key={dish.id}
+                  className="bg-slate-900 border border-slate-800 rounded-3xl p-4 flex items-center justify-between gap-3"
+                >
+                  <div className="flex-1">
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <span className={`h-2 w-2 rounded-full ${dish.isVeg ? 'bg-green-500' : 'bg-red-500'}`}></span>
+                      <span className="text-[10px] font-bold text-slate-400 uppercase">{dish.category}</span>
                     </div>
+                    <h4 className="text-xs font-bold text-white">{dish.name}</h4>
+                    <p className="text-xs font-black text-orange-400 mt-0.5">₹{dish.price}</p>
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => toggleItemAvailability(itm.id)}
-                      className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                        itm.isAvailable
-                          ? 'bg-green-100 text-green-800 hover:bg-green-200'
-                          : 'bg-red-100 text-red-800 hover:bg-red-200'
+                      onClick={() => toggleItemAvailability(dish.id)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all ${
+                        dish.isAvailable
+                          ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                          : 'bg-rose-500/20 text-rose-400 border border-rose-500/40'
                       }`}
                     >
-                      {itm.isAvailable ? '✓ In Stock' : '✕ Sold Out'}
+                      {dish.isAvailable ? 'IN STOCK' : 'SOLD OUT'}
                     </button>
+
                     <button
-                      onClick={() => handleDeleteItem(itm.id)}
-                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all text-xs"
-                      title="Delete dish"
+                      onClick={() => handleDeleteItem(dish.id)}
+                      className="text-slate-500 hover:text-rose-400 text-xs p-1"
                     >
-                      🗑
+                      🗑️
                     </button>
                   </div>
                 </div>
@@ -577,115 +670,111 @@ export default function RestaurantDashboardPage() {
         )}
       </div>
 
-      {/* Add New Dish Modal */}
+      {/* 7. ADD DISH MODAL */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in duration-200">
-            <div className="flex justify-between items-center border-b pb-3">
-              <h3 className="font-black text-lg text-gray-900">Add New Dish to Menu</h3>
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-md space-y-4 shadow-2xl">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+              <h3 className="text-base font-black text-white">Add New Dish</h3>
               <button
                 onClick={() => setShowAddModal(false)}
-                className="h-8 w-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center font-bold text-gray-600"
+                className="text-slate-400 hover:text-white font-bold"
               >
                 ✕
               </button>
             </div>
 
-            <form onSubmit={handleAddNewItem} className="space-y-3.5">
+            <form onSubmit={handleAddNewItem} className="space-y-3">
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Dish Name *</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                  Dish Name
+                </label>
                 <input
                   type="text"
-                  required
-                  placeholder="e.g. Kadai Paneer with Butter Naan"
+                  placeholder="e.g. Butter Naan & Shahi Paneer"
                   value={newItem.name}
                   onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                  autoFocus
+                  className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-orange-500"
+                  required
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-2.5">
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Price (₹) *</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    Price (₹)
+                  </label>
                   <input
                     type="number"
-                    required
-                    min="1"
-                    placeholder="e.g. 140"
+                    placeholder="120"
                     value={newItem.price}
                     onChange={(e) => setNewItem({ ...newItem, price: e.target.value })}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-orange-500"
+                    required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Category</label>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    Category
+                  </label>
                   <select
                     value={newItem.category}
                     onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-bold text-gray-900 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
+                    className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-orange-500"
                   >
                     <option value="Main Course">Main Course</option>
                     <option value="Starters">Starters</option>
                     <option value="Snacks">Snacks</option>
                     <option value="Beverages">Beverages</option>
                     <option value="Desserts">Desserts</option>
-                    <option value="South Indian">South Indian</option>
                   </select>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Food Type</label>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                  Food Type
+                </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
                     type="button"
                     onClick={() => setNewItem({ ...newItem, isVeg: true })}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
-                      newItem.isVeg ? 'bg-green-50 border-green-500 text-green-800' : 'bg-gray-50 border-gray-200 text-gray-600'
+                    className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                      newItem.isVeg
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500'
+                        : 'bg-slate-800 text-slate-400 border-slate-700'
                     }`}
                   >
-                    <span className="h-2 w-2 rounded-full bg-green-600"></span>
-                    Pure Veg (🟢)
+                    🟢 Pure Veg
                   </button>
                   <button
                     type="button"
                     onClick={() => setNewItem({ ...newItem, isVeg: false })}
-                    className={`py-2 px-3 rounded-xl text-xs font-bold border transition-all flex items-center justify-center gap-1.5 ${
-                      !newItem.isVeg ? 'bg-red-50 border-red-500 text-red-800' : 'bg-gray-50 border-gray-200 text-gray-600'
+                    className={`py-2 rounded-xl text-xs font-bold border transition-all ${
+                      !newItem.isVeg
+                        ? 'bg-rose-500/20 text-rose-400 border-rose-500'
+                        : 'bg-slate-800 text-slate-400 border-slate-700'
                     }`}
                   >
-                    <span className="h-2 w-2 rounded-full bg-red-600"></span>
-                    Non-Veg (🔴)
+                    🔴 Non-Veg
                   </button>
                 </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-gray-700 uppercase mb-1">Description (Optional)</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Fresh cottage cheese in spicy aromatic gravy"
-                  value={newItem.description}
-                  onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3.5 py-2.5 text-xs font-medium text-gray-900 focus:bg-white focus:ring-2 focus:ring-orange-500 focus:outline-none"
-                />
               </div>
 
               <div className="pt-2 flex gap-2">
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
-                  className="w-1/3 py-3 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl text-xs"
+                  className="flex-1 bg-slate-800 text-slate-400 font-bold py-3 rounded-xl text-xs uppercase"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="w-2/3 py-3 bg-orange-600 hover:bg-orange-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-orange-500/30"
+                  className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-black py-3 rounded-xl text-xs uppercase shadow-md"
                 >
-                  Add Dish to Menu ➔
+                  Save Dish
                 </button>
               </div>
             </form>

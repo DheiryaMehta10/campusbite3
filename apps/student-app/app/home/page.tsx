@@ -13,442 +13,612 @@ interface Restaurant {
   rating?: number;
   operational_status?: string;
   operationalStatus?: string;
+  cuisines?: string;
+  deliveryTime?: string;
+  priceForTwo?: number;
 }
 
-interface GroceryItem {
+interface DishItem {
   id: string;
   name: string;
-  description?: string;
-  image_url?: string;
-  price?: number;
-  stock?: number;
-}
-
-interface MedicalItem {
-  id: string;
-  name: string;
-  description?: string;
   price: number;
-  dosage_info?: string;
+  description: string;
+  isVeg: boolean;
+  category: string;
+  restaurantId: string;
+  restaurantName: string;
+  rating: number;
+  image: string;
+  isBestseller?: boolean;
+}
+
+interface CartItem {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+  restaurantId: string;
+  restaurantName: string;
 }
 
 const DEFAULT_RESTAURANTS: Restaurant[] = [
   {
     id: '550e8400-e29b-41d4-a716-446655440001',
     name: 'North Campus Central Canteen',
-    description: 'Paneer Butter Masala, Butter Naans, Cold Coffee & Thalis',
-    image_url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600',
+    description: 'North Indian • Thalis • Butter Naan • Beverages',
+    image_url: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
     rating: 4.6,
     operational_status: 'open',
+    cuisines: 'North Indian, Street Food, Chinese',
+    deliveryTime: 'Slot 6:00 - 7:00 PM',
+    priceForTwo: 180,
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440002',
     name: 'South Mess & Food Court',
-    description: 'Hyderabadi Dum Biryani, Chicken Curry & Desserts',
-    image_url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600',
+    description: 'Hyderabadi Biryani • South Indian • Meals & Combos',
+    image_url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=800&auto=format&fit=crop&q=80',
     rating: 4.5,
     operational_status: 'open',
+    cuisines: 'Biryani, South Indian, Dosa',
+    deliveryTime: 'Slot 6:00 - 7:00 PM',
+    priceForTwo: 220,
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440003',
     name: 'Night Canteen & Snacks Hub',
-    description: 'Crispy Spring Rolls, Chicken 65, Fried Rice & Maggi',
-    image_url: 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=600',
+    description: 'Fast Food • Crispy Starters • Rolls • Maggi',
+    image_url: 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=800&auto=format&fit=crop&q=80',
     rating: 4.4,
     operational_status: 'open',
+    cuisines: 'Snacks, Burgers, Fast Food',
+    deliveryTime: 'Night Slot 9:30 - 10:30 PM',
+    priceForTwo: 150,
   },
   {
     id: '550e8400-e29b-41d4-a716-446655440004',
     name: 'Campus Chai & Fast Food Corner',
-    description: 'Cheese Burst Burgers, Sandwiches & Elaichi Chai Flasks',
-    image_url: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600',
+    description: 'Burgers • Sandwiches • Kulhad Chai • Cold Coffee',
+    image_url: 'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=800&auto=format&fit=crop&q=80',
     rating: 4.7,
     operational_status: 'open',
+    cuisines: 'Tea, Coffee, Sandwiches, Burgers',
+    deliveryTime: 'Slot 6:00 - 7:00 PM',
+    priceForTwo: 120,
   },
 ];
 
-const DEFAULT_GROCERIES: GroceryItem[] = [
-  { id: 'groc-1', name: 'Basmati Rice (1kg Pack)', description: 'Premium long grain aged basmati rice', price: 95, image_url: 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400' },
-  { id: 'groc-2', name: 'Toor Dal (500g)', description: 'Unpolished protein-rich pulses', price: 75, image_url: 'https://images.unsplash.com/photo-1585994192701-f1a505c817ea?w=400' },
-  { id: 'groc-3', name: 'Almonds & Cashews Mix (200g)', description: 'Crunchy roasted high-energy dry fruits', price: 180, image_url: 'https://images.unsplash.com/photo-1508061253366-f7da158b6d46?w=400' },
-  { id: 'groc-4', name: 'Fresh Amul Taaza Milk (500ml)', description: 'Pasteurized homogenized toned milk', price: 30, image_url: 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400' },
-  { id: 'groc-5', name: 'Maggi 2-Minute Noodles (4-Pack)', description: 'Masala instant noodles for late nights', price: 56, image_url: 'https://images.unsplash.com/photo-1612927601601-6638404737ce?w=400' },
-  { id: 'groc-6', name: 'Nescafe Classic Instant Coffee (50g)', description: '100% pure instant coffee powder jar', price: 165, image_url: 'https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=400' },
+const POPULAR_DISHES: DishItem[] = [
+  {
+    id: 'dish-1',
+    name: 'Paneer Butter Masala Combo',
+    price: 140,
+    description: 'Rich velvety cottage cheese gravy served with 2 warm butter naans & fresh salad',
+    isVeg: true,
+    category: 'Main Course',
+    restaurantId: '550e8400-e29b-41d4-a716-446655440001',
+    restaurantName: 'North Campus Central Canteen',
+    rating: 4.8,
+    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=500&auto=format&fit=crop&q=80',
+    isBestseller: true,
+  },
+  {
+    id: 'dish-2',
+    name: 'Chicken Biryani Bowl',
+    price: 160,
+    description: 'Authentic Hyderabadi aromatic long grain dum biryani with juicy tender chicken & cooling raita',
+    isVeg: false,
+    category: 'Biryani',
+    restaurantId: '550e8400-e29b-41d4-a716-446655440002',
+    restaurantName: 'South Mess & Food Court',
+    rating: 4.9,
+    image: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&auto=format&fit=crop&q=80',
+    isBestseller: true,
+  },
+  {
+    id: 'dish-3',
+    name: 'Crispy Veg Spring Rolls',
+    price: 80,
+    description: 'Golden crunchy rolls loaded with seasoned cabbage, carrots & sweet chili dip',
+    isVeg: true,
+    category: 'Snacks',
+    restaurantId: '550e8400-e29b-41d4-a716-446655440003',
+    restaurantName: 'Night Canteen & Snacks Hub',
+    rating: 4.6,
+    image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=80',
+    isBestseller: false,
+  },
+  {
+    id: 'dish-4',
+    name: 'Thick Cold Coffee with Ice Cream',
+    price: 60,
+    description: 'Rich creamy blended cold coffee crowned with a generous scoop of vanilla ice cream',
+    isVeg: true,
+    category: 'Beverages',
+    restaurantId: '550e8400-e29b-41d4-a716-446655440004',
+    restaurantName: 'Campus Chai & Fast Food Corner',
+    rating: 4.9,
+    image: 'https://images.unsplash.com/photo-1517701550927-30cf4ba1dba5?w=500&auto=format&fit=crop&q=80',
+    isBestseller: true,
+  },
+  {
+    id: 'dish-5',
+    name: 'Cheese Burst Veg Burger',
+    price: 95,
+    description: 'Juicy vegetable patty oozing with molten cheddar, fresh tomato, crisp lettuce & signature sauce',
+    isVeg: true,
+    category: 'Burgers',
+    restaurantId: '550e8400-e29b-41d4-a716-446655440004',
+    restaurantName: 'Campus Chai & Fast Food Corner',
+    rating: 4.7,
+    image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=80',
+    isBestseller: true,
+  },
+  {
+    id: 'dish-6',
+    name: 'Hot Gulab Jamun (2 pcs)',
+    price: 40,
+    description: 'Traditional melt-in-mouth warm khoya dumplings soaked in rose cardamom sugar syrup',
+    isVeg: true,
+    category: 'Desserts',
+    restaurantId: '550e8400-e29b-41d4-a716-446655440001',
+    restaurantName: 'North Campus Central Canteen',
+    rating: 4.8,
+    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?w=500&auto=format&fit=crop&q=80',
+    isBestseller: false,
+  },
 ];
 
-const DEFAULT_MEDICAL: MedicalItem[] = [
-  { id: 'med-1', name: 'Dolo 650 Tablets (Strip of 15)', description: 'Paracetamol 650mg for headache, body pain & fever relief', price: 34, dosage_info: '1 tablet after food as needed' },
-  { id: 'med-2', name: 'Moov Pain Relief Spray (50g)', description: 'Fast action ointment spray for muscle spasms & sprains', price: 145, dosage_info: 'Spray directly on painful area' },
-  { id: 'med-3', name: 'Band-Aid First Aid Strips (Pack of 10)', description: 'Antiseptic waterproof adhesive bandages', price: 30, dosage_info: 'Clean wound and apply strip' },
-  { id: 'med-4', name: 'Digene Antacid Tablets (Strip of 15)', description: 'Mint flavored chewable tablets for acidity & gas', price: 25, dosage_info: 'Chew 1-2 tablets after meals' },
-  { id: 'med-5', name: 'Electral ORS Powder (21.8g Sachet)', description: 'WHO formula oral rehydration salt for dehydration', price: 22, dosage_info: 'Mix with 1 litre of clean drinking water' },
-  { id: 'med-6', name: 'Vicks Inhaler for Blocked Nose', description: 'Fast relief from nasal congestion & cold', price: 65, dosage_info: 'Inhale deeply through each nostril' },
+const CATEGORIES = [
+  { id: 'all', label: 'All', icon: '🍽️' },
+  { id: 'Main Course', label: 'Thali & Meals', icon: '🍛' },
+  { id: 'Biryani', label: 'Biryani', icon: '🍗' },
+  { id: 'Burgers', label: 'Burgers', icon: '🍔' },
+  { id: 'Snacks', label: 'Snacks & Rolls', icon: '🍟' },
+  { id: 'Beverages', label: 'Cold Coffee & Shakes', icon: '🥤' },
+  { id: 'Desserts', label: 'Sweets', icon: '🍨' },
 ];
 
 export default function HomePage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<'food' | 'grocery' | 'medical'>('food');
   const [restaurants, setRestaurants] = useState<Restaurant[]>(DEFAULT_RESTAURANTS);
-  const [groceryItems, setGroceryItems] = useState<GroceryItem[]>(DEFAULT_GROCERIES);
-  const [medicalItems, setMedicalItems] = useState<MedicalItem[]>(DEFAULT_MEDICAL);
-  const [announcements, setAnnouncements] = useState<any[]>([
-    { title: 'Slot Ordering Active', message: 'Main evening slots 6–7 PM & 7–8 PM are open for booking!' },
-  ]);
-  const [cart, setCart] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [cart, setCart] = useState<CartItem[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [vegOnly, setVegOnly] = useState(false);
   const [userHostel, setUserHostel] = useState('Tagore Hostel Block A');
+  const [userRoom, setUserRoom] = useState('304');
+  const [userName, setUserName] = useState('Student');
+  const [activeOrdersCount, setActiveOrdersCount] = useState(0);
 
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://campusbite-amber.vercel.app' });
+  const api = axios.create({ baseURL: '' });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const storedUserId = localStorage.getItem('userId');
-      if (!storedUserId) {
-        localStorage.setItem('userId', 'student-default');
-      }
-      const hostel = localStorage.getItem('userHostel');
-      if (hostel) setUserHostel(hostel);
+      const hostel = localStorage.getItem('userHostel') || 'Tagore Hostel Block A';
+      const room = localStorage.getItem('userRoom') || '304';
+      const name = localStorage.getItem('userName') || 'Student';
+      setUserHostel(hostel);
+      setUserRoom(room);
+      setUserName(name);
 
       const savedCart = localStorage.getItem('cb_cart');
       if (savedCart) {
-        try {
-          setCart(JSON.parse(savedCart));
-        } catch {}
+        try { setCart(JSON.parse(savedCart)); } catch {}
       }
+
+      const orders = JSON.parse(localStorage.getItem('cb_orders') || '[]');
+      const active = orders.filter((o: any) => {
+        const s = String(o.orderStatus || o.order_status || '').toUpperCase();
+        return s !== 'DELIVERED' && s !== 'CANCELLED';
+      }).length;
+      setActiveOrdersCount(active);
     }
 
-    loadAllData();
+    loadRestaurants();
   }, []);
 
-  const loadAllData = async () => {
+  const loadRestaurants = async () => {
     try {
-      const [restRes, grocRes, medRes, annRes] = await Promise.all([
-        api.get('/api/restaurants').catch(() => ({ data: { data: [] } })),
-        api.get('/api/grocery').catch(() => ({ data: { data: [] } })),
-        api.get('/api/medical').catch(() => ({ data: { data: [] } })),
-        api.get('/api/announcements').catch(() => ({ data: { data: [] } })),
-      ]);
+      const res = await api.get('/api/restaurants');
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        setRestaurants(res.data.data);
+      }
+    } catch (e) {}
+  };
 
-      if (restRes.data?.data && restRes.data.data.length > 0) setRestaurants(restRes.data.data);
-      if (grocRes.data?.data && grocRes.data.data.length > 0) setGroceryItems(grocRes.data.data);
-      if (medRes.data?.data && medRes.data.data.length > 0) setMedicalItems(medRes.data.data);
-      if (annRes.data?.data && annRes.data.data.length > 0) setAnnouncements(annRes.data.data);
-    } catch (e) {
-      console.error(e);
+  const updateCartStorage = (newCart: CartItem[]) => {
+    setCart(newCart);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('cb_cart', JSON.stringify(newCart));
     }
   };
 
-  const addToCart = (item: any, type: 'food' | 'grocery' | 'medical', price = 50) => {
+  const getItemQuantity = (id: string) => {
+    const item = cart.find((i) => i.id === id);
+    return item ? item.quantity : 0;
+  };
+
+  const handleAddDish = (dish: DishItem) => {
     const updated = [...cart];
-    const existing = updated.find((i) => i.id === item.id);
-    if (existing) {
-      existing.quantity += 1;
+    const existingIndex = updated.findIndex((i) => i.id === dish.id);
+    if (existingIndex > -1) {
+      updated[existingIndex].quantity += 1;
     } else {
       updated.push({
-        id: item.id,
-        name: item.name,
-        price: Number(item.price || price),
+        id: dish.id,
+        name: dish.name,
+        price: dish.price,
         quantity: 1,
-        restaurantId: '550e8400-e29b-41d4-a716-446655440001',
-        restaurantName: 'North Campus Central Canteen',
-        type,
+        restaurantId: dish.restaurantId,
+        restaurantName: dish.restaurantName,
       });
     }
-    setCart(updated);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cb_cart', JSON.stringify(updated));
+    updateCartStorage(updated);
+  };
+
+  const handleRemoveDish = (id: string) => {
+    const updated = [...cart];
+    const existingIndex = updated.findIndex((i) => i.id === id);
+    if (existingIndex > -1) {
+      if (updated[existingIndex].quantity > 1) {
+        updated[existingIndex].quantity -= 1;
+      } else {
+        updated.splice(existingIndex, 1);
+      }
+      updateCartStorage(updated);
     }
   };
 
   const totalCartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const cartSubtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const totalCartPrice = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+
+  const filteredDishes = POPULAR_DISHES.filter((dish) => {
+    if (vegOnly && !dish.isVeg) return false;
+    if (selectedCategory !== 'all' && dish.category !== selectedCategory) return false;
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        dish.name.toLowerCase().includes(q) ||
+        dish.description.toLowerCase().includes(q) ||
+        dish.category.toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
+
+  const filteredRestaurants = restaurants.filter((r) => {
+    if (searchQuery.trim()) {
+      const q = searchQuery.toLowerCase();
+      return (
+        r.name.toLowerCase().includes(q) ||
+        (r.description || '').toLowerCase().includes(q) ||
+        (r.cuisines || '').toLowerCase().includes(q)
+      );
+    }
+    return true;
+  });
 
   return (
-    <div className="min-h-screen bg-slate-50 pb-28">
-      {/* Top Mobile Bar */}
-      <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm px-4 py-3">
-        <div className="max-w-lg mx-auto flex items-center justify-between">
-          <div className="flex items-center space-x-2.5">
-            <div className="w-10 h-10 bg-gradient-to-tr from-orange-600 to-amber-500 rounded-2xl flex items-center justify-center text-white font-black text-lg shadow-md shadow-orange-500/30">
-              CB
-            </div>
-            <div>
-              <div className="flex items-center text-xs font-black text-gray-900">
-                <span>📍 {userHostel}</span>
-                <span className="ml-1 text-[10px] text-orange-600 font-bold">▼</span>
+    <div className="min-h-screen bg-[#F8FAFC] pb-32 text-gray-900 font-sans selection:bg-orange-500 selection:text-white">
+      {/* 1. TOP SWIGGY-STYLE HEADER WITH LOCATION */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all">
+        <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
+            {/* Location Pill */}
+            <div className="flex items-center gap-2.5 cursor-pointer">
+              <div className="h-9 w-9 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-white text-base shadow-md shadow-orange-500/20">
+                📍
               </div>
-              <p className="text-[10px] text-gray-500 font-medium">Scheduled Slot Delivery Platform</p>
+              <div>
+                <div className="flex items-center gap-1">
+                  <span className="text-xs font-black text-gray-900 tracking-tight flex items-center gap-1">
+                    {userHostel}
+                    <span className="text-[10px] text-orange-600">▾</span>
+                  </span>
+                </div>
+                <p className="text-[11px] font-semibold text-gray-500 truncate max-w-[200px]">
+                  Room {userRoom} • Scheduled Delivery Active
+                </p>
+              </div>
             </div>
+
+            {/* Profile Avatar / Quick Link */}
+            <Link
+              href="/profile"
+              className="h-9 w-9 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-200 flex items-center justify-center text-gray-700 text-xs font-black shadow-inner hover:ring-2 hover:ring-orange-500 transition-all"
+            >
+              {userName.slice(0, 1).toUpperCase()}
+            </Link>
           </div>
 
-          <Link href="/cart" className="relative p-2.5 bg-orange-50 hover:bg-orange-100 rounded-2xl transition-all">
-            <span className="text-xl">🛒</span>
-            {totalCartCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-orange-600 text-white text-[10px] font-extrabold w-5 h-5 rounded-full flex items-center justify-center border-2 border-white shadow-md animate-pulse">
-                {totalCartCount}
-              </span>
-            )}
-          </Link>
-        </div>
-
-        {/* Search Bar */}
-        <div className="max-w-lg mx-auto mt-2.5">
-          <div className="relative">
-            <span className="absolute inset-y-0 left-3.5 flex items-center text-gray-400 text-sm">🔍</span>
+          {/* Search Bar (Swiggy / Zomato style) */}
+          <div className="mt-3 relative">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
             <input
               type="text"
-              placeholder="Search dishes, groceries, medicines..."
+              placeholder="Search for biryani, butter paneer, cold coffee, snacks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-gray-100 hover:bg-gray-100/80 focus:bg-white text-xs font-semibold rounded-2xl border border-transparent focus:border-orange-500 focus:outline-none transition-all shadow-inner"
+              className="w-full pl-10 pr-10 py-2.5 bg-gray-100/80 hover:bg-gray-100 focus:bg-white text-xs font-medium rounded-2xl border border-transparent focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all outline-none text-gray-800 placeholder-gray-400 shadow-inner"
             />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery('')}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold bg-gray-200 rounded-full h-4 w-4 flex items-center justify-center"
+              >
+                ✕
+              </button>
+            )}
           </div>
         </div>
       </header>
 
-      {/* Announcements Pill */}
-      {announcements.length > 0 && (
-        <div className="max-w-lg mx-auto px-4 mt-3">
-          <div className="bg-amber-50 border border-amber-200/80 text-amber-950 rounded-2xl px-4 py-2.5 text-xs flex items-center space-x-2 shadow-sm">
-            <span className="text-base">📢</span>
-            <div className="truncate">
-              <strong className="font-bold">{announcements[0].title}:</strong>{' '}
-              <span className="text-amber-900">{announcements[0].message}</span>
-            </div>
+      {/* MAIN CONTAINER */}
+      <main className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 pt-3 space-y-6">
+        {/* 2. SWIGGY PROMOTIONAL HERO BANNER */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-600 via-amber-600 to-orange-500 text-white p-5 shadow-lg shadow-orange-500/15">
+          <div className="relative z-10 max-w-[70%] space-y-1">
+            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-white text-orange-600 uppercase tracking-widest shadow-sm">
+              ⚡ LIVE SLOT WAVE
+            </span>
+            <h2 className="text-lg font-black tracking-tight leading-snug">
+              Evening Canteen Slots Open!
+            </h2>
+            <p className="text-[11px] text-orange-100 font-medium">
+              Free delivery to hostel lobbies. Use code <span className="font-bold underline text-white">FIRSTBITE</span> for 20% OFF!
+            </p>
+          </div>
+
+          <div className="absolute right-2 -bottom-3 text-7xl opacity-90 select-none pointer-events-none drop-shadow-md">
+            🍱
           </div>
         </div>
-      )}
 
-      {/* Hero Delivery Slot Status Banner */}
-      <div className="max-w-lg mx-auto px-4 mt-3">
-        <div className="bg-gradient-to-r from-slate-950 via-gray-900 to-orange-950 text-white p-5 rounded-3xl shadow-xl relative overflow-hidden">
-          <div className="flex justify-between items-center z-10 relative">
+        {/* 3. CATEGORIES HORIZONTAL PILL CAROUSEL */}
+        <div>
+          <div className="flex items-center justify-between mb-2.5 px-1">
+            <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
+              Explore Cravings
+            </h3>
+            <button
+              onClick={() => setVegOnly(!vegOnly)}
+              className={`text-[11px] font-bold px-2.5 py-1 rounded-full border transition-all flex items-center gap-1.5 ${
+                vegOnly ? 'bg-green-50 text-green-700 border-green-300 shadow-sm' : 'bg-white text-gray-600 border-gray-200'
+              }`}
+            >
+              <span className={`h-2 w-2 rounded-full ${vegOnly ? 'bg-green-600' : 'bg-gray-300'}`}></span>
+              Pure Veg Only
+            </button>
+          </div>
+
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+            {CATEGORIES.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.id)}
+                className={`flex items-center gap-1.5 px-3.5 py-2 rounded-2xl text-xs font-bold whitespace-nowrap transition-all ${
+                  selectedCategory === cat.id
+                    ? 'bg-gray-900 text-white shadow-md shadow-gray-900/20 scale-[1.02]'
+                    : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-100 shadow-sm'
+                }`}
+              >
+                <span>{cat.icon}</span>
+                <span>{cat.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 4. POPULAR DISHES (SWIGGY FOOD CARDS WITH INSTANT QUANTITY ADDER) */}
+        <div>
+          <div className="flex items-center justify-between mb-3 px-1">
             <div>
-              <span className="inline-block px-2.5 py-0.5 bg-orange-500 text-[10px] font-extrabold uppercase rounded-full tracking-wider mb-1.5 shadow-sm">
-                Next Active Slot
-              </span>
-              <h3 className="font-black text-lg text-white">Evening (6:00 PM – 7:00 PM)</h3>
-              <p className="text-xs text-orange-200/90 mt-1">Order before <strong>5:50 PM</strong> cutoff for this slot</p>
+              <h3 className="text-sm font-black text-gray-900">Campus Bestsellers</h3>
+              <p className="text-[11px] text-gray-500">Student favorites cooked fresh for your slot</p>
             </div>
-            <div className="text-3xl bg-white/10 p-3 rounded-2xl backdrop-blur-sm">⏰</div>
           </div>
-          <div className="absolute -right-8 -bottom-8 w-28 h-28 bg-orange-500/20 rounded-full blur-xl"></div>
-        </div>
-      </div>
 
-      {/* 3 Main Categories */}
-      <div className="max-w-lg mx-auto px-4 mt-4">
-        <div className="grid grid-cols-3 gap-2.5">
-          <button
-            onClick={() => setActiveTab('food')}
-            className={`p-3.5 rounded-2xl flex flex-col items-center justify-center transition-all ${
-              activeTab === 'food'
-                ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 scale-[1.02]'
-                : 'bg-white text-gray-700 border border-gray-200/80 hover:bg-orange-50/50'
-            }`}
-          >
-            <span className="text-2xl mb-1">🍔</span>
-            <span className="text-xs font-black">Food</span>
-            <span className={`text-[9px] ${activeTab === 'food' ? 'text-orange-100' : 'text-gray-400'}`}>Canteen & Meals</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('grocery')}
-            className={`p-3.5 rounded-2xl flex flex-col items-center justify-center transition-all ${
-              activeTab === 'grocery'
-                ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 scale-[1.02]'
-                : 'bg-white text-gray-700 border border-gray-200/80 hover:bg-orange-50/50'
-            }`}
-          >
-            <span className="text-2xl mb-1">🛒</span>
-            <span className="text-xs font-black">Grocery</span>
-            <span className={`text-[9px] ${activeTab === 'grocery' ? 'text-orange-100' : 'text-gray-400'}`}>Hostel Staples</span>
-          </button>
-
-          <button
-            onClick={() => setActiveTab('medical')}
-            className={`p-3.5 rounded-2xl flex flex-col items-center justify-center transition-all ${
-              activeTab === 'medical'
-                ? 'bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/30 scale-[1.02]'
-                : 'bg-white text-gray-700 border border-gray-200/80 hover:bg-orange-50/50'
-            }`}
-          >
-            <span className="text-2xl mb-1">💊</span>
-            <span className="text-xs font-black">Medical</span>
-            <span className={`text-[9px] ${activeTab === 'medical' ? 'text-orange-100' : 'text-gray-400'}`}>OTC Essentials</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Content Area */}
-      <main className="max-w-lg mx-auto px-4 mt-5">
-        {/* 1. FOOD TAB */}
-        {activeTab === 'food' && (
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest">Campus Restaurants & Canteens</h2>
-              <span className="text-xs text-orange-600 font-bold">{restaurants.length} Outlets</span>
-            </div>
-
-            <div className="space-y-4">
-              {restaurants
-                .filter((r) => r.name.toLowerCase().includes(searchQuery.toLowerCase()))
-                .map((rest) => {
-                  const status = rest.operational_status || rest.operationalStatus || 'open';
-                  const isClosed = status === 'temporarily_closed';
-
-                  return (
-                    <Link key={rest.id} href={isClosed ? '#' : `/restaurant/${rest.id}`}>
-                      <div className={`bg-white rounded-3xl overflow-hidden border border-gray-200/80 shadow-sm hover:shadow-lg transition-all group ${isClosed ? 'opacity-75' : ''}`}>
-                        <div className="h-40 bg-gray-100 relative overflow-hidden">
-                          <img
-                            src={rest.image_url || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=600'}
-                            alt={rest.name}
-                            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          />
-                          <div className="absolute top-3 right-3">
-                            {isClosed ? (
-                              <span className="bg-red-600 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg">
-                                ✕ TEMPORARILY CLOSED
-                              </span>
-                            ) : (
-                              <span className="bg-green-600 text-white text-[10px] font-black px-3 py-1 rounded-full shadow-lg">
-                                ● OPEN FOR SLOT
-                              </span>
-                            )}
-                          </div>
-                          <div className="absolute bottom-3 left-3 bg-black/80 backdrop-blur-md text-white px-2.5 py-1 rounded-xl text-xs font-bold flex items-center gap-1 shadow">
-                            ⭐ {rest.rating || 4.5}
-                          </div>
-                        </div>
-
-                        <div className="p-4">
-                          <h3 className="font-black text-gray-900 text-base">{rest.name}</h3>
-                          <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{rest.description || 'Thalis, Rolls, Snacks & Beverages'}</p>
-
-                          <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 text-xs">
-                            <span className="text-gray-500 font-medium">🛵 Slot: 6:00 – 7:00 PM</span>
-                            <span className="text-orange-600 font-black group-hover:translate-x-1 transition-transform">
-                              {isClosed ? 'Closed' : 'View Menu ➔'}
-                            </span>
-                          </div>
-                        </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+            {filteredDishes.map((dish) => {
+              const qty = getItemQuantity(dish.id);
+              return (
+                <div
+                  key={dish.id}
+                  className="bg-white rounded-3xl p-4 border border-gray-100/80 shadow-sm hover:shadow-md transition-all flex justify-between gap-3 relative overflow-hidden group"
+                >
+                  {/* Left Info */}
+                  <div className="flex-1 flex flex-col justify-between pr-2">
+                    <div>
+                      {/* Veg / Non-Veg badge + Bestseller */}
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <span
+                          className={`inline-flex items-center justify-center h-4 w-4 rounded-sm border ${
+                            dish.isVeg ? 'border-green-600' : 'border-red-600'
+                          }`}
+                        >
+                          <span
+                            className={`h-2 w-2 rounded-full ${dish.isVeg ? 'bg-green-600' : 'bg-red-600'}`}
+                          ></span>
+                        </span>
+                        {dish.isBestseller && (
+                          <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-amber-50 text-amber-700 border border-amber-200">
+                            ★ Bestseller
+                          </span>
+                        )}
                       </div>
-                    </Link>
-                  );
-                })}
-            </div>
-          </div>
-        )}
 
-        {/* 2. GROCERY TAB */}
-        {activeTab === 'grocery' && (
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest">Hostel Grocery Essentials</h2>
-              <span className="text-xs text-orange-600 font-bold">{groceryItems.length} Products</span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              {groceryItems.map((item) => (
-                <div key={item.id} className="bg-white p-3.5 rounded-3xl border border-gray-200/80 shadow-sm flex flex-col justify-between hover:border-orange-200 transition-all">
-                  <div className="h-28 bg-gray-50 rounded-2xl overflow-hidden mb-2">
-                    <img
-                      src={item.image_url || 'https://images.unsplash.com/photo-1612927601601-6638404737ce?w=400'}
-                      alt={item.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <div>
-                    <h4 className="font-bold text-xs text-gray-900 line-clamp-2">{item.name}</h4>
-                    <p className="text-[10px] text-gray-500 mt-0.5">{item.description || 'Hostel pantry staple'}</p>
-                  </div>
-                  <div className="flex items-center justify-between mt-3 pt-2 border-t border-gray-100">
-                    <span className="font-black text-sm text-gray-900">₹{item.price || 40}</span>
-                    <button
-                      onClick={() => addToCart(item, 'grocery', item.price || 40)}
-                      className="px-3 py-1.5 bg-orange-50 hover:bg-orange-600 hover:text-white text-orange-600 text-xs font-black rounded-xl border border-orange-200 transition-all active:scale-95"
-                    >
-                      + ADD
-                    </button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* 3. MEDICAL TAB */}
-        {activeTab === 'medical' && (
-          <div>
-            <div className="flex justify-between items-center mb-3">
-              <div>
-                <h2 className="text-xs font-black text-gray-500 uppercase tracking-widest">Basic OTC Medical Essentials</h2>
-                <p className="text-[10px] text-gray-500">Delivered sealed in secure slot packets (Strictly OTC)</p>
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              {medicalItems.map((med) => (
-                <div key={med.id} className="bg-white p-4 rounded-3xl border border-gray-200/80 shadow-sm flex items-center justify-between hover:border-orange-200 transition-all">
-                  <div className="flex-1 pr-3">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-green-700 bg-green-50 text-[10px] font-black px-2 py-0.5 rounded-md border border-green-200">OTC ✓</span>
-                      <h4 className="font-bold text-sm text-gray-900">{med.name}</h4>
+                      <h4 className="text-xs font-bold text-gray-900 line-clamp-1 group-hover:text-orange-600 transition-colors">
+                        {dish.name}
+                      </h4>
+                      <p className="text-xs font-black text-gray-900 mt-1">₹{dish.price}</p>
+                      <p className="text-[10px] text-gray-400 font-medium line-clamp-2 mt-1 leading-relaxed">
+                        {dish.description}
+                      </p>
                     </div>
-                    <p className="text-xs text-gray-500 mt-1">{med.description}</p>
-                    {med.dosage_info && <p className="text-[10px] text-gray-400 mt-1">💡 {med.dosage_info}</p>}
-                    <p className="font-black text-sm text-gray-900 mt-2">₹{med.price}</p>
+
+                    <p className="text-[9px] font-bold text-orange-600/80 truncate mt-2">
+                      📍 {dish.restaurantName}
+                    </p>
                   </div>
-                  <button
-                    onClick={() => addToCart(med, 'medical', med.price)}
-                    className="px-4 py-2.5 bg-orange-600 hover:bg-orange-700 text-white text-xs font-black rounded-2xl shadow-md shadow-orange-500/25 transition-all active:scale-95"
-                  >
-                    + ADD
-                  </button>
+
+                  {/* Right Image + Swiggy Floating Adder */}
+                  <div className="relative flex flex-col items-center justify-between w-28 shrink-0">
+                    <div className="h-24 w-28 rounded-2xl overflow-hidden bg-gray-100 shadow-inner">
+                      <img
+                        src={dish.image}
+                        alt={dish.name}
+                        className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
+                    </div>
+
+                    {/* Swiggy Button */}
+                    <div className="absolute -bottom-1">
+                      {qty === 0 ? (
+                        <button
+                          onClick={() => handleAddDish(dish)}
+                          className="px-5 py-1.5 bg-white hover:bg-orange-50 text-green-700 hover:text-green-800 font-black text-xs uppercase tracking-wider rounded-xl shadow-md border border-gray-200 hover:border-green-300 active:scale-95 transition-all"
+                        >
+                          ADD +
+                        </button>
+                      ) : (
+                        <div className="flex items-center bg-green-700 text-white rounded-xl shadow-md font-black text-xs px-1 py-0.5 border border-green-800">
+                          <button
+                            onClick={() => handleRemoveDish(dish.id)}
+                            className="px-2 py-0.5 hover:bg-green-800 rounded text-xs transition-colors"
+                          >
+                            −
+                          </button>
+                          <span className="px-2 text-xs font-bold">{qty}</span>
+                          <button
+                            onClick={() => handleAddDish(dish)}
+                            className="px-2 py-0.5 hover:bg-green-800 rounded text-xs transition-colors"
+                          >
+                            +
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              ))}
+              );
+            })}
+          </div>
+        </div>
+
+        {/* 5. CAMPUS CANTEENS & FOOD COURTS LIST */}
+        <div>
+          <div className="flex items-center justify-between mb-3 px-1">
+            <div>
+              <h3 className="text-sm font-black text-gray-900">Campus Canteens & Kitchens</h3>
+              <p className="text-[11px] text-gray-500">Scheduled batch delivery directly to your hostel</p>
             </div>
           </div>
-        )}
+
+          <div className="space-y-4">
+            {filteredRestaurants.map((res) => (
+              <Link
+                key={res.id}
+                href={`/restaurant/${res.id}`}
+                className="block bg-white rounded-3xl p-4 border border-gray-100 shadow-sm hover:shadow-lg transition-all overflow-hidden group"
+              >
+                {/* Banner Image */}
+                <div className="h-44 w-full rounded-2xl overflow-hidden relative bg-gray-100">
+                  <img
+                    src={res.image_url || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800'}
+                    alt={res.name}
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
+
+                  {/* Rating Badge */}
+                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-[11px] font-black text-gray-900 shadow-sm flex items-center gap-1">
+                    <span className="text-amber-500">★</span> {res.rating || 4.6}
+                  </div>
+
+                  {/* Status Badge */}
+                  <div className="absolute top-3 right-3">
+                    <span className="bg-green-600 text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl shadow-md">
+                      OPEN FOR ORDERS
+                    </span>
+                  </div>
+
+                  {/* Bottom Text Over Image */}
+                  <div className="absolute bottom-3 left-3 right-3 text-white">
+                    <h4 className="text-base font-black leading-tight drop-shadow-sm">{res.name}</h4>
+                    <p className="text-[11px] text-gray-200 font-medium truncate mt-0.5">
+                      {res.description || res.cuisines}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Restaurant Card Details */}
+                <div className="mt-3 flex items-center justify-between text-xs text-gray-500 pt-1">
+                  <div className="flex items-center gap-1.5 font-bold text-gray-700">
+                    <span>🕒</span>
+                    <span className="text-orange-600 font-extrabold">{res.deliveryTime || 'Slot 6:00 - 7:00 PM'}</span>
+                  </div>
+                  <div className="font-semibold">
+                    ₹{res.priceForTwo || 150} for two
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
       </main>
 
-      {/* Floating Cart Bar */}
+      {/* 6. SWIGGY-STYLE FLOATING BOTTOM CART BAR */}
       {totalCartCount > 0 && (
-        <div className="fixed bottom-16 left-4 right-4 max-w-lg mx-auto z-40">
-          <Link href="/cart">
-            <div className="bg-gradient-to-r from-orange-600 to-amber-500 text-white p-4 rounded-2xl shadow-2xl flex items-center justify-between animate-bounce-short">
-              <div>
-                <span className="font-black text-xs uppercase tracking-wider">{totalCartCount} {totalCartCount === 1 ? 'Item' : 'Items'}</span>
-                <p className="font-black text-base">₹{cartSubtotal} <span className="text-xs font-normal opacity-80">+ ₹10 Slot Delivery</span></p>
+        <div className="fixed bottom-16 left-0 right-0 z-40 px-4 max-w-md md:max-w-2xl lg:max-w-4xl mx-auto animate-bounce-short">
+          <div className="bg-gradient-to-r from-green-700 to-emerald-600 text-white p-3.5 rounded-2xl shadow-xl flex items-center justify-between border border-green-500/30">
+            <div className="flex items-center gap-3">
+              <div className="h-8 w-8 rounded-xl bg-white/20 flex items-center justify-center text-sm font-black">
+                🛍️
               </div>
-              <div className="flex items-center text-xs font-black bg-white/20 px-3.5 py-2 rounded-xl backdrop-blur-sm">
-                View Cart ➔
+              <div>
+                <p className="text-xs font-black tracking-wide">
+                  {totalCartCount} {totalCartCount === 1 ? 'ITEM' : 'ITEMS'} ADDED
+                </p>
+                <p className="text-[11px] text-green-100 font-semibold">
+                  Subtotal: ₹{totalCartPrice}
+                </p>
               </div>
             </div>
-          </Link>
+
+            <Link
+              href="/cart"
+              className="bg-white text-green-800 hover:bg-green-50 px-4 py-2 rounded-xl text-xs font-black uppercase tracking-wider shadow-sm flex items-center gap-1 active:scale-95 transition-all"
+            >
+              <span>View Cart</span>
+              <span>➔</span>
+            </Link>
+          </div>
         </div>
       )}
 
-      {/* Sticky Bottom Navigation Bar */}
-      <nav className="fixed bottom-0 left-0 right-0 bg-white/95 backdrop-blur-md border-t border-gray-200 z-50">
-        <div className="max-w-lg mx-auto grid grid-cols-4 py-2 text-center">
-          <Link href="/home" className="flex flex-col items-center text-orange-600 font-black">
-            <span className="text-xl">🏠</span>
-            <span className="text-[10px] mt-0.5">Home</span>
+      {/* 7. PLAYSTORE MOBILE BOTTOM NAVIGATION */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-200 py-2">
+        <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-6 flex justify-around items-center">
+          <Link href="/home" className="flex flex-col items-center text-orange-600 font-black text-[10px] gap-0.5">
+            <span className="text-lg">🍔</span>
+            <span>Explore</span>
           </Link>
-          <Link href="/orders" className="flex flex-col items-center text-gray-500 hover:text-orange-600 font-bold">
-            <span className="text-xl">📦</span>
-            <span className="text-[10px] mt-0.5">Orders</span>
+
+          <Link href="/orders" className="flex flex-col items-center text-gray-400 hover:text-gray-900 font-bold text-[10px] gap-0.5 relative">
+            <span className="text-lg">📜</span>
+            <span>Orders</span>
+            {activeOrdersCount > 0 && (
+              <span className="absolute -top-1 right-2 bg-orange-600 text-white text-[9px] font-black h-4 w-4 rounded-full flex items-center justify-center animate-pulse">
+                {activeOrdersCount}
+              </span>
+            )}
           </Link>
-          <Link href="/cart" className="flex flex-col items-center text-gray-500 hover:text-orange-600 font-bold">
-            <span className="text-xl">🛒</span>
-            <span className="text-[10px] mt-0.5">Cart</span>
-          </Link>
-          <Link href="/profile" className="flex flex-col items-center text-gray-500 hover:text-orange-600 font-bold">
-            <span className="text-xl">👤</span>
-            <span className="text-[10px] mt-0.5">Profile</span>
+
+          <Link href="/profile" className="flex flex-col items-center text-gray-400 hover:text-gray-900 font-bold text-[10px] gap-0.5">
+            <span className="text-lg">👤</span>
+            <span>Profile</span>
           </Link>
         </div>
       </nav>

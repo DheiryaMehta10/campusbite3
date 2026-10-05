@@ -7,6 +7,7 @@ import axios from 'axios';
 interface OrderItem {
   name?: string;
   itemName?: string;
+  item_name?: string;
   quantity: number;
   price?: number;
 }
@@ -22,14 +23,28 @@ interface Order {
   placedAt?: string;
   placed_at?: string;
   deliverySlot?: string;
+  delivery_slot?: { name: string };
   studentName?: string;
+  student_name?: string;
   studentPhone?: string;
+  student_phone?: string;
   hostelName?: string;
+  hostel_name?: string;
   roomNumber?: string;
+  room_number?: string;
   restaurantName?: string;
   items?: OrderItem[];
   order_items?: OrderItem[];
 }
+
+const STATUS_OPTIONS = [
+  'ALL',
+  'ORDER_PLACED',
+  'PREPARING',
+  'READY_FOR_DELIVERY',
+  'DELIVERED',
+  'CANCELLED',
+];
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -115,175 +130,173 @@ export default function AdminOrdersPage() {
 
     if (filterStatus !== 'ALL') {
       let f = filterStatus.toUpperCase();
-      if (f === 'PLACED') f = 'ORDER_PLACED';
       if (status !== f) return false;
     }
 
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
-      const num = String(ord.orderNumber || ord.order_number || ord.id).toLowerCase();
-      const name = String(ord.studentName || '').toLowerCase();
-      const phone = String(ord.studentPhone || '').toLowerCase();
-      const hostel = String(ord.hostelName || '').toLowerCase();
-      if (!num.includes(q) && !name.includes(q) && !phone.includes(q) && !hostel.includes(q)) {
-        return false;
-      }
+      const num = String(ord.orderNumber || ord.order_number || '').toLowerCase();
+      const sName = String(ord.studentName || ord.student_name || '').toLowerCase();
+      const hName = String(ord.hostelName || ord.hostel_name || '').toLowerCase();
+      const rNum = String(ord.roomNumber || ord.room_number || '').toLowerCase();
+      return num.includes(q) || sName.includes(q) || hName.includes(q) || rNum.includes(q);
     }
+
     return true;
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20 font-sans">
-      {/* Top Header */}
-      <div className="bg-white shadow-sm p-4 border-b flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">CampusBite Admin</h1>
-          <p className="text-sm text-gray-600">All Orders Management</p>
-        </div>
-      </div>
-
-      {/* Navigation */}
-      <div className="bg-white border-b p-3">
-        <div className="flex gap-2 overflow-x-auto max-w-7xl mx-auto">
-          <Link href="/dashboard" className="px-4 py-2 hover:bg-gray-100 rounded-xl text-xs font-bold text-gray-700">
-            Dashboard
-          </Link>
-          <Link href="/orders" className="px-4 py-2 bg-gray-900 text-white rounded-xl text-xs font-bold">
-            Orders ({orders.length})
-          </Link>
-          <Link href="/orders/uncollected" className="px-4 py-2 hover:bg-gray-100 rounded-xl text-xs font-bold text-gray-700">
-            Uncollected Hub
-          </Link>
-          <Link href="/restaurants" className="px-4 py-2 hover:bg-gray-100 rounded-xl text-xs font-bold text-gray-700">
-            Restaurants
-          </Link>
-          <Link href="/config" className="px-4 py-2 hover:bg-gray-100 rounded-xl text-xs font-bold text-gray-700">
-            Config & Fees
-          </Link>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto p-4 md:p-6 space-y-4">
-        {/* Filters */}
-        <div className="flex flex-wrap justify-between items-center gap-3 bg-white p-4 rounded-2xl border shadow-sm">
-          <div className="flex-1 min-w-[200px]">
-            <input
-              type="text"
-              placeholder="Search by order #, student name, phone, hostel..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-gray-50 border rounded-xl px-3.5 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
-            />
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans selection:bg-orange-500 selection:text-white">
+      {/* 1. TOP HEADER */}
+      <header className="bg-slate-900 text-white border-b border-slate-800 shadow-md">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-xl font-black shadow-lg shadow-orange-500/20">
+              📦
+            </div>
+            <div>
+              <h1 className="text-base font-black tracking-tight">Live Campus Orders Monitor</h1>
+              <p className="text-[11px] text-slate-400">Real-Time Kitchen Status & Delivery Waves</p>
+            </div>
           </div>
 
-          <div className="flex gap-2 overflow-x-auto">
-            {['ALL', 'ORDER_PLACED', 'PREPARING', 'READY_FOR_DELIVERY', 'DELIVERED', 'UNCOLLECTED', 'CANCELLED'].map((st) => (
+          <button
+            onClick={() => loadOrders()}
+            className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border border-slate-700"
+          >
+            ↻ Refresh Feed
+          </button>
+        </div>
+
+        {/* Navigation Tabs */}
+        <div className="border-t border-slate-800 px-6 py-2.5">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar max-w-7xl mx-auto">
+            <Link href="/dashboard" className="px-4 py-2 hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-300 whitespace-nowrap transition-colors">
+              📊 Analytics Overview
+            </Link>
+            <Link href="/orders" className="px-4 py-2 bg-orange-600 text-white rounded-xl text-xs font-black whitespace-nowrap shadow-md shadow-orange-600/20">
+              📦 Live Orders Feed
+            </Link>
+            <Link href="/orders/uncollected" className="px-4 py-2 hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-300 whitespace-nowrap transition-colors">
+              🚨 Uncollected Hub
+            </Link>
+            <Link href="/restaurants" className="px-4 py-2 hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-300 whitespace-nowrap transition-colors">
+              🏪 Canteen Partners
+            </Link>
+            <Link href="/config" className="px-4 py-2 hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-300 whitespace-nowrap transition-colors">
+              ⚙️ Slots & Fee Config
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* 2. FILTERS & SEARCH */}
+      <main className="p-4 md:p-6 max-w-7xl mx-auto space-y-4">
+        <div className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+          <div className="flex gap-1.5 overflow-x-auto no-scrollbar w-full md:w-auto">
+            {STATUS_OPTIONS.map((opt) => (
               <button
-                key={st}
-                onClick={() => setFilterStatus(st)}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all ${
-                  filterStatus === st ? 'bg-orange-600 text-white shadow-sm' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                key={opt}
+                onClick={() => setFilterStatus(opt)}
+                className={`px-3.5 py-2 rounded-xl text-xs font-black whitespace-nowrap transition-all ${
+                  filterStatus === opt
+                    ? 'bg-gray-900 text-white shadow-md'
+                    : 'bg-gray-50 text-gray-600 hover:bg-gray-100'
                 }`}
               >
-                {st.replace(/_/g, ' ')}
+                {opt.replace(/_/g, ' ')}
               </button>
             ))}
           </div>
-        </div>
 
-        {/* Orders List */}
-        <div className="bg-white rounded-3xl p-6 border shadow-sm space-y-4">
-          <div className="flex justify-between items-center border-b pb-3">
-            <h2 className="font-bold text-base text-gray-900">Orders Stream ({filteredOrders.length})</h2>
-            <button onClick={() => loadOrders(false)} className="text-xs text-orange-600 font-bold hover:underline">
-              🔄 Refresh List
-            </button>
+          <div className="relative w-full md:w-72">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">🔍</span>
+            <input
+              type="text"
+              placeholder="Search order #, student, room..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-900 focus:bg-white focus:border-orange-500 outline-none"
+            />
           </div>
-
-          {loading ? (
-            <p className="py-8 text-center text-xs text-gray-500">Loading orders...</p>
-          ) : filteredOrders.length === 0 ? (
-            <div className="py-12 text-center text-gray-500 text-xs">No orders matching current filter</div>
-          ) : (
-            <div className="divide-y divide-gray-100">
-              {filteredOrders.map((order) => {
-                const num = order.orderNumber || order.order_number || order.id;
-                const status = order.orderStatus || order.order_status || 'ORDER_PLACED';
-                const total = order.totalAmount ?? order.total_amount ?? 0;
-                const slot = order.deliverySlot || 'Scheduled Slot';
-                const itemsList = order.items || order.order_items || [];
-
-                return (
-                  <div key={order.id} className="py-4 space-y-3">
-                    <div className="flex flex-wrap justify-between items-start gap-2">
-                      <div>
-                        <span className="text-[10px] font-bold text-gray-400">ORDER NO.</span>
-                        <h3 className="font-black text-base text-gray-900">#{num}</h3>
-                        <p className="text-xs text-orange-600 font-semibold mt-0.5">⏱ {slot}</p>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <span
-                          className={`text-[10px] font-extrabold px-2.5 py-1 rounded-full uppercase tracking-wider ${
-                            status === 'DELIVERED'
-                              ? 'bg-green-100 text-green-800'
-                              : status === 'UNCOLLECTED'
-                              ? 'bg-red-100 text-red-800'
-                              : status === 'CANCELLED'
-                              ? 'bg-gray-200 text-gray-800'
-                              : 'bg-orange-100 text-orange-800'
-                          }`}
-                        >
-                          {status.replace(/_/g, ' ')}
-                        </span>
-
-                        <select
-                          value={status}
-                          onChange={(e) => updateOrderStatus(order.id, e.target.value)}
-                          className="text-xs font-bold border border-gray-300 rounded-xl px-2 py-1 bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                        >
-                          <option value="ORDER_PLACED">Order Placed</option>
-                          <option value="RESTAURANT_ACCEPTED">Accepted</option>
-                          <option value="PREPARING">Preparing</option>
-                          <option value="READY_FOR_DELIVERY">Ready for Dispatch</option>
-                          <option value="OUT_FOR_DELIVERY">Out for Delivery</option>
-                          <option value="ARRIVED">Arrived at Hostel</option>
-                          <option value="DELIVERED">Delivered ✓</option>
-                          <option value="UNCOLLECTED">Uncollected ⚠️</option>
-                          <option value="CANCELLED">Cancelled ✕</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-2xl p-3.5 text-xs text-gray-700 flex flex-wrap justify-between gap-4">
-                      <div className="space-y-1">
-                        <p><strong>Student:</strong> {order.studentName || 'Student'} (📱 {order.studentPhone || '9876543210'})</p>
-                        <p><strong>Location:</strong> {order.hostelName || 'Hostel'} (Room {order.roomNumber || '304'})</p>
-                        <p><strong>Canteen:</strong> {order.restaurantName || 'North Campus Central Canteen'}</p>
-                      </div>
-
-                      <div className="space-y-1 text-right">
-                        <p className="font-black text-sm text-gray-900">Total: ₹{total}</p>
-                        <p className="text-[11px] text-gray-400">Placed: {new Date(order.placedAt || Date.now()).toLocaleTimeString()}</p>
-                      </div>
-                    </div>
-
-                    {itemsList.length > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {itemsList.map((itm, idx) => (
-                          <span key={idx} className="bg-white border rounded-lg px-2.5 py-1 text-[11px] font-medium text-gray-700">
-                            {itm.quantity}x {itm.name || itm.itemName}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          )}
         </div>
-      </div>
+
+        {/* 3. LIVE ORDERS FEED */}
+        {filteredOrders.length === 0 ? (
+          <div className="bg-white rounded-3xl p-12 text-center border border-gray-100 shadow-sm space-y-2">
+            <p className="text-3xl">📦</p>
+            <h3 className="text-sm font-bold text-gray-700">No matching orders found</h3>
+            <p className="text-xs text-gray-400">Orders placed by students will appear in this feed automatically.</p>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {filteredOrders.map((ord) => {
+              const items = ord.items || ord.order_items || [];
+              const orderNum = ord.orderNumber || ord.order_number || 'CB-XXXX';
+              const status = String(ord.orderStatus || ord.order_status || 'ORDER_PLACED').toUpperCase();
+              const slot = ord.deliverySlot || ord.delivery_slot?.name || 'Evening Slot (6-7 PM)';
+
+              return (
+                <div
+                  key={ord.id}
+                  className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all flex flex-col md:flex-row md:items-center justify-between gap-4"
+                >
+                  {/* Left Details */}
+                  <div className="space-y-1.5 flex-1">
+                    <div className="flex items-center gap-2.5">
+                      <span className="text-sm font-black text-gray-900">#{orderNum}</span>
+                      <span className="text-xs text-gray-400 font-bold">•</span>
+                      <span className="text-xs font-bold text-orange-600">
+                        {ord.restaurantName || 'Campus Central Canteen'}
+                      </span>
+                      <span className="text-xs text-gray-400 font-bold">•</span>
+                      <span className="text-[11px] font-bold text-slate-500">🕒 {slot}</span>
+                    </div>
+
+                    <div className="text-xs text-gray-600 font-medium">
+                      <span className="font-bold text-gray-900">
+                        👤 {ord.studentName || ord.student_name || 'Student'}
+                      </span>
+                      <span className="text-gray-400"> • </span>
+                      <span>📍 {ord.hostelName || ord.hostel_name || 'Hostel'}, Room {ord.roomNumber || ord.room_number || '304'}</span>
+                      <span className="text-gray-400"> • </span>
+                      <span>📞 +91 {ord.studentPhone || ord.student_phone || '9876543210'}</span>
+                    </div>
+
+                    <div className="text-xs text-slate-500 pt-0.5">
+                      <span className="font-bold text-gray-700">Items: </span>
+                      {items.map((it: any) => `${it.quantity}x ${it.name || it.itemName || it.item_name || 'Food Item'}`).join(', ')}
+                    </div>
+                  </div>
+
+                  {/* Right Status & Controls */}
+                  <div className="flex items-center justify-between md:justify-end gap-3 pt-2 md:pt-0 border-t md:border-t-0 border-gray-100">
+                    <div className="text-right">
+                      <p className="text-sm font-black text-gray-900">
+                        ₹{ord.totalAmount || ord.total_amount || 0}
+                      </p>
+                      <p className="text-[10px] text-gray-400 font-semibold">COD</p>
+                    </div>
+
+                    <select
+                      value={status}
+                      onChange={(e) => updateOrderStatus(ord.id, e.target.value)}
+                      className="px-3 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-black text-gray-800 focus:outline-none focus:border-orange-500"
+                    >
+                      <option value="ORDER_PLACED">Order Placed</option>
+                      <option value="PREPARING">Preparing / Cooking</option>
+                      <option value="READY_FOR_DELIVERY">Ready for Delivery</option>
+                      <option value="DELIVERED">Delivered</option>
+                      <option value="CANCELLED">Cancelled</option>
+                      <option value="UNCOLLECTED">Uncollected</option>
+                    </select>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </main>
     </div>
   );
 }

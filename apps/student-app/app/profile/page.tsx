@@ -6,43 +6,37 @@ import Link from 'next/link';
 
 export default function ProfilePage() {
   const router = useRouter();
-  const [name, setName] = useState('');
-  const [phone, setPhone] = useState('');
-  const [email, setEmail] = useState('');
-  const [college, setCollege] = useState('');
-  const [hostel, setHostel] = useState('');
-  const [room, setRoom] = useState('');
+  const [userName, setUserName] = useState('Student');
+  const [userEmail, setUserEmail] = useState('student@campus.edu');
+  const [userPhone, setUserPhone] = useState('9876543210');
+  const [userHostel, setUserHostel] = useState('Tagore Hostel Block A');
+  const [userRoom, setUserRoom] = useState('304');
   const [isEditing, setIsEditing] = useState(false);
   const [savedSuccess, setSavedSuccess] = useState(false);
-  const [isLoaded, setIsLoaded] = useState(false);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedName = localStorage.getItem('userName') || '';
-      const savedPhone = localStorage.getItem('userPhone') || '';
-      const savedEmail = localStorage.getItem('userEmail') || '';
-      const savedCollege = localStorage.getItem('userCollege') || '';
-      const savedHostel = localStorage.getItem('userHostel') || '';
-      const savedRoom = localStorage.getItem('userRoom') || '';
+      const name = localStorage.getItem('userName') || 'Student';
+      const email = localStorage.getItem('userEmail') || 'student@campus.edu';
+      const phone = localStorage.getItem('userPhone') || '9876543210';
+      const hostel = localStorage.getItem('userHostel') || 'Tagore Hostel Block A';
+      const room = localStorage.getItem('userRoom') || '304';
 
-      setName(savedName);
-      setPhone(savedPhone);
-      setEmail(savedEmail);
-      setCollege(savedCollege);
-      setHostel(savedHostel);
-      setRoom(savedRoom);
-      setIsLoaded(true);
+      setUserName(name);
+      setUserEmail(email);
+      setUserPhone(phone);
+      setUserHostel(hostel);
+      setUserRoom(room);
     }
   }, []);
 
-  const handleSave = () => {
+  const handleSave = (e: React.FormEvent) => {
+    e.preventDefault();
     if (typeof window !== 'undefined') {
-      localStorage.setItem('userName', name.trim());
-      localStorage.setItem('userPhone', phone.trim());
-      localStorage.setItem('userEmail', email.trim());
-      localStorage.setItem('userCollege', college.trim());
-      localStorage.setItem('userHostel', hostel.trim());
-      localStorage.setItem('userRoom', room.trim());
+      localStorage.setItem('userName', userName.trim());
+      localStorage.setItem('userHostel', userHostel.trim());
+      localStorage.setItem('userRoom', userRoom.trim());
+      localStorage.setItem('userPhone', userPhone.trim());
     }
     setIsEditing(false);
     setSavedSuccess(true);
@@ -52,191 +46,221 @@ export default function ProfilePage() {
   const handleLogout = () => {
     if (confirm('Are you sure you want to log out from CampusBite?')) {
       if (typeof window !== 'undefined') {
-        localStorage.clear();
+        localStorage.removeItem('userId');
+        localStorage.removeItem('userName');
+        localStorage.removeItem('userEmail');
+        localStorage.removeItem('userPhone');
+        localStorage.removeItem('cb_cart');
       }
       router.push('/auth/login');
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-28 font-sans">
-      {/* Top Header */}
-      <div className="bg-white border-b px-4 py-3 sticky top-0 z-30 flex items-center justify-between shadow-sm">
-        <h1 className="font-black text-gray-900 text-lg">My Profile</h1>
-        <button
-          onClick={() => setIsEditing(!isEditing)}
-          className="text-orange-600 font-bold text-xs bg-orange-50 px-3.5 py-1.5 rounded-full hover:bg-orange-100 transition-all"
-        >
-          {isEditing ? 'Done' : 'Edit Details'}
-        </button>
-      </div>
+    <div className="min-h-screen bg-[#F8FAFC] pb-32 font-sans selection:bg-orange-500 selection:text-white">
+      {/* 1. TOP HEADER */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm px-4 py-3">
+        <div className="max-w-md md:max-w-2xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => router.push('/home')}
+              className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-bold hover:bg-gray-200 transition-all active:scale-95"
+            >
+              ←
+            </button>
+            <h1 className="text-base font-black text-gray-900 tracking-tight">Student Account</h1>
+          </div>
+          <span className="text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full">
+            Campus ID Verified
+          </span>
+        </div>
+      </header>
 
-      <div className="max-w-xl mx-auto p-4 space-y-4">
+      <main className="max-w-md md:max-w-2xl mx-auto p-4 space-y-4">
+        {/* 2. USER PROFILE HERO CARD */}
+        <div className="bg-gradient-to-tr from-gray-900 via-gray-800 to-black rounded-3xl p-6 text-white shadow-xl space-y-4 relative overflow-hidden">
+          <div className="flex items-center gap-4 relative z-10">
+            <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-2xl font-black text-white shadow-lg shadow-orange-500/30 shrink-0">
+              {userName.slice(0, 1).toUpperCase()}
+            </div>
+            <div className="min-w-0">
+              <h2 className="text-lg font-black tracking-tight truncate">{userName}</h2>
+              <p className="text-xs text-gray-300 font-medium truncate">{userEmail}</p>
+              <p className="text-[11px] text-orange-400 font-bold mt-1">
+                📍 {userHostel}, Room {userRoom}
+              </p>
+            </div>
+          </div>
+        </div>
+
         {savedSuccess && (
-          <div className="bg-green-50 border border-green-200 text-green-800 text-xs font-bold p-3.5 rounded-2xl flex items-center gap-1.5">
+          <div className="p-3 bg-green-50 border border-green-200 rounded-2xl text-xs font-bold text-green-800 flex items-center gap-2">
             <span>✓</span> Profile details updated successfully!
           </div>
         )}
 
-        {/* Profile Details Card */}
-        <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-4">
-          <div className="flex items-center gap-4 border-b pb-4">
-            <div className="h-16 w-16 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 text-white flex items-center justify-center text-2xl font-black shadow-md shadow-orange-500/25">
-              {name ? name.charAt(0).toUpperCase() : '👤'}
-            </div>
+        {/* 3. HOSTEL DELIVERY DETAILS CARD */}
+        <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-gray-100">
             <div>
-              <h2 className="text-lg font-black text-gray-900">{name || 'Student Account'}</h2>
-              <p className="text-xs text-orange-600 font-bold">{college || 'Campus Member'}</p>
-              <p className="text-[11px] text-gray-400 mt-0.5">
-                {phone ? `📱 +91 ${phone}` : 'Enter your mobile number'}
-              </p>
+              <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
+                Hostel Delivery Details
+              </h3>
+              <p className="text-[11px] text-gray-400">Used for fast scheduled batch dispatch</p>
             </div>
+            <button
+              onClick={() => setIsEditing(!isEditing)}
+              className="text-xs font-bold text-orange-600 hover:underline"
+            >
+              {isEditing ? 'Cancel' : 'Edit Details'}
+            </button>
           </div>
 
-          <div className="space-y-3 pt-1">
-            <div>
-              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Full Name</label>
-              {isEditing ? (
+          {isEditing ? (
+            <form onSubmit={handleSave} className="space-y-3">
+              <div>
+                <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">
+                  Full Name
+                </label>
                 <input
                   type="text"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter your name"
-                  className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  value={userName}
+                  onChange={(e) => setUserName(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:border-orange-500 outline-none"
+                  required
                 />
-              ) : (
-                <p className="text-xs font-bold text-gray-800">{name || 'Not set'}</p>
-              )}
-            </div>
+              </div>
 
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Hostel Name / Block</label>
-                {isEditing ? (
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">
+                    Hostel & Block
+                  </label>
                   <input
                     type="text"
-                    value={hostel}
-                    onChange={(e) => setHostel(e.target.value)}
-                    placeholder="e.g. Block A"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={userHostel}
+                    onChange={(e) => setUserHostel(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:border-orange-500 outline-none"
+                    required
                   />
-                ) : (
-                  <p className="text-xs font-bold text-gray-800">{hostel || 'Not set'}</p>
-                )}
-              </div>
+                </div>
 
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">Room Number</label>
-                {isEditing ? (
+                <div>
+                  <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">
+                    Room Number
+                  </label>
                   <input
                     type="text"
-                    value={room}
-                    onChange={(e) => setRoom(e.target.value)}
-                    placeholder="e.g. 304"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
+                    value={userRoom}
+                    onChange={(e) => setUserRoom(e.target.value)}
+                    className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:border-orange-500 outline-none"
+                    required
                   />
-                ) : (
-                  <p className="text-xs font-bold text-gray-800">{room || 'Not set'}</p>
-                )}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">College / Campus</label>
-                {isEditing ? (
-                  <input
-                    type="text"
-                    value={college}
-                    onChange={(e) => setCollege(e.target.value)}
-                    placeholder="Enter institute name"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                ) : (
-                  <p className="text-xs font-bold text-gray-800 truncate">{college || 'Not set'}</p>
-                )}
+                </div>
               </div>
 
               <div>
-                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block mb-1">College Email</label>
-                {isEditing ? (
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your.email@college.edu"
-                    className="w-full bg-gray-50 border border-gray-200 rounded-xl px-3 py-2 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-orange-500"
-                  />
-                ) : (
-                  <p className="text-xs font-bold text-gray-800 truncate">{email || 'Not set'}</p>
-                )}
+                <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">
+                  Phone Number
+                </label>
+                <input
+                  type="tel"
+                  value={userPhone}
+                  onChange={(e) => setUserPhone(e.target.value)}
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:border-orange-500 outline-none"
+                  required
+                />
               </div>
-            </div>
 
-            {isEditing && (
               <button
-                onClick={handleSave}
-                className="w-full mt-4 bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition-all uppercase tracking-wider"
+                type="submit"
+                className="w-full bg-orange-600 hover:bg-orange-700 text-white font-black text-xs py-3 rounded-xl uppercase tracking-wider shadow-md active:scale-95 transition-all"
               >
                 Save Changes
               </button>
-            )}
+            </form>
+          ) : (
+            <div className="space-y-2.5 text-xs">
+              <div className="flex justify-between py-1 border-b border-gray-50">
+                <span className="text-gray-500 font-medium">Hostel:</span>
+                <span className="font-bold text-gray-900">{userHostel}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-gray-50">
+                <span className="text-gray-500 font-medium">Room Number:</span>
+                <span className="font-bold text-gray-900">{userRoom}</span>
+              </div>
+              <div className="flex justify-between py-1 border-b border-gray-50">
+                <span className="text-gray-500 font-medium">Contact Phone:</span>
+                <span className="font-bold text-gray-900">+91 {userPhone}</span>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 4. APP GUIDELINES & SUPPORT */}
+        <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-3">
+          <h3 className="text-xs font-black uppercase tracking-wider text-gray-500">
+            Campus Delivery Support
+          </h3>
+
+          <div className="space-y-2 text-xs">
+            <div className="p-3 bg-gray-50 rounded-2xl flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="text-base">🕒</span>
+                <div>
+                  <p className="font-bold text-gray-900">Delivery Wave Timings</p>
+                  <p className="text-[10px] text-gray-500">Evening (6-7 PM, 7-8 PM) & Night Canteen (9:30-10:30 PM)</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-3 bg-gray-50 rounded-2xl flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <span className="text-base">💬</span>
+                <div>
+                  <p className="font-bold text-gray-900">Campus Helpdesk</p>
+                  <p className="text-[10px] text-gray-500">Quick assistance for canteen food & order queries</p>
+                </div>
+              </div>
+              <span className="text-xs font-bold text-green-700">Online</span>
+            </div>
           </div>
         </div>
 
-        {/* How Slot Delivery Works Info Card */}
-        <div className="bg-gradient-to-br from-amber-50 to-orange-50 rounded-3xl p-5 border border-orange-100 shadow-sm space-y-2">
-          <h3 className="text-xs font-black text-orange-950 uppercase tracking-wider flex items-center gap-1.5">
-            <span>ℹ️</span> How Scheduled Slot Delivery Works
-          </h3>
-          <ul className="text-xs text-orange-900/90 space-y-1.5 list-disc pl-4">
-            <li>Orders are grouped and delivered in bulk scheduled slots for maximum efficiency.</li>
-            <li>Main evening delivery slots: <strong>6:00–7:00 PM</strong> & <strong>7:00–8:00 PM</strong>.</li>
-            <li>Order cutoff is strictly 10 minutes prior to slot start time.</li>
-            <li>Delivery fee is ₹10 per order. Platform fee is item-count based (1–3 items: ₹2, 4–7 items: ₹4).</li>
-          </ul>
-        </div>
-
-        {/* Action Links */}
-        <div className="space-y-2">
-          <Link
-            href="/orders"
-            className="w-full bg-white hover:bg-gray-50 border border-gray-200 text-gray-800 py-3.5 rounded-2xl font-bold text-xs shadow-sm flex items-center justify-between px-4 transition-all"
-          >
-            <span className="flex items-center gap-2">
-              <span>📦</span> View All Past & Active Orders
-            </span>
-            <span>➔</span>
-          </Link>
-
+        {/* 5. LOGOUT & APP VERSION */}
+        <div className="pt-2 text-center space-y-3">
           <button
             onClick={handleLogout}
-            className="w-full bg-red-50 hover:bg-red-100 text-red-600 border border-red-200 py-3 rounded-2xl font-bold text-xs transition-all"
+            className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-black text-xs py-3.5 rounded-2xl border border-red-200 shadow-sm transition-all active:scale-95 uppercase tracking-wider"
           >
-            Logout from Account
+            Log Out from CampusBite
           </button>
-        </div>
-      </div>
 
-      {/* Bottom Navigation Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-6 py-2 flex justify-between items-center shadow-lg z-30">
-        <Link href="/home" className="flex flex-col items-center text-gray-500 hover:text-orange-600">
-          <span className="text-lg">🏠</span>
-          <span className="text-[10px] font-bold mt-0.5">Home</span>
-        </Link>
-        <Link href="/orders" className="flex flex-col items-center text-gray-500 hover:text-orange-600">
-          <span className="text-lg">📦</span>
-          <span className="text-[10px] font-bold mt-0.5">Orders</span>
-        </Link>
-        <Link href="/cart" className="flex flex-col items-center text-gray-500 hover:text-orange-600">
-          <span className="text-lg">🛒</span>
-          <span className="text-[10px] font-bold mt-0.5">Cart</span>
-        </Link>
-        <Link href="/profile" className="flex flex-col items-center text-orange-600 font-black">
-          <span className="text-lg">👤</span>
-          <span className="text-[10px] mt-0.5">Profile</span>
-        </Link>
-      </div>
+          <p className="text-[10px] font-bold text-gray-400">
+            CampusBite v2.4.0 • Android PlayStore Release
+          </p>
+        </div>
+      </main>
+
+      {/* 6. BOTTOM NAVIGATION BAR */}
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-200 py-2">
+        <div className="max-w-md md:max-w-2xl mx-auto px-6 flex justify-around items-center">
+          <Link href="/home" className="flex flex-col items-center text-gray-400 hover:text-gray-900 font-bold text-[10px] gap-0.5">
+            <span className="text-lg">🍔</span>
+            <span>Explore</span>
+          </Link>
+
+          <Link href="/orders" className="flex flex-col items-center text-gray-400 hover:text-gray-900 font-bold text-[10px] gap-0.5">
+            <span className="text-lg">📜</span>
+            <span>Orders</span>
+          </Link>
+
+          <Link href="/profile" className="flex flex-col items-center text-orange-600 font-black text-[10px] gap-0.5">
+            <span className="text-lg">👤</span>
+            <span>Profile</span>
+          </Link>
+        </div>
+      </nav>
     </div>
   );
 }
