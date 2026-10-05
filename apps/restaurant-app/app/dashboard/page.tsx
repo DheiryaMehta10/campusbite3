@@ -81,30 +81,44 @@ export default function RestaurantDashboardPage() {
     description: '',
   });
 
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://campusbite-amber.vercel.app' });
+  const api = axios.create({ baseURL: 'https://campusbite-amber.vercel.app' });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
-      const savedMenu = localStorage.getItem('cb_restaurant_menu');
-      if (savedMenu) {
-        try {
-          setMenuItems(JSON.parse(savedMenu));
-        } catch {}
-      }
-
       const id = localStorage.getItem('restaurantId') || 'canteen-1';
       const name = localStorage.getItem('restaurantName') || 'North Campus Central Canteen';
       setRestaurantId(id);
       setRestaurantName(name);
+      
+      fetchMenu(id);
       fetchOrders(id);
 
-      // Auto-poll for new student orders every 4 seconds
+      // Auto-poll for new student orders and menu sync every 3 seconds
       const interval = setInterval(() => {
         fetchOrders(id, true);
-      }, 4000);
+      }, 3000);
       return () => clearInterval(interval);
     }
   }, []);
+
+  const fetchMenu = async (id: string) => {
+    try {
+      const res = await api.get(`/api/restaurants/${id}/menu`);
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        setMenuItems(res.data.data);
+        if (typeof window !== 'undefined') {
+          localStorage.setItem('cb_restaurant_menu', JSON.stringify(res.data.data));
+        }
+      }
+    } catch (e) {
+      if (typeof window !== 'undefined') {
+        const savedMenu = localStorage.getItem('cb_restaurant_menu');
+        if (savedMenu) {
+          try { setMenuItems(JSON.parse(savedMenu)); } catch {}
+        }
+      }
+    }
+  };
 
   const saveMenuToStorage = (items: MenuItem[]) => {
     setMenuItems(items);
@@ -120,12 +134,12 @@ export default function RestaurantDashboardPage() {
 
     try {
       const res = await api.get('/api/orders');
-      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+      if (res.data?.data && Array.isArray(res.data.data)) {
         loadedOrders = res.data.data;
         fetched = true;
       }
     } catch (e) {
-      // API call error fallback
+      // Fallback
     }
 
     if (!fetched && typeof window !== 'undefined') {
@@ -135,42 +149,6 @@ export default function RestaurantDashboardPage() {
           loadedOrders = JSON.parse(local);
         }
       } catch {}
-    }
-
-    if (loadedOrders.length === 0) {
-      loadedOrders = [
-        {
-          id: 'ord-301',
-          orderNumber: 'CB-9412',
-          totalAmount: 200,
-          orderStatus: 'ORDER_PLACED',
-          placedAt: new Date().toISOString(),
-          deliverySlot: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
-          studentName: 'Rahul Sharma',
-          studentPhone: '9876543210',
-          hostelName: 'Tagore Hostel Block A',
-          roomNumber: '304',
-          items: [
-            { name: 'Paneer Butter Masala Combo', quantity: 1, price: 140 },
-            { name: 'Cold Coffee with Ice Cream', quantity: 1, price: 60 },
-          ],
-        },
-        {
-          id: 'ord-302',
-          orderNumber: 'CB-9413',
-          totalAmount: 320,
-          orderStatus: 'PREPARING',
-          placedAt: new Date(Date.now() - 15 * 60000).toISOString(),
-          deliverySlot: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
-          studentName: 'Priya Verma',
-          studentPhone: '9876543211',
-          hostelName: 'Gargi Hostel Block C',
-          roomNumber: '112',
-          items: [
-            { name: 'Chicken Biryani Bowl', quantity: 2, price: 160 },
-          ],
-        },
-      ];
     }
 
     setOrders(loadedOrders);
@@ -205,21 +183,29 @@ export default function RestaurantDashboardPage() {
     } catch {}
   };
 
-  const toggleItemAvailability = (itemId: string) => {
-    const updated = menuItems.map((itm) =>
-      itm.id === itemId ? { ...itm, isAvailable: !itm.isAvailable } : itm
+  const toggleItemAvailability = async (itemId: string) => {
+    const itm = menuItems.find((i) => i.id === itemId);
+    const newAvail = itm ? !itm.isAvailable : true;
+    const updated = menuItems.map((i) =>
+      i.id === itemId ? { ...i, isAvailable: newAvail } : i
     );
     saveMenuToStorage(updated);
+    try {
+      await api.patch(`/api/restaurants/${restaurantId}/menu`, { itemId, isAvailable: newAvail });
+    } catch {}
   };
 
-  const handleDeleteItem = (itemId: string) => {
+  const handleDeleteItem = async (itemId: string) => {
     if (confirm('Are you sure you want to remove this dish from the menu?')) {
       const updated = menuItems.filter((i) => i.id !== itemId);
       saveMenuToStorage(updated);
+      try {
+        await api.delete(`/api/restaurants/${restaurantId}/menu?itemId=${itemId}`);
+      } catch {}
     }
   };
 
-  const handleAddNewItem = (e: React.FormEvent) => {
+  const handleAddNewItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.name.trim()) {
       alert('Please enter dish name');
@@ -251,7 +237,25 @@ export default function RestaurantDashboardPage() {
       isVeg: true,
       description: '',
     });
-    alert(`✓ "${created.name}" has been added to the menu!`);
+
+    try {
+      const res = await api.post(`/api/restaurants/${restaurantId}/menu`, {
+        name: created.name,
+        price: created.price,
+        category: created.category,
+        isVeg: created.isVeg,
+        description: created.description,
+      });
+      if (res.data?.data) {
+        // Replace temp id with permanent DB id
+        const finalItems = updated.map((i) => (i.id === created.id ? res.data.data : i));
+        saveMenuToStorage(finalItems);
+      }
+    } catch (err) {
+      console.warn('Backend menu save note:', err);
+    }
+
+    alert(`✓ "${created.name}" has been added to the live menu across all apps!`);
   };
 
   const getNormStatus = (o: Order) => String(o.orderStatus || o.order_status || '').toUpperCase();

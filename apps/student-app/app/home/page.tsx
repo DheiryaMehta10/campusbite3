@@ -99,7 +99,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [userHostel, setUserHostel] = useState('Tagore Hostel Block A');
 
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '' });
+  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://campusbite-amber.vercel.app' });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

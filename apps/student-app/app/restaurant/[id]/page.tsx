@@ -61,11 +61,10 @@ export default function RestaurantPage() {
   const [cart, setCart] = useState<CartItem[]>([]);
 
   const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || '',
+    baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://campusbite-amber.vercel.app',
   });
 
   useEffect(() => {
-    // Load existing cart from localStorage
     if (typeof window !== 'undefined') {
       try {
         const savedCart = localStorage.getItem('cb_cart');
@@ -83,7 +82,16 @@ export default function RestaurantPage() {
     setLoading(true);
     let menuLoaded: FoodItem[] = [];
 
-    if (typeof window !== 'undefined') {
+    try {
+      const res = await api.get(`/api/restaurants/${restaurantId}/menu`);
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        menuLoaded = res.data.data;
+      }
+    } catch (error) {
+      console.warn('API menu fetch error, falling back to storage:', error);
+    }
+
+    if (menuLoaded.length === 0 && typeof window !== 'undefined') {
       try {
         const savedMenu = localStorage.getItem('cb_restaurant_menu');
         if (savedMenu) {
@@ -93,16 +101,7 @@ export default function RestaurantPage() {
     }
 
     if (menuLoaded.length === 0) {
-      try {
-        const res = await api.get(`/api/restaurants/${restaurantId}/menu`);
-        if (res.data?.data && res.data.data.length > 0) {
-          menuLoaded = res.data.data;
-        } else {
-          menuLoaded = SAMPLE_ITEMS[restaurantId] || SAMPLE_ITEMS.default;
-        }
-      } catch (error) {
-        menuLoaded = SAMPLE_ITEMS[restaurantId] || SAMPLE_ITEMS.default;
-      }
+      menuLoaded = SAMPLE_ITEMS[restaurantId] || SAMPLE_ITEMS.default;
     }
 
     setItems(menuLoaded);
