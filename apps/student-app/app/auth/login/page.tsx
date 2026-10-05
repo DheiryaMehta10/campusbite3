@@ -203,11 +203,27 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-7 md:p-8 z-10 border border-orange-100/50">
         {/* Brand Header */}
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-tr from-orange-600 to-amber-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-orange-500/30 text-3xl mb-2.5">
-            🍔
+          <div className="relative inline-flex items-center justify-center mb-3">
+            <div className="w-16 h-16 bg-gradient-to-tr from-[#FF5200] via-[#FF6A00] to-[#FFA000] rounded-2xl flex items-center justify-center shadow-xl shadow-orange-500/30 border border-white/20">
+              <svg className="w-9 h-9 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
+                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
+                <line x1="6" y1="1" x2="6" y2="4" />
+                <line x1="10" y1="1" x2="10" y2="4" />
+                <line x1="14" y1="1" x2="14" y2="4" />
+              </svg>
+            </div>
+            <span className="absolute -bottom-1 -right-1 bg-white text-orange-600 rounded-full p-1 shadow-md border border-orange-100 flex items-center justify-center">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+              </svg>
+            </span>
           </div>
-          <h1 className="text-2xl font-black text-gray-950 tracking-tight">CampusBite</h1>
-          <p className="text-orange-600 font-bold text-xs tracking-wider uppercase mt-0.5">
+
+          <h1 className="text-2xl font-black text-gray-950 tracking-tight flex items-center justify-center gap-1.5">
+            <span>CampusBite</span>
+          </h1>
+          <p className="text-orange-600 font-black text-[11px] tracking-widest uppercase mt-0.5">
             Order Smart • Delivered by Slot
           </p>
           <div className="flex justify-center gap-1.5 mt-3">

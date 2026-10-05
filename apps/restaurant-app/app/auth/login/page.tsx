@@ -48,12 +48,23 @@ export default function RestaurantLoginPage() {
       <div className="w-full max-w-md bg-white/95 backdrop-blur-xl rounded-3xl shadow-2xl border border-orange-100 p-8 space-y-6">
         {/* Brand Header */}
         <div className="text-center space-y-2">
-          <div className="inline-flex h-14 w-14 rounded-2xl bg-gradient-to-tr from-orange-600 to-amber-500 items-center justify-center text-2xl shadow-lg shadow-orange-500/30 text-white mb-1">
-            👨‍🍳
+          <div className="relative inline-flex items-center justify-center mb-2">
+            <div className="w-16 h-16 bg-gradient-to-tr from-[#1E293B] via-[#0F172A] to-[#334155] rounded-2xl flex items-center justify-center shadow-xl shadow-slate-900/30 border border-slate-700">
+              <svg className="w-9 h-9 text-amber-400 drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z" />
+                <line x1="6" y1="17" x2="18" y2="17" />
+              </svg>
+            </div>
+            <span className="absolute -bottom-1 -right-1 bg-gradient-to-tr from-amber-500 to-orange-500 text-white rounded-full p-1 shadow-md border border-white">
+              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+              </svg>
+            </span>
           </div>
+
           <h1 className="text-2xl font-black text-gray-900 tracking-tight">CampusBite Partner</h1>
-          <p className="text-xs font-semibold text-orange-600 uppercase tracking-widest">
-            Kitchen & Restaurant Portal
+          <p className="text-[11px] font-black text-orange-600 uppercase tracking-widest">
+            Kitchen POS & Live Orders
           </p>
           <p className="text-xs text-gray-500">Sign in to manage live kitchen slot orders & menu availability</p>
         </div>
