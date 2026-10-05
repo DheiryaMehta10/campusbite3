@@ -139,9 +139,18 @@ export default function OrdersPage() {
             </button>
             <h1 className="text-base font-black text-gray-900 tracking-tight">Your Orders</h1>
           </div>
-          <div className="flex items-center gap-1">
-            <span className="h-2 w-2 rounded-full bg-green-500 animate-ping"></span>
-            <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Live Sync</span>
+          <div className="flex items-center gap-2">
+            <Link
+              href="/helpdesk"
+              className="text-[10px] font-black text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-full flex items-center gap-1 hover:bg-orange-100 transition-all"
+            >
+              <span>💬</span>
+              <span>Helpdesk</span>
+            </Link>
+            <div className="flex items-center gap-1">
+              <span className="h-2 w-2 rounded-full bg-green-500 animate-ping"></span>
+              <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Live Sync</span>
+            </div>
           </div>
         </div>
       </header>

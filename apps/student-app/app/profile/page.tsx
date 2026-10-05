@@ -214,16 +214,24 @@ export default function ProfilePage() {
               </div>
             </div>
 
-            <div className="p-3 bg-gray-50 rounded-2xl flex items-center justify-between">
+            <Link
+              href="/helpdesk"
+              className="p-3 bg-orange-50/50 hover:bg-orange-50 border border-orange-200/60 rounded-2xl flex items-center justify-between transition-all group active:scale-95"
+            >
               <div className="flex items-center gap-2.5">
                 <span className="text-base">💬</span>
                 <div>
-                  <p className="font-bold text-gray-900">Campus Helpdesk</p>
-                  <p className="text-[10px] text-gray-500">Quick assistance for canteen food & order queries</p>
+                  <p className="font-bold text-gray-900 group-hover:text-orange-600">Campus Helpdesk</p>
+                  <p className="text-[10px] text-gray-500">Live call, WhatsApp & order assistance desk</p>
                 </div>
               </div>
-              <span className="text-xs font-bold text-green-700">Online</span>
-            </div>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                  Online
+                </span>
+                <span className="text-gray-400 font-black text-sm">➔</span>
+              </div>
+            </Link>
           </div>
         </div>
 
