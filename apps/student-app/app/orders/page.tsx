@@ -67,68 +67,74 @@ export default function OrdersPage() {
 
   const fetchOrders = async (isPolling = false) => {
     if (!isPolling) setLoading(true);
-    let fetchedFromApi = false;
+    let apiOrders: Order[] = [];
     try {
       const res = await api.get('/api/orders');
-      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        setOrders(res.data.data);
-        fetchedFromApi = true;
+      if (res.data?.data && Array.isArray(res.data.data)) {
+        apiOrders = res.data.data;
       }
-    } catch (e) {
-      // Fallback
-    }
+    } catch (e) {}
 
-    if (!fetchedFromApi && typeof window !== 'undefined') {
+    let localOrders: Order[] = [];
+    if (typeof window !== 'undefined') {
       try {
         const local = localStorage.getItem('cb_orders');
         if (local) {
-          setOrders(JSON.parse(local));
-        } else {
-          // Demo seed orders if completely empty
-          const sample: Order[] = [
-            {
-              id: 'ord-101',
-              orderNumber: 'CB-8821',
-              totalAmount: 172,
-              orderStatus: 'PREPARING',
-              placedAt: new Date().toISOString(),
-              deliverySlot: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
-              hostelName: 'Tagore Hostel Block A',
-              roomNumber: '304',
-              restaurantName: 'North Campus Central Canteen',
-              items: [
-                { name: 'Paneer Butter Masala Combo', price: 140, quantity: 1 },
-                { name: 'Cold Coffee with Ice Cream', price: 60, quantity: 1 },
-              ],
-            },
-            {
-              id: 'ord-102',
-              orderNumber: 'CB-7612',
-              totalAmount: 220,
-              orderStatus: 'DELIVERED',
-              placedAt: new Date(Date.now() - 86400000).toISOString(),
-              deliverySlot: 'Evening Slot 2 (7:00 PM – 8:00 PM)',
-              hostelName: 'Tagore Hostel Block A',
-              roomNumber: '304',
-              restaurantName: 'South Mess & Food Court',
-              items: [
-                { name: 'Chicken Biryani Bowl', price: 160, quantity: 1 },
-                { name: 'Hot Gulab Jamun (2 pcs)', price: 40, quantity: 1 },
-              ],
-            },
-          ];
-          setOrders(sample);
-          localStorage.setItem('cb_orders', JSON.stringify(sample));
+          localOrders = JSON.parse(local);
         }
-      } catch (e) {
-        console.error(e);
+      } catch (e) {}
+    }
+
+    // Merge API orders and local orders by matching ID or orderNumber
+    const mergedMap = new Map<string, Order>();
+    for (const ord of localOrders) {
+      if (ord.id) mergedMap.set(ord.id, ord);
+      if (ord.orderNumber) mergedMap.set(ord.orderNumber, ord);
+      if (ord.order_number) mergedMap.set(ord.order_number, ord);
+    }
+    for (const ord of apiOrders) {
+      if (ord.id) mergedMap.set(ord.id, ord);
+      if (ord.orderNumber) mergedMap.set(ord.orderNumber, ord);
+      if (ord.order_number) mergedMap.set(ord.order_number, ord);
+    }
+
+    const uniqueList = Array.from(new Set(Array.from(mergedMap.values())));
+    uniqueList.sort((a, b) => new Date(b.placedAt || b.placed_at || 0).getTime() - new Date(a.placedAt || a.placed_at || 0).getTime());
+
+    if (uniqueList.length > 0) {
+      setOrders(uniqueList);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cb_orders', JSON.stringify(uniqueList));
+      }
+    } else {
+      // Demo seed orders if completely empty
+      const sample: Order[] = [
+        {
+          id: 'ord-101',
+          orderNumber: 'CB-8821',
+          totalAmount: 172,
+          orderStatus: 'PREPARING',
+          placedAt: new Date().toISOString(),
+          deliverySlot: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
+          hostelName: 'Tagore Hostel Block A',
+          roomNumber: '304',
+          restaurantName: 'North Campus Central Canteen',
+          items: [
+            { name: 'Paneer Butter Masala Combo', price: 140, quantity: 1 },
+            { name: 'Cold Coffee with Ice Cream', price: 60, quantity: 1 },
+          ],
+        },
+      ];
+      setOrders(sample);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cb_orders', JSON.stringify(sample));
       }
     }
     setLoading(false);
   };
 
   const isOrderActive = (status: string) => {
-    const s = status.toUpperCase();
+    const s = String(status || '').toUpperCase();
     return s !== 'DELIVERED' && s !== 'CANCELLED' && s !== 'FAILED' && s !== 'UNCOLLECTED';
   };
 

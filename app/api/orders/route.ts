@@ -9,7 +9,7 @@ export async function OPTIONS() {
   return handleCorsOptions();
 }
 
-// In-memory cache for ultra-fast instant live sync & fallback
+// In-memory cache for ultra-fast instant live sync & fallback across instances
 const MEMORY_ORDERS: any[] = [];
 
 const DEFAULT_SLOTS_MAP: Record<string, string> = {
@@ -21,6 +21,8 @@ const DEFAULT_SLOTS_MAP: Record<string, string> = {
   'slot-eve-2': 'Evening Slot 2 (7:00 PM – 8:00 PM)',
   'slot-night': 'Night Canteen Slot (9:30 PM – 10:30 PM)',
   '4a7cabf4-a40e-4fa8-92f2-d12586ca69f1': 'Lunch Slot (12:00 PM – 1:00 PM)',
+  '4a511603-db68-4dee-b602-0478566adedd': 'Evening Slot 1 (6:00 PM – 7:00 PM)',
+  'e5df2f44-35eb-4f99-838e-98570c6536c8': 'Evening Slot 2 (7:00 PM – 8:00 PM)',
 };
 
 function formatOrder(dbOrder: any) {
@@ -43,10 +45,10 @@ function formatOrder(dbOrder: any) {
 
   let orderStatus = dbOrder.order_status || dbOrder.orderStatus || 'ORDER_PLACED';
   const upperStatus = String(orderStatus).toUpperCase();
-  if (orderStatus === 'placed' || upperStatus === 'ORDER_PLACED') orderStatus = 'ORDER_PLACED';
-  else if (orderStatus === 'restaurant_accepted' || upperStatus === 'RESTAURANT_ACCEPTED') orderStatus = 'RESTAURANT_ACCEPTED';
+  if (orderStatus === 'placed' || upperStatus === 'ORDER_PLACED' || upperStatus === 'PLACED') orderStatus = 'ORDER_PLACED';
+  else if (orderStatus === 'restaurant_accepted' || upperStatus === 'RESTAURANT_ACCEPTED' || upperStatus === 'ACCEPTED') orderStatus = 'RESTAURANT_ACCEPTED';
   else if (orderStatus === 'preparing' || upperStatus === 'PREPARING') orderStatus = 'PREPARING';
-  else if (orderStatus === 'ready_for_delivery' || upperStatus === 'READY_FOR_DELIVERY') orderStatus = 'READY_FOR_DELIVERY';
+  else if (orderStatus === 'ready_for_delivery' || upperStatus === 'READY_FOR_DELIVERY' || upperStatus === 'READY') orderStatus = 'READY_FOR_DELIVERY';
   else if (orderStatus === 'out_for_delivery' || upperStatus === 'OUT_FOR_DELIVERY') orderStatus = 'OUT_FOR_DELIVERY';
   else if (orderStatus === 'arrived' || upperStatus === 'ARRIVED') orderStatus = 'ARRIVED';
   else if (orderStatus === 'delivered' || upperStatus === 'DELIVERED') orderStatus = 'DELIVERED';
@@ -102,7 +104,7 @@ export async function POST(request: NextRequest) {
       restaurantId = '550e8400-e29b-41d4-a716-446655440000',
       restaurantName = 'North Campus Central Canteen',
       catalogType = 'food',
-      deliverySlotId = '550e8400-e29b-41d4-a716-446655440101',
+      deliverySlotId = '4a511603-db68-4dee-b602-0478566adedd',
       items = [],
       promoCode,
       paymentMethod = 'cod',
@@ -138,13 +140,7 @@ export async function POST(request: NextRequest) {
 
     const totalItemCount = validatedItems.reduce((acc: number, it: any) => acc + it.quantity, 0);
     const deliveryFee = customDeliveryFee !== undefined ? Number(customDeliveryFee) : 10.0;
-
-    let platformFee = 2.0;
-    if (customPlatformFee !== undefined) {
-      platformFee = Number(customPlatformFee);
-    } else if (totalItemCount >= 4) {
-      platformFee = 4.0;
-    }
+    const platformFee = customPlatformFee !== undefined ? Number(customPlatformFee) : (totalItemCount >= 4 ? 4.0 : 2.0);
 
     let discount = customDiscount ? Number(customDiscount) : 0;
     if (promoCode && !discount) {
@@ -164,7 +160,7 @@ export async function POST(request: NextRequest) {
     const orderNumber = `CB-${Math.floor(1000 + Math.random() * 9000)}`;
     const slotName = DEFAULT_SLOTS_MAP[deliverySlotId] || 'Evening Slot 1 (6:00 PM – 7:00 PM)';
 
-    // 1. Upsert Student in database
+    // 1. Ensure student exists in Supabase
     let dbStudentId: string = uuidv4();
     try {
       const { data: existingStudent } = await supabaseServer
@@ -175,10 +171,10 @@ export async function POST(request: NextRequest) {
 
       if (existingStudent?.id) {
         dbStudentId = existingStudent.id;
-        // update profile details
         await supabaseServer.from('students').update({
           full_name: studentName || 'Student',
           hostel_name: hostelName || 'Tagore Hostel Block A',
+          room_number: roomNumber || '304',
         }).eq('id', dbStudentId);
       } else {
         const { data: createdStudent } = await supabaseServer.from('students').insert({
@@ -187,6 +183,7 @@ export async function POST(request: NextRequest) {
           full_name: studentName || 'Student',
           college_name: 'Campus University',
           hostel_name: hostelName || 'Tagore Hostel Block A',
+          room_number: roomNumber || '304',
           email: `${normalizedPhone}@campus.edu`,
         }).select().single();
         if (createdStudent?.id) dbStudentId = createdStudent.id;
@@ -195,7 +192,7 @@ export async function POST(request: NextRequest) {
       console.warn('Student upsert notice:', sErr);
     }
 
-    // 2. Fetch valid restaurant and slot IDs from DB
+    // 2. Fetch valid restaurant and slot IDs from Supabase
     let validRestId = restaurantId;
     try {
       const { data: rList } = await supabaseServer.from('restaurants').select('id');
@@ -257,9 +254,9 @@ export async function POST(request: NextRequest) {
 
     MEMORY_ORDERS.unshift(newOrderObj);
 
-    // 3. Save persistently to Supabase
+    // 3. Save persistently to Supabase orders table
     try {
-      await supabaseServer.from('orders').insert({
+      const { error: ordInsertErr } = await supabaseServer.from('orders').insert({
         id: orderId,
         order_number: orderNumber,
         student_id: dbStudentId,
@@ -275,18 +272,26 @@ export async function POST(request: NextRequest) {
         order_status: 'placed',
       });
 
+      if (ordInsertErr) {
+        console.error('Supabase order insert error:', ordInsertErr);
+      }
+
       if (validatedItems.length > 0) {
         const itemsToInsert = validatedItems.map((itm: any) => ({
+          id: uuidv4(),
           order_id: orderId,
           item_type: 'food',
           item_name: itm.name,
           quantity: itm.quantity,
           unit_price: itm.price,
         }));
-        await supabaseServer.from('order_items').insert(itemsToInsert);
+        const { error: itmInsertErr } = await supabaseServer.from('order_items').insert(itemsToInsert);
+        if (itmInsertErr) {
+          console.error('Supabase order_items insert error:', itmInsertErr);
+        }
       }
     } catch (dbErr) {
-      console.warn('Supabase order insert warning:', dbErr);
+      console.error('Supabase order save error:', dbErr);
     }
 
     return corsResponse({

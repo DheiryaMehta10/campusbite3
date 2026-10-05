@@ -129,31 +129,38 @@ export default function RestaurantDashboardPage() {
 
   const fetchOrders = async (id: string, isPolling = false) => {
     if (!isPolling) setLoading(true);
-    let loadedOrders: Order[] = [];
-    let fetched = false;
-
+    let apiOrders: Order[] = [];
     try {
       const res = await api.get('/api/orders');
       if (res.data?.data && Array.isArray(res.data.data)) {
-        loadedOrders = res.data.data;
-        fetched = true;
+        apiOrders = res.data.data;
       }
-    } catch (e) {
-      // Fallback
-    }
+    } catch (e) {}
 
-    if (!fetched && typeof window !== 'undefined') {
+    let localOrders: Order[] = [];
+    if (typeof window !== 'undefined') {
       try {
         const local = localStorage.getItem('cb_orders');
-        if (local) {
-          loadedOrders = JSON.parse(local);
-        }
+        if (local) localOrders = JSON.parse(local);
       } catch {}
     }
 
-    setOrders(loadedOrders);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cb_orders', JSON.stringify(loadedOrders));
+    const mergedMap = new Map<string, Order>();
+    for (const ord of localOrders) {
+      if (ord.id) mergedMap.set(ord.id, ord);
+      if (ord.orderNumber) mergedMap.set(ord.orderNumber, ord);
+    }
+    for (const ord of apiOrders) {
+      if (ord.id) mergedMap.set(ord.id, ord);
+      if (ord.orderNumber) mergedMap.set(ord.orderNumber, ord);
+    }
+
+    const uniqueList = Array.from(new Set(Array.from(mergedMap.values())));
+    uniqueList.sort((a, b) => new Date(b.placedAt || b.placed_at || 0).getTime() - new Date(a.placedAt || a.placed_at || 0).getTime());
+
+    setOrders(uniqueList);
+    if (typeof window !== 'undefined' && uniqueList.length > 0) {
+      localStorage.setItem('cb_orders', JSON.stringify(uniqueList));
     }
     if (!isPolling) setLoading(false);
   };

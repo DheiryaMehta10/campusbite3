@@ -51,63 +51,75 @@ export default function AdminOrdersPage() {
 
   const loadOrders = async (isPolling = false) => {
     if (!isPolling) setLoading(true);
-    let fetched = false;
-    let list: Order[] = [];
-
+    let apiOrders: Order[] = [];
     try {
       const res = await api.get('/api/orders');
-      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        list = res.data.data;
-        fetched = true;
+      if (res.data?.data && Array.isArray(res.data.data)) {
+        apiOrders = res.data.data;
       }
-    } catch (e) {
-      // API fallback
-    }
+    } catch (e) {}
 
-    if (!fetched && typeof window !== 'undefined') {
+    let localOrders: Order[] = [];
+    if (typeof window !== 'undefined') {
       try {
         const local = localStorage.getItem('cb_orders');
-        if (local) {
-          list = JSON.parse(local);
-        } else {
-          const sample: Order[] = [
-            {
-              id: 'ord-301',
-              orderNumber: 'CB-9412',
-              totalAmount: 200,
-              orderStatus: 'ORDER_PLACED',
-              placedAt: new Date().toISOString(),
-              deliverySlot: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
-              studentName: 'Rahul Sharma',
-              studentPhone: '9876543210',
-              hostelName: 'Tagore Hostel Block A',
-              roomNumber: '304',
-              restaurantName: 'North Campus Central Canteen',
-              items: [{ name: 'Paneer Butter Masala Combo', quantity: 1, price: 140 }, { name: 'Cold Coffee', quantity: 1, price: 60 }],
-            },
-            {
-              id: 'ord-302',
-              orderNumber: 'CB-9413',
-              totalAmount: 320,
-              orderStatus: 'PREPARING',
-              placedAt: new Date(Date.now() - 15 * 60000).toISOString(),
-              deliverySlot: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
-              studentName: 'Priya Verma',
-              studentPhone: '9876543211',
-              hostelName: 'Gargi Hostel Block C',
-              roomNumber: '112',
-              restaurantName: 'South Mess & Food Court',
-              items: [{ name: 'Chicken Biryani Bowl', quantity: 2, price: 160 }],
-            },
-          ];
-          list = sample;
-        }
+        if (local) localOrders = JSON.parse(local);
       } catch {}
     }
 
-    setOrders(list);
-    if (typeof window !== 'undefined') {
-      localStorage.setItem('cb_orders', JSON.stringify(list));
+    const mergedMap = new Map<string, Order>();
+    for (const ord of localOrders) {
+      if (ord.id) mergedMap.set(ord.id, ord);
+      if (ord.orderNumber) mergedMap.set(ord.orderNumber, ord);
+    }
+    for (const ord of apiOrders) {
+      if (ord.id) mergedMap.set(ord.id, ord);
+      if (ord.orderNumber) mergedMap.set(ord.orderNumber, ord);
+    }
+
+    const uniqueList = Array.from(new Set(Array.from(mergedMap.values())));
+    uniqueList.sort((a, b) => new Date(b.placedAt || b.placed_at || 0).getTime() - new Date(a.placedAt || a.placed_at || 0).getTime());
+
+    if (uniqueList.length > 0) {
+      setOrders(uniqueList);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cb_orders', JSON.stringify(uniqueList));
+      }
+    } else {
+      const sample: Order[] = [
+        {
+          id: 'ord-301',
+          orderNumber: 'CB-9412',
+          totalAmount: 200,
+          orderStatus: 'ORDER_PLACED',
+          placedAt: new Date().toISOString(),
+          deliverySlot: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
+          studentName: 'Rahul Sharma',
+          studentPhone: '9876543210',
+          hostelName: 'Tagore Hostel Block A',
+          roomNumber: '304',
+          restaurantName: 'North Campus Central Canteen',
+          items: [{ name: 'Paneer Butter Masala Combo', quantity: 1, price: 140 }, { name: 'Cold Coffee', quantity: 1, price: 60 }],
+        },
+        {
+          id: 'ord-302',
+          orderNumber: 'CB-9413',
+          totalAmount: 320,
+          orderStatus: 'PREPARING',
+          placedAt: new Date(Date.now() - 15 * 60000).toISOString(),
+          deliverySlot: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
+          studentName: 'Priya Verma',
+          studentPhone: '9876543211',
+          hostelName: 'Gargi Hostel Block C',
+          roomNumber: '112',
+          restaurantName: 'South Mess & Food Court',
+          items: [{ name: 'Chicken Biryani Bowl', quantity: 2, price: 160 }],
+        },
+      ];
+      setOrders(sample);
+      if (typeof window !== 'undefined') {
+        localStorage.setItem('cb_orders', JSON.stringify(sample));
+      }
     }
     if (!isPolling) setLoading(false);
   };
