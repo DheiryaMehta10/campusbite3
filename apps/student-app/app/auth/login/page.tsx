@@ -12,13 +12,13 @@ export default function LoginPage() {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
-  const [previewOtp, setPreviewOtp] = useState('');
   const [verificationToken, setVerificationToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [resendTimer, setResendTimer] = useState(30);
   const [canResend, setCanResend] = useState(false);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const [signup, setSignup] = useState({
     fullName: '',
@@ -54,6 +54,10 @@ export default function LoginPage() {
       setError('Please enter a valid student email address');
       return;
     }
+    if (!agreedToTerms) {
+      setError('Please agree to the Terms & Conditions and Privacy Policy to continue');
+      return;
+    }
 
     setLoading(true);
     setError('');
@@ -64,16 +68,13 @@ export default function LoginPage() {
       if (res.data?.token) {
         setVerificationToken(res.data.token);
       }
-      if (res.data?.otpCode) {
-        setPreviewOtp(res.data.otpCode);
-      }
       setStep('otp');
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
-      setSuccessMsg(res.data?.message || `Verification OTP sent to ${cleanEmail}.`);
+      setSuccessMsg(res.data?.message || `Verification OTP sent to ${cleanEmail}. Check your inbox.`);
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to send OTP email. Please try again.';
+      const msg = err.response?.data?.message || 'Failed to send OTP email. Please check your address and try again.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -90,13 +91,10 @@ export default function LoginPage() {
       if (res.data?.token) {
         setVerificationToken(res.data.token);
       }
-      if (res.data?.otpCode) {
-        setPreviewOtp(res.data.otpCode);
-      }
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
-      setSuccessMsg(`A fresh OTP code has been generated for ${cleanEmail}`);
+      setSuccessMsg(`A fresh verification code has been sent to ${cleanEmail}`);
     } catch (err: any) {
       setError('Failed to resend OTP. Please try again.');
     } finally {
@@ -293,8 +291,30 @@ export default function LoginPage() {
                 />
               </div>
               <p className="text-[11px] text-gray-500 mt-1.5">
-                We will email a 6-digit verification code to sign in or create your student profile.
+                We will email a 6-digit verification code to secure your student account.
               </p>
+            </div>
+
+            {/* Terms & Conditions Agreement Checkbox */}
+            <div className="p-3 bg-gray-50 rounded-2xl border border-gray-200">
+              <label className="flex items-start gap-2.5 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-0.5 h-4 w-4 rounded text-orange-600 focus:ring-orange-500 border-gray-300"
+                />
+                <span className="text-[11px] font-bold text-gray-700 leading-snug">
+                  I agree to CampusBite&apos;s{' '}
+                  <Link href="/terms" target="_blank" className="text-orange-600 underline font-black hover:text-orange-700">
+                    Terms &amp; Conditions
+                  </Link>{' '}
+                  and{' '}
+                  <Link href="/privacy" target="_blank" className="text-orange-600 underline font-black hover:text-orange-700">
+                    Privacy Policy
+                  </Link>
+                </span>
+              </label>
             </div>
 
             {error && (
@@ -306,8 +326,8 @@ export default function LoginPage() {
 
             <button
               onClick={handleSendOtp}
-              disabled={loading || !cleanEmail.includes('@')}
-              className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50"
+              disabled={loading || !cleanEmail.includes('@') || !agreedToTerms}
+              className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Sending Code...' : 'Send OTP to Email ➔'}
             </button>
@@ -335,18 +355,18 @@ export default function LoginPage() {
         {/* STEP 2: EMAIL OTP VERIFICATION */}
         {step === 'otp' && (
           <div className="space-y-4">
-            <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 text-center">
-              <span className="text-[11px] font-bold text-orange-950">
-                Verification OTP for <strong>{cleanEmail}</strong>
-              </span>
-              {previewOtp && (
-                <div className="mt-1.5 inline-block px-3 py-1 bg-white border border-orange-300 rounded-lg shadow-sm">
-                  <span className="text-[10px] text-gray-500 block">Generated Code:</span>
-                  <span className="text-base font-black tracking-widest text-orange-600">{previewOtp}</span>
-                </div>
-              )}
-              <p className="text-[10px] text-orange-700 mt-1">
-                (Master test code <strong>123456</strong> also works)
+            <div className="bg-orange-50/80 border border-orange-200 rounded-2xl p-4 text-center space-y-1">
+              <div className="h-10 w-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-lg mx-auto font-black mb-1">
+                ✉️
+              </div>
+              <p className="text-xs font-black text-gray-950">
+                Verification Code Sent!
+              </p>
+              <p className="text-[11px] text-gray-700">
+                We sent a 6-digit OTP code to <strong className="text-gray-950">{cleanEmail}</strong>
+              </p>
+              <p className="text-[10px] text-gray-500 pt-0.5">
+                Please check your inbox or spam folder and enter the code below.
               </p>
               <button
                 onClick={() => {
@@ -354,7 +374,7 @@ export default function LoginPage() {
                   setError('');
                   setSuccessMsg('');
                 }}
-                className="block mx-auto text-[11px] font-black text-orange-600 underline mt-1"
+                className="inline-block text-[11px] font-black text-orange-600 underline pt-1"
               >
                 Change Email Address
               </button>

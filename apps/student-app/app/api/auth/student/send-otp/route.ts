@@ -56,7 +56,6 @@ export async function POST(request: NextRequest) {
       isEmail,
       identifier: targetKey,
       token,
-      otpCode: otp,
     });
   } catch (error: any) {
     console.error('Send OTP Error:', error);
