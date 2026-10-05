@@ -19,22 +19,22 @@ export async function PATCH(
 
     let dbStatus = orderStatus;
     const upper = String(orderStatus).toUpperCase();
-    if (upper === 'ORDER_PLACED') dbStatus = 'placed';
-    else if (upper === 'RESTAURANT_ACCEPTED') dbStatus = 'restaurant_accepted';
+    if (upper === 'ORDER_PLACED' || upper === 'PLACED') dbStatus = 'placed';
+    else if (upper === 'RESTAURANT_ACCEPTED' || upper === 'ACCEPTED') dbStatus = 'restaurant_accepted';
     else if (upper === 'PREPARING') dbStatus = 'preparing';
-    else if (upper === 'READY_FOR_DELIVERY') dbStatus = 'ready_for_delivery';
+    else if (upper === 'READY_FOR_DELIVERY' || upper === 'READY') dbStatus = 'ready_for_delivery';
     else if (upper === 'OUT_FOR_DELIVERY') dbStatus = 'out_for_delivery';
     else if (upper === 'ARRIVED') dbStatus = 'arrived';
     else if (upper === 'DELIVERED') dbStatus = 'delivered';
     else if (upper === 'CANCELLED') dbStatus = 'cancelled';
     else if (upper === 'UNCOLLECTED') dbStatus = 'uncollected';
 
-    const updateData: any = { order_status: dbStatus };
+    const updateData: any = { order_status: dbStatus, updated_at: new Date().toISOString() };
     const now = new Date().toISOString();
 
     if (dbStatus === 'restaurant_accepted') updateData.accepted_at = now;
-    if (dbStatus === 'ready_for_delivery') updateData.ready_at = now;
     if (dbStatus === 'delivered') updateData.delivered_at = now;
+    if (dbStatus === 'cancelled') updateData.cancelled_at = now;
     if (cancellationReason) updateData.cancellation_reason = cancellationReason;
 
     try {
@@ -46,12 +46,14 @@ export async function PATCH(
         .maybeSingle();
 
       if (dbStatus === 'uncollected' && order) {
-        await supabaseServer.from('uncollected_orders').insert({
-          order_id: order.id,
-          student_id: order.student_id,
-          contacted: false,
-          collected: false,
-        });
+        try {
+          await supabaseServer.from('uncollected_orders').insert({
+            order_id: order.id,
+            student_id: order.student_id,
+            contacted: false,
+            collected: false,
+          });
+        } catch {}
       }
     } catch (dbErr) {
       console.warn('Supabase status update warning:', dbErr);
