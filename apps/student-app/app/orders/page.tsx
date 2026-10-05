@@ -53,15 +53,13 @@ export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState<'active' | 'past'>('active');
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
 
-  const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://campusbite-amber.vercel.app',
-  });
+  const api = axios.create({ baseURL: '' });
 
   useEffect(() => {
     fetchOrders();
     const interval = setInterval(() => {
       fetchOrders(true);
-    }, 4000);
+    }, 2500);
     return () => clearInterval(interval);
   }, []);
 
@@ -73,7 +71,14 @@ export default function OrdersPage() {
       if (res.data?.data && Array.isArray(res.data.data)) {
         apiOrders = res.data.data;
       }
-    } catch (e) {}
+    } catch (e) {
+      try {
+        const fallbackRes = await axios.get('https://student-app-xi-bice.vercel.app/api/orders');
+        if (fallbackRes.data?.data && Array.isArray(fallbackRes.data.data)) {
+          apiOrders = fallbackRes.data.data;
+        }
+      } catch {}
+    }
 
     let localOrders: Order[] = [];
     if (typeof window !== 'undefined') {

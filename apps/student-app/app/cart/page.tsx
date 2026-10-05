@@ -42,8 +42,7 @@ export default function CartPage() {
   const [promoInput, setPromoInput] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null);
   const [promoError, setPromoError] = useState('');
-
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://campusbite-amber.vercel.app' });
+  const api = axios.create({ baseURL: '' });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -202,7 +201,12 @@ export default function CartPage() {
         paymentMethod,
       };
 
-      const res = await api.post('/api/orders', orderPayload);
+      let res;
+      try {
+        res = await api.post('/api/orders', orderPayload);
+      } catch (postErr) {
+        res = await axios.post('https://student-app-xi-bice.vercel.app/api/orders', orderPayload);
+      }
       if (res.data?.order?.id) {
         newLocalOrder.id = res.data.order.id;
         newLocalOrder.orderNumber = res.data.order.orderNumber || orderNum;

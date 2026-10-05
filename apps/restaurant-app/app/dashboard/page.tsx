@@ -81,7 +81,7 @@ export default function RestaurantDashboardPage() {
     description: '',
   });
 
-  const api = axios.create({ baseURL: 'https://campusbite-amber.vercel.app' });
+  const api = axios.create({ baseURL: '' });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -135,7 +135,14 @@ export default function RestaurantDashboardPage() {
       if (res.data?.data && Array.isArray(res.data.data)) {
         apiOrders = res.data.data;
       }
-    } catch (e) {}
+    } catch (e) {
+      try {
+        const fallbackRes = await axios.get('https://student-app-xi-bice.vercel.app/api/orders');
+        if (fallbackRes.data?.data && Array.isArray(fallbackRes.data.data)) {
+          apiOrders = fallbackRes.data.data;
+        }
+      } catch {}
+    }
 
     let localOrders: Order[] = [];
     if (typeof window !== 'undefined') {
@@ -187,7 +194,11 @@ export default function RestaurantDashboardPage() {
     }
     try {
       await api.patch(`/api/orders/${orderId}/status`, { orderStatus: newStatus });
-    } catch {}
+    } catch {
+      try {
+        await axios.patch(`https://student-app-xi-bice.vercel.app/api/orders/${orderId}/status`, { orderStatus: newStatus });
+      } catch {}
+    }
   };
 
   const toggleItemAvailability = async (itemId: string) => {

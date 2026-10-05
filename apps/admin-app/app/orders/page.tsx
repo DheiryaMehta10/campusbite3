@@ -37,15 +37,13 @@ export default function AdminOrdersPage() {
   const [filterStatus, setFilterStatus] = useState('ALL');
   const [searchQuery, setSearchQuery] = useState('');
 
-  const api = axios.create({
-    baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://campusbite-amber.vercel.app',
-  });
+  const api = axios.create({ baseURL: '' });
 
   useEffect(() => {
     loadOrders();
     const interval = setInterval(() => {
       loadOrders(true);
-    }, 4000);
+    }, 3000);
     return () => clearInterval(interval);
   }, []);
 
@@ -57,7 +55,14 @@ export default function AdminOrdersPage() {
       if (res.data?.data && Array.isArray(res.data.data)) {
         apiOrders = res.data.data;
       }
-    } catch (e) {}
+    } catch (e) {
+      try {
+        const fallbackRes = await axios.get('https://student-app-xi-bice.vercel.app/api/orders');
+        if (fallbackRes.data?.data && Array.isArray(fallbackRes.data.data)) {
+          apiOrders = fallbackRes.data.data;
+        }
+      } catch {}
+    }
 
     let localOrders: Order[] = [];
     if (typeof window !== 'undefined') {
@@ -80,46 +85,9 @@ export default function AdminOrdersPage() {
     const uniqueList = Array.from(new Set(Array.from(mergedMap.values())));
     uniqueList.sort((a, b) => new Date(b.placedAt || b.placed_at || 0).getTime() - new Date(a.placedAt || a.placed_at || 0).getTime());
 
-    if (uniqueList.length > 0) {
-      setOrders(uniqueList);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('cb_orders', JSON.stringify(uniqueList));
-      }
-    } else {
-      const sample: Order[] = [
-        {
-          id: 'ord-301',
-          orderNumber: 'CB-9412',
-          totalAmount: 200,
-          orderStatus: 'ORDER_PLACED',
-          placedAt: new Date().toISOString(),
-          deliverySlot: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
-          studentName: 'Rahul Sharma',
-          studentPhone: '9876543210',
-          hostelName: 'Tagore Hostel Block A',
-          roomNumber: '304',
-          restaurantName: 'North Campus Central Canteen',
-          items: [{ name: 'Paneer Butter Masala Combo', quantity: 1, price: 140 }, { name: 'Cold Coffee', quantity: 1, price: 60 }],
-        },
-        {
-          id: 'ord-302',
-          orderNumber: 'CB-9413',
-          totalAmount: 320,
-          orderStatus: 'PREPARING',
-          placedAt: new Date(Date.now() - 15 * 60000).toISOString(),
-          deliverySlot: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
-          studentName: 'Priya Verma',
-          studentPhone: '9876543211',
-          hostelName: 'Gargi Hostel Block C',
-          roomNumber: '112',
-          restaurantName: 'South Mess & Food Court',
-          items: [{ name: 'Chicken Biryani Bowl', quantity: 2, price: 160 }],
-        },
-      ];
-      setOrders(sample);
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('cb_orders', JSON.stringify(sample));
-      }
+    setOrders(uniqueList);
+    if (typeof window !== 'undefined' && uniqueList.length > 0) {
+      localStorage.setItem('cb_orders', JSON.stringify(uniqueList));
     }
     if (!isPolling) setLoading(false);
   };
@@ -134,7 +102,11 @@ export default function AdminOrdersPage() {
     }
     try {
       await api.patch(`/api/orders/${orderId}/status`, { orderStatus: newStatus });
-    } catch {}
+    } catch {
+      try {
+        await axios.patch(`https://student-app-xi-bice.vercel.app/api/orders/${orderId}/status`, { orderStatus: newStatus });
+      } catch {}
+    }
   };
 
   const filteredOrders = orders.filter((ord) => {

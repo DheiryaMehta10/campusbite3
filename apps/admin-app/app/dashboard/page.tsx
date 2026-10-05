@@ -21,7 +21,7 @@ export default function DashboardPage() {
     uncollectedOrdersCount: 1,
   });
   const [loading, setLoading] = useState(false);
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || 'https://campusbite-amber.vercel.app' });
+  const api = axios.create({ baseURL: '' });
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -31,7 +31,7 @@ export default function DashboardPage() {
       fetchDashboard();
       const interval = setInterval(() => {
         fetchDashboard(true);
-      }, 5000);
+      }, 3000);
       return () => clearInterval(interval);
     }
   }, []);
@@ -44,18 +44,30 @@ export default function DashboardPage() {
         setStats(res.data.data);
       }
     } catch (error) {
-      // Use live local calculations
-      if (typeof window !== 'undefined') {
-        try {
-          const orders = JSON.parse(localStorage.getItem('cb_orders') || '[]');
-          const uncollected = orders.filter((o: any) => o.orderStatus === 'UNCOLLECTED').length;
-          setStats({
-            totalOrders: 420 + orders.length,
-            todayOrders: orders.length || 38,
-            activeRestaurants: 4,
-            uncollectedOrdersCount: uncollected || 1,
-          });
-        } catch {}
+      try {
+        const fallbackRes = await axios.get('https://student-app-xi-bice.vercel.app/api/orders');
+        const orders = fallbackRes.data?.data || [];
+        const uncollected = orders.filter((o: any) => o.orderStatus === 'UNCOLLECTED').length;
+        setStats({
+          totalOrders: orders.length || 1,
+          todayOrders: orders.length || 1,
+          activeRestaurants: 4,
+          uncollectedOrdersCount: uncollected,
+        });
+      } catch {
+        // Use live local calculations
+        if (typeof window !== 'undefined') {
+          try {
+            const orders = JSON.parse(localStorage.getItem('cb_orders') || '[]');
+            const uncollected = orders.filter((o: any) => o.orderStatus === 'UNCOLLECTED').length;
+            setStats({
+              totalOrders: orders.length || 1,
+              todayOrders: orders.length || 1,
+              activeRestaurants: 4,
+              uncollectedOrdersCount: uncollected,
+            });
+          } catch {}
+        }
       }
     } finally {
       if (!isPolling) setLoading(false);

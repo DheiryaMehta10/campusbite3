@@ -39,7 +39,7 @@ function formatOrder(dbOrder: any) {
   const studentName = dbOrder.students?.full_name || dbOrder.studentName || dbOrder.student_name || 'Student';
   const studentPhone = dbOrder.students?.phone_number || dbOrder.studentPhone || dbOrder.student_phone || '9876543210';
   const hostelName = dbOrder.students?.hostel_name || dbOrder.hostelName || dbOrder.hostel_name || 'Tagore Hostel Block A';
-  const roomNumber = dbOrder.roomNumber || dbOrder.room_number || '304';
+  const roomNumber = dbOrder.students?.room_number || dbOrder.roomNumber || dbOrder.room_number || '304';
   const restaurantName = dbOrder.restaurants?.name || dbOrder.restaurantName || dbOrder.restaurant_name || 'North Campus Central Canteen';
   const deliverySlot = dbOrder.delivery_slots?.name || dbOrder.deliverySlot || (typeof dbOrder.delivery_slot === 'object' ? dbOrder.delivery_slot?.name : dbOrder.delivery_slot) || 'Evening Slot 1 (6:00 PM – 7:00 PM)';
 
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
       studentId,
       studentName = 'Student',
       studentPhone = '9876543210',
-      restaurantId = '550e8400-e29b-41d4-a716-446655440000',
+      restaurantId = '550e8400-e29b-41d4-a716-446655440001',
       restaurantName = 'North Campus Central Canteen',
       catalogType = 'food',
       deliverySlotId = '4a511603-db68-4dee-b602-0478566adedd',
@@ -110,7 +110,6 @@ export async function POST(request: NextRequest) {
       paymentMethod = 'cod',
       hostelName = 'Tagore Hostel Block A',
       roomNumber = '304',
-      itemTotal,
       deliveryFee: customDeliveryFee,
       platformFee: customPlatformFee,
       discount: customDiscount,
@@ -353,7 +352,8 @@ export async function GET(request: NextRequest) {
     if (studentId) {
       result = result.filter((o) => o.studentId === studentId || o.student_id === studentId || o.studentPhone === studentId || o.student_phone === studentId);
     } else if (restaurantId) {
-      result = result.filter((o) => o.restaurantId === restaurantId || o.restaurant_id === restaurantId);
+      // Check if matches restaurantId or if universal canteen
+      result = result.filter((o) => !restaurantId || o.restaurantId === restaurantId || o.restaurant_id === restaurantId || restaurantId === 'canteen-1');
     }
 
     return corsResponse({ success: true, data: result });
