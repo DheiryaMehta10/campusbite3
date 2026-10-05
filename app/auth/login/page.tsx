@@ -11,6 +11,7 @@ export default function LoginPage() {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
+  const [previewOtp, setPreviewOtp] = useState('');
   const [verificationToken, setVerificationToken] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -62,11 +63,14 @@ export default function LoginPage() {
       if (res.data?.token) {
         setVerificationToken(res.data.token);
       }
+      if (res.data?.otpCode) {
+        setPreviewOtp(res.data.otpCode);
+      }
       setStep('otp');
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
-      setSuccessMsg(`Verification OTP sent to ${cleanEmail}. Please check your inbox or spam folder.`);
+      setSuccessMsg(res.data?.message || `Verification OTP sent to ${cleanEmail}.`);
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Failed to send OTP email. Please try again.';
       setError(msg);
@@ -85,10 +89,13 @@ export default function LoginPage() {
       if (res.data?.token) {
         setVerificationToken(res.data.token);
       }
+      if (res.data?.otpCode) {
+        setPreviewOtp(res.data.otpCode);
+      }
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
-      setSuccessMsg(`A fresh OTP code has been sent to ${cleanEmail}`);
+      setSuccessMsg(`A fresh OTP code has been generated for ${cleanEmail}`);
     } catch (err: any) {
       setError('Failed to resend OTP. Please try again.');
     } finally {
@@ -99,7 +106,7 @@ export default function LoginPage() {
   const handleVerifyOtp = async () => {
     const cleanOtp = otp.trim();
     if (cleanOtp.length < 4) {
-      setError('Please enter the 6-digit OTP sent to your email');
+      setError('Please enter the 6-digit OTP code');
       return;
     }
     setLoading(true);
@@ -130,7 +137,7 @@ export default function LoginPage() {
           router.push('/home');
         }
       } else {
-        setError(res.data?.message || 'Invalid OTP code. Please check your email.');
+        setError(res.data?.message || 'Invalid OTP code. Please try again.');
       }
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Invalid code. You may also use test code 123456.';
@@ -279,10 +286,16 @@ export default function LoginPage() {
           <div className="space-y-4">
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 text-center">
               <span className="text-[11px] font-bold text-orange-950">
-                Code sent to <strong>{cleanEmail}</strong>
+                Verification OTP for <strong>{cleanEmail}</strong>
               </span>
-              <p className="text-[10px] text-orange-700 mt-0.5">
-                (Test code: <strong>123456</strong> works instantly for testing)
+              {previewOtp && (
+                <div className="mt-1.5 inline-block px-3 py-1 bg-white border border-orange-300 rounded-lg shadow-sm">
+                  <span className="text-[10px] text-gray-500 block">Generated Code:</span>
+                  <span className="text-base font-black tracking-widest text-orange-600">{previewOtp}</span>
+                </div>
+              )}
+              <p className="text-[10px] text-orange-700 mt-1">
+                (Master test code <strong>123456</strong> also works)
               </p>
               <button
                 onClick={() => {
