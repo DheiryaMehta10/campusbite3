@@ -227,26 +227,12 @@ export default function LoginPage() {
         {/* Brand Header */}
         <div className="text-center mb-6">
           <div className="relative inline-flex items-center justify-center mb-3">
-            <div className="w-16 h-16 bg-gradient-to-tr from-[#FF5200] via-[#FF6A00] to-[#FFA000] rounded-2xl flex items-center justify-center shadow-xl shadow-orange-500/30 border border-white/20">
-              {/* Modern Minimalist Food & Speed Monogram */}
-              <svg className="w-9 h-9 text-white" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-                {/* Dynamic Food Wave Arc */}
-                <path
-                  d="M8 20C8 13.3726 13.3726 8 20 8C26.6274 8 32 13.3726 32 20C32 26.6274 26.6274 32 20 32C15.5 32 11.6 29.5 9.6 25.8"
-                  stroke="currentColor"
-                  strokeWidth="3.2"
-                  strokeLinecap="round"
-                />
-                {/* Speed Lightning Curve */}
-                <path
-                  d="M22 13L15 21H23L17 28"
-                  stroke="currentColor"
-                  strokeWidth="3"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-                <circle cx="28" cy="12" r="2" fill="currentColor" />
-              </svg>
+            <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl shadow-orange-500/25 border-2 border-orange-100 bg-white flex items-center justify-center p-1">
+              <img
+                src="/logo-icon.png"
+                alt="CampusBite Logo"
+                className="w-full h-full object-contain rounded-xl"
+              />
             </div>
             <span className="absolute -bottom-1 -right-1 bg-white text-orange-600 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-md border border-orange-100">
               Student

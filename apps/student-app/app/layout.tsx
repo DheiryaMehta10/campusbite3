@@ -5,6 +5,10 @@ export const metadata: Metadata = {
   title: 'CampusBite Student — Order Smart. Delivered by Slot.',
   description: 'Hostel delivery platform for college campus students.',
   manifest: '/manifest.json',
+  icons: {
+    icon: '/logo-icon.png',
+    apple: '/logo-icon.png',
+  },
 };
 
 export const viewport: Viewport = {

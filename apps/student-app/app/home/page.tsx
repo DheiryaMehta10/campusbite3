@@ -305,23 +305,23 @@ export default function HomePage() {
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all">
         <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-3">
-            {/* Location Pill */}
-            <Link href="/profile" className="flex items-center gap-2.5 cursor-pointer group">
-              <div className="h-9 w-9 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-white text-base shadow-md shadow-orange-500/20 group-hover:scale-105 transition-transform">
-                📍
-              </div>
-              <div>
+            {/* Location Pill & Brand Emblem */}
+            <div className="flex items-center gap-2.5">
+              <Link href="/home" className="h-9 w-9 rounded-2xl overflow-hidden border border-orange-200 shadow-sm bg-white flex-shrink-0 flex items-center justify-center p-0.5 hover:scale-105 transition-transform">
+                <img src="/logo-icon.png" alt="CampusBite" className="w-full h-full object-contain" />
+              </Link>
+              <Link href="/profile" className="cursor-pointer group">
                 <div className="flex items-center gap-1">
                   <span className="text-xs font-black text-gray-900 tracking-tight flex items-center gap-1 group-hover:text-orange-600 transition-colors">
                     {userHostel || 'Set Delivery Hostel'}
                     <span className="text-[10px] text-orange-600">▾</span>
                   </span>
                 </div>
-                <p className="text-[11px] font-semibold text-gray-500 truncate max-w-[200px]">
+                <p className="text-[11px] font-semibold text-gray-500 truncate max-w-[180px]">
                   {userRoom ? `Room ${userRoom} • Scheduled Delivery` : 'Tap to configure hostel & room'}
                 </p>
-              </div>
-            </Link>
+              </Link>
+            </div>
 
             {/* Profile Avatar / Quick Link */}
             <Link

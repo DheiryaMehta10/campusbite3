@@ -202,8 +202,17 @@ export default function LoginPage() {
       <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-7 md:p-8 z-10 border border-orange-100/50">
         {/* Brand Header */}
         <div className="text-center mb-6">
-          <div className="w-16 h-16 bg-gradient-to-tr from-orange-600 to-amber-500 rounded-2xl mx-auto flex items-center justify-center shadow-lg shadow-orange-500/30 text-3xl mb-2.5">
-            🍔
+          <div className="relative inline-flex items-center justify-center mb-3">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl shadow-orange-500/25 border-2 border-orange-100 bg-white flex items-center justify-center p-1">
+              <img
+                src="/logo-icon.png"
+                alt="CampusBite Logo"
+                className="w-full h-full object-contain rounded-xl"
+              />
+            </div>
+            <span className="absolute -bottom-1 -right-1 bg-white text-orange-600 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-md border border-orange-100">
+              Student
+            </span>
           </div>
           <h1 className="text-2xl font-black text-gray-950 tracking-tight">CampusBite</h1>
           <p className="text-orange-600 font-bold text-xs tracking-wider uppercase mt-0.5">

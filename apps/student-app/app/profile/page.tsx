@@ -297,9 +297,10 @@ export default function ProfilePage() {
             Log Out from CampusBite
           </button>
 
-          <p className="text-[10px] font-bold text-gray-400">
-            CampusBite v2.4.0 • Android PlayStore Release
-          </p>
+          <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-gray-400">
+            <img src="/logo-icon.png" alt="CampusBite" className="h-4 w-4 object-contain rounded-md" />
+            <span>CampusBite v2.4.0 • Android PlayStore Release</span>
+          </div>
         </div>
       </main>
 
