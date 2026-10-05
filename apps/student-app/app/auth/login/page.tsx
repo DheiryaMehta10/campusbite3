@@ -4,16 +4,12 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 
-type AuthMode = 'email' | 'phone';
-type Step = 'input' | 'otp' | 'signup';
+type Step = 'email' | 'otp' | 'signup';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [authMode, setAuthMode] = useState<AuthMode>('email');
-  const [step, setStep] = useState<Step>('input');
-  
+  const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [otp, setOtp] = useState('');
   const [verificationToken, setVerificationToken] = useState('');
   const [loading, setLoading] = useState(false);
@@ -28,7 +24,7 @@ export default function LoginPage() {
     hostelName: '',
     roomNumber: '',
     email: '',
-    phoneNumber: '',
+    phoneNumber: '9876543210',
   });
 
   const api = axios.create({ baseURL: '' });
@@ -49,20 +45,12 @@ export default function LoginPage() {
     return () => clearInterval(interval);
   }, [step, resendTimer]);
 
-  const activeIdentifier = authMode === 'email' ? email.trim() : phone.replace(/\D/g, '').slice(-10);
+  const cleanEmail = email.trim().toLowerCase();
 
   const handleSendOtp = async () => {
-    if (authMode === 'email') {
-      if (!email.trim() || !email.includes('@')) {
-        setError('Please enter a valid email address');
-        return;
-      }
-    } else {
-      const clean = phone.replace(/\D/g, '').slice(-10);
-      if (clean.length !== 10) {
-        setError('Please enter a valid 10-digit Indian mobile number');
-        return;
-      }
+    if (!cleanEmail || !cleanEmail.includes('@')) {
+      setError('Please enter a valid student email address');
+      return;
     }
 
     setLoading(true);
@@ -70,9 +58,7 @@ export default function LoginPage() {
     setSuccessMsg('');
 
     try {
-      const payload = authMode === 'email' ? { email: email.trim().toLowerCase() } : { phoneNumber: phone.replace(/\D/g, '').slice(-10) };
-      const res = await api.post('/api/auth/student/send-otp', payload);
-      
+      const res = await api.post('/api/auth/student/send-otp', { email: cleanEmail });
       if (res.data?.token) {
         setVerificationToken(res.data.token);
       }
@@ -80,14 +66,9 @@ export default function LoginPage() {
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
-      
-      if (authMode === 'email') {
-        setSuccessMsg(`Free 6-digit OTP sent to ${email.trim()}. Check your inbox or spam folder!`);
-      } else {
-        setSuccessMsg(`Verification code sent to +91 ${activeIdentifier}`);
-      }
+      setSuccessMsg(`Verification OTP sent to ${cleanEmail}. Please check your inbox or spam folder.`);
     } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to send OTP. Please try again.';
+      const msg = err.response?.data?.message || 'Failed to send OTP email. Please try again.';
       setError(msg);
     } finally {
       setLoading(false);
@@ -100,15 +81,14 @@ export default function LoginPage() {
     setError('');
     setSuccessMsg('');
     try {
-      const payload = authMode === 'email' ? { email: email.trim().toLowerCase() } : { phoneNumber: phone.replace(/\D/g, '').slice(-10) };
-      const res = await api.post('/api/auth/student/send-otp', payload);
+      const res = await api.post('/api/auth/student/send-otp', { email: cleanEmail });
       if (res.data?.token) {
         setVerificationToken(res.data.token);
       }
       setResendTimer(30);
       setCanResend(false);
       setOtp('');
-      setSuccessMsg(`A fresh OTP code has been sent.`);
+      setSuccessMsg(`A fresh OTP code has been sent to ${cleanEmail}`);
     } catch (err: any) {
       setError('Failed to resend OTP. Please try again.');
     } finally {
@@ -119,45 +99,38 @@ export default function LoginPage() {
   const handleVerifyOtp = async () => {
     const cleanOtp = otp.trim();
     if (cleanOtp.length < 4) {
-      setError('Please enter the 6-digit verification code');
+      setError('Please enter the 6-digit OTP sent to your email');
       return;
     }
     setLoading(true);
     setError('');
 
     try {
-      const payload = {
-        email: authMode === 'email' ? email.trim().toLowerCase() : undefined,
-        phoneNumber: authMode === 'phone' ? phone.replace(/\D/g, '').slice(-10) : undefined,
+      const res = await api.post('/api/auth/student/verify-otp', {
+        email: cleanEmail,
         otp: cleanOtp,
         token: verificationToken,
-      };
-
-      const res = await api.post('/api/auth/student/verify-otp', payload);
+      });
 
       if (res.data?.success) {
         if (res.data?.isNewUser) {
-          setSignup((prev) => ({
-            ...prev,
-            email: authMode === 'email' ? email.trim().toLowerCase() : '',
-            phoneNumber: authMode === 'phone' ? phone.replace(/\D/g, '').slice(-10) : '',
-          }));
+          setSignup((prev) => ({ ...prev, email: cleanEmail }));
           setStep('signup');
           setError('');
         } else {
           const s = res.data?.student || {};
-          const uId = res.data?.userId || s.id || `student-${activeIdentifier}`;
+          const uId = res.data?.userId || s.id || `student-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '')}`;
           localStorage.setItem('userId', uId);
-          localStorage.setItem('userPhone', s.phone || (authMode === 'phone' ? activeIdentifier : '9876543210'));
+          localStorage.setItem('userEmail', cleanEmail);
+          localStorage.setItem('userPhone', s.phone || '9876543210');
           if (s.fullName) localStorage.setItem('userName', s.fullName);
           if (s.hostelName) localStorage.setItem('userHostel', s.hostelName);
           if (s.roomNumber) localStorage.setItem('userRoom', s.roomNumber);
           if (s.collegeName) localStorage.setItem('userCollege', s.collegeName);
-          if (s.email || authMode === 'email') localStorage.setItem('userEmail', s.email || email.trim());
           router.push('/home');
         }
       } else {
-        setError(res.data?.message || 'Invalid verification code. Please check and try again.');
+        setError(res.data?.message || 'Invalid OTP code. Please check your email.');
       }
     } catch (err: any) {
       const msg = err.response?.data?.message || 'Invalid code. You may also use test code 123456.';
@@ -176,13 +149,6 @@ export default function LoginPage() {
       setError('Please enter your Hostel Name / Block');
       return;
     }
-    const finalEmail = signup.email.trim() || (authMode === 'email' ? email.trim() : '');
-    if (!finalEmail || !finalEmail.includes('@')) {
-      setError('Please enter a valid College Email ID');
-      return;
-    }
-
-    const finalPhone = signup.phoneNumber.replace(/\D/g, '').slice(-10) || (authMode === 'phone' ? phone.replace(/\D/g, '').slice(-10) : '9876543210');
 
     setLoading(true);
     setError('');
@@ -190,18 +156,18 @@ export default function LoginPage() {
     try {
       const res = await api.post('/api/auth/student/signup', {
         ...signup,
-        email: finalEmail,
-        phoneNumber: finalPhone,
+        email: cleanEmail,
+        phoneNumber: signup.phoneNumber || '9876543210',
       });
 
-      const sId = res.data?.student?.id || `student-${finalPhone || 'user'}`;
+      const sId = res.data?.student?.id || `student-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '')}`;
       localStorage.setItem('userId', sId);
       localStorage.setItem('userName', signup.fullName.trim());
-      localStorage.setItem('userPhone', finalPhone);
+      localStorage.setItem('userEmail', cleanEmail);
+      localStorage.setItem('userPhone', signup.phoneNumber || '9876543210');
       localStorage.setItem('userCollege', (signup.collegeName || 'Campus').trim());
       localStorage.setItem('userHostel', signup.hostelName.trim());
-      localStorage.setItem('userRoom', signup.roomNumber.trim());
-      localStorage.setItem('userEmail', finalEmail);
+      localStorage.setItem('userRoom', (signup.roomNumber || '').trim());
       router.push('/home');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to complete registration. Please try again.');
@@ -212,12 +178,12 @@ export default function LoginPage() {
 
   const handleQuickDemoLogin = () => {
     localStorage.setItem('userId', 'student-demo-1');
+    localStorage.setItem('userEmail', 'aarav.sharma@campus.edu');
     localStorage.setItem('userPhone', '9876543210');
     localStorage.setItem('userName', 'Aarav Sharma');
     localStorage.setItem('userHostel', 'Tagore Hostel Block A');
     localStorage.setItem('userRoom', '304');
     localStorage.setItem('userCollege', 'Campus Institute');
-    localStorage.setItem('userEmail', 'aarav.sharma@campus.edu');
     router.push('/home');
   };
 
@@ -238,97 +204,40 @@ export default function LoginPage() {
             Order Smart • Delivered by Slot
           </p>
           <div className="flex justify-center gap-1.5 mt-3">
-            <span className={`h-1.5 rounded-full transition-all ${step === 'input' ? 'w-6 bg-orange-600' : 'w-2 bg-gray-200'}`}></span>
+            <span className={`h-1.5 rounded-full transition-all ${step === 'email' ? 'w-6 bg-orange-600' : 'w-2 bg-gray-200'}`}></span>
             <span className={`h-1.5 rounded-full transition-all ${step === 'otp' ? 'w-6 bg-orange-600' : 'w-2 bg-gray-200'}`}></span>
             <span className={`h-1.5 rounded-full transition-all ${step === 'signup' ? 'w-6 bg-orange-600' : 'w-2 bg-gray-200'}`}></span>
           </div>
         </div>
 
-        {/* STEP 1: AUTH METHOD SELECTION & INPUT */}
-        {step === 'input' && (
+        {/* STEP 1: EMAIL INPUT ONLY */}
+        {step === 'email' && (
           <div className="space-y-4">
-            {/* Mode Switcher */}
-            <div className="flex bg-gray-100 p-1 rounded-2xl">
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('email');
-                  setError('');
-                }}
-                className={`flex-1 py-2 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                  authMode === 'email'
-                    ? 'bg-white text-orange-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-900'
-                }`}
-              >
-                <span>✉️ Email OTP</span>
-                <span className="bg-emerald-100 text-emerald-800 text-[9px] px-1.5 py-0.5 rounded-full font-bold">100% Free</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setAuthMode('phone');
-                  setError('');
-                }}
-                className={`flex-1 py-2 text-xs font-black rounded-xl transition-all flex items-center justify-center gap-1.5 ${
-                  authMode === 'phone'
-                    ? 'bg-white text-orange-600 shadow-sm'
-                    : 'text-gray-500 hover:text-gray-900'
-                }`}
-              >
-                <span>📱 Mobile Number</span>
-              </button>
-            </div>
-
-            {authMode === 'email' ? (
-              <div>
-                <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-1.5">
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="block text-xs font-black text-gray-700 uppercase tracking-widest">
                   Student Email ID
                 </label>
-                <div className="flex items-center rounded-2xl border-2 border-gray-200 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-200 transition-all overflow-hidden bg-gray-50">
-                  <span className="pl-3.5 text-gray-400 text-sm">✉️</span>
-                  <input
-                    type="email"
-                    placeholder="student@campus.edu or gmail.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
-                    className="w-full px-3.5 py-3 text-sm font-bold text-gray-900 bg-transparent focus:outline-none"
-                    autoFocus
-                  />
-                </div>
-                <p className="text-[11px] text-gray-500 mt-1.5">
-                  Instant free OTP sent to your mailbox (no SMS charges or carrier delay).
-                </p>
+                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
+                  ✉️ Free Instant OTP
+                </span>
               </div>
-            ) : (
-              <div>
-                <label className="block text-xs font-black text-gray-700 uppercase tracking-widest mb-1.5">
-                  Student Mobile Number
-                </label>
-                <div className="flex items-center rounded-2xl border-2 border-gray-200 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-200 transition-all overflow-hidden bg-gray-50">
-                  <div className="px-3.5 py-3 bg-gray-100 border-r border-gray-200 text-xs font-bold text-gray-700 flex items-center gap-1">
-                    <span>IN</span>
-                    <span>+91</span>
-                  </div>
-                  <input
-                    type="tel"
-                    placeholder="Enter 10-digit mobile"
-                    value={phone}
-                    onChange={(e) => {
-                      const val = e.target.value.replace(/\D/g, '').slice(0, 10);
-                      setPhone(val);
-                    }}
-                    onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
-                    className="w-full px-3.5 py-3 text-sm font-bold text-gray-900 bg-transparent focus:outline-none"
-                    autoFocus
-                  />
-                </div>
-                <p className="text-[11px] text-gray-500 mt-1.5">
-                  We will send a 6-digit verification code to authenticate your account.
-                </p>
+              <div className="flex items-center rounded-2xl border-2 border-gray-200 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-200 transition-all overflow-hidden bg-gray-50">
+                <span className="pl-3.5 text-gray-400 text-base">✉️</span>
+                <input
+                  type="email"
+                  placeholder="Enter college or personal email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
+                  className="w-full px-3.5 py-3 text-sm font-bold text-gray-900 bg-transparent focus:outline-none"
+                  autoFocus
+                />
               </div>
-            )}
+              <p className="text-[11px] text-gray-500 mt-1.5">
+                We will email a 6-digit verification code to sign in or create your student profile.
+              </p>
+            </div>
 
             {error && (
               <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-start gap-2">
@@ -339,10 +248,10 @@ export default function LoginPage() {
 
             <button
               onClick={handleSendOtp}
-              disabled={loading || (authMode === 'email' ? !email.includes('@') : phone.length !== 10)}
+              disabled={loading || !cleanEmail.includes('@')}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'Sending Code...' : `Send OTP to ${authMode === 'email' ? 'Email' : 'Mobile'} ➔`}
+              {loading ? 'Sending Code...' : 'Send OTP to Email ➔'}
             </button>
 
             <div className="relative my-3">
@@ -365,25 +274,25 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* STEP 2: OTP VERIFICATION */}
+        {/* STEP 2: EMAIL OTP VERIFICATION */}
         {step === 'otp' && (
           <div className="space-y-4">
             <div className="bg-orange-50 border border-orange-200 rounded-2xl p-3.5 text-center">
               <span className="text-[11px] font-bold text-orange-950">
-                Code sent to <strong>{activeIdentifier}</strong>
+                Code sent to <strong>{cleanEmail}</strong>
               </span>
               <p className="text-[10px] text-orange-700 mt-0.5">
-                (Test code: <strong>123456</strong> works instantly for quick testing)
+                (Test code: <strong>123456</strong> works instantly for testing)
               </p>
               <button
                 onClick={() => {
-                  setStep('input');
+                  setStep('email');
                   setError('');
                   setSuccessMsg('');
                 }}
                 className="block mx-auto text-[11px] font-black text-orange-600 underline mt-1"
               >
-                Change {authMode === 'email' ? 'Email' : 'Number'}
+                Change Email Address
               </button>
             </div>
 
@@ -412,7 +321,7 @@ export default function LoginPage() {
                   disabled={loading}
                   className="text-xs font-bold text-orange-600 hover:underline"
                 >
-                  Resend Verification Code
+                  Resend Verification Email
                 </button>
               ) : (
                 <p className="text-xs text-gray-400 font-medium">
@@ -439,21 +348,21 @@ export default function LoginPage() {
               disabled={loading || otp.length < 4}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'Verifying...' : 'Verify OTP & Enter CampusBite ➔'}
+              {loading ? 'Verifying Code...' : 'Verify & Enter CampusBite ➔'}
             </button>
           </div>
         )}
 
-        {/* STEP 3: REGISTRATION PROFILE */}
+        {/* STEP 3: STUDENT PROFILE REGISTRATION */}
         {step === 'signup' && (
           <div className="space-y-3.5">
             <div className="border-b pb-2">
               <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg text-[11px] font-bold mb-1.5">
                 <span>✓ Verified:</span>
-                <span>{activeIdentifier}</span>
+                <span>{cleanEmail}</span>
               </div>
               <h2 className="text-base font-black text-gray-900">Student Profile Setup</h2>
-              <p className="text-xs text-gray-500">Set up your delivery hostel for scheduled slots</p>
+              <p className="text-xs text-gray-500">Set up your hostel details for slot meal delivery</p>
             </div>
 
             <div>
@@ -500,32 +409,6 @@ export default function LoginPage() {
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
               />
             </div>
-
-            {authMode !== 'email' && (
-              <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">College Email ID *</label>
-                <input
-                  type="email"
-                  value={signup.email}
-                  onChange={(e) => setSignup({ ...signup, email: e.target.value })}
-                  placeholder="your.name@college.edu"
-                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-            )}
-
-            {authMode !== 'phone' && (
-              <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Mobile Number</label>
-                <input
-                  type="tel"
-                  value={signup.phoneNumber}
-                  onChange={(e) => setSignup({ ...signup, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                  placeholder="10-digit mobile number"
-                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-                />
-              </div>
-            )}
 
             {error && (
               <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-start gap-2">
