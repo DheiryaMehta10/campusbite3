@@ -205,18 +205,28 @@ export default function LoginPage() {
         <div className="text-center mb-6">
           <div className="relative inline-flex items-center justify-center mb-3">
             <div className="w-16 h-16 bg-gradient-to-tr from-[#FF5200] via-[#FF6A00] to-[#FFA000] rounded-2xl flex items-center justify-center shadow-xl shadow-orange-500/30 border border-white/20">
-              <svg className="w-9 h-9 text-white drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8h1a4 4 0 0 1 0 8h-1" />
-                <path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z" />
-                <line x1="6" y1="1" x2="6" y2="4" />
-                <line x1="10" y1="1" x2="10" y2="4" />
-                <line x1="14" y1="1" x2="14" y2="4" />
+              {/* Modern Minimalist Food & Speed Monogram */}
+              <svg className="w-9 h-9 text-white" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                {/* Dynamic Food Wave Arc */}
+                <path
+                  d="M8 20C8 13.3726 13.3726 8 20 8C26.6274 8 32 13.3726 32 20C32 26.6274 26.6274 32 20 32C15.5 32 11.6 29.5 9.6 25.8"
+                  stroke="currentColor"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                />
+                {/* Speed Lightning Curve */}
+                <path
+                  d="M22 13L15 21H23L17 28"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle cx="28" cy="12" r="2" fill="currentColor" />
               </svg>
             </div>
-            <span className="absolute -bottom-1 -right-1 bg-white text-orange-600 rounded-full p-1 shadow-md border border-orange-100 flex items-center justify-center">
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor">
-                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-              </svg>
+            <span className="absolute -bottom-1 -right-1 bg-white text-orange-600 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-md border border-orange-100">
+              Student
             </span>
           </div>
 
@@ -224,7 +234,7 @@ export default function LoginPage() {
             <span>CampusBite</span>
           </h1>
           <p className="text-orange-600 font-black text-[11px] tracking-widest uppercase mt-0.5">
-            Order Smart • Delivered by Slot
+            Hostel Delivery Network
           </p>
           <div className="flex justify-center gap-1.5 mt-3">
             <span className={`h-1.5 rounded-full transition-all ${step === 'email' ? 'w-6 bg-orange-600' : 'w-2 bg-gray-200'}`}></span>

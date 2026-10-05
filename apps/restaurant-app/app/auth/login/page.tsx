@@ -50,15 +50,25 @@ export default function RestaurantLoginPage() {
         <div className="text-center space-y-2">
           <div className="relative inline-flex items-center justify-center mb-2">
             <div className="w-16 h-16 bg-gradient-to-tr from-[#1E293B] via-[#0F172A] to-[#334155] rounded-2xl flex items-center justify-center shadow-xl shadow-slate-900/30 border border-slate-700">
-              <svg className="w-9 h-9 text-amber-400 drop-shadow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z" />
-                <line x1="6" y1="17" x2="18" y2="17" />
+              <svg className="w-9 h-9 text-amber-400" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  d="M8 20C8 13.3726 13.3726 8 20 8C26.6274 8 32 13.3726 32 20C32 26.6274 26.6274 32 20 32C15.5 32 11.6 29.5 9.6 25.8"
+                  stroke="currentColor"
+                  strokeWidth="3.2"
+                  strokeLinecap="round"
+                />
+                <path
+                  d="M22 13L15 21H23L17 28"
+                  stroke="currentColor"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+                <circle cx="28" cy="12" r="2" fill="currentColor" />
               </svg>
             </div>
-            <span className="absolute -bottom-1 -right-1 bg-gradient-to-tr from-amber-500 to-orange-500 text-white rounded-full p-1 shadow-md border border-white">
-              <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
-              </svg>
+            <span className="absolute -bottom-1 -right-1 bg-gradient-to-tr from-amber-500 to-orange-500 text-white text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-md border border-white">
+              Partner
             </span>
           </div>
 
