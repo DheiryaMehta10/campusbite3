@@ -272,12 +272,9 @@ export default function LoginPage() {
               </div>
 
               <div>
-                <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Password
-                  </label>
-                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Default: campus123</span>
-                </div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Password
+                </label>
                 <input
                   type="password"
                   placeholder="Enter your password"
