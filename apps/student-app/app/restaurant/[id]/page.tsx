@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface FoodItem {
   id: string;
@@ -332,7 +333,7 @@ export default function RestaurantPage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-32 font-sans selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-32 font-sans selection:bg-orange-500 selection:text-white transition-colors duration-200 text-slate-900 dark:text-slate-100">
       {/* 1. TOP HERO BANNER & HEADER */}
       <div className="relative h-60 w-full bg-gray-900">
         <img
@@ -340,20 +341,21 @@ export default function RestaurantPage() {
           alt={restInfo.name}
           className="h-full w-full object-cover opacity-60"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#F8FAFC] via-black/40 to-black/60"></div>
+        <div className="absolute inset-0 bg-gradient-to-t from-[#F8FAFC] dark:from-slate-950 via-black/40 to-black/60"></div>
 
         {/* Top Floating Back and Share */}
         <div className="absolute top-4 left-4 right-4 flex justify-between items-center z-10">
           <button
             onClick={() => router.back()}
-            className="h-9 w-9 rounded-full bg-white/90 backdrop-blur-md text-gray-800 font-bold flex items-center justify-center shadow-md hover:bg-white transition-all active:scale-95"
+            className="h-9 w-9 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-gray-800 dark:text-white font-bold flex items-center justify-center shadow-md hover:bg-white transition-all active:scale-95"
           >
             ←
           </button>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
             <button
               onClick={() => alert('Link copied to clipboard!')}
-              className="h-9 w-9 rounded-full bg-white/90 backdrop-blur-md text-gray-800 font-bold flex items-center justify-center shadow-md hover:bg-white transition-all active:scale-95"
+              className="h-9 w-9 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-gray-800 dark:text-white font-bold flex items-center justify-center shadow-md hover:bg-white transition-all active:scale-95"
             >
               🔗
             </button>
@@ -363,12 +365,12 @@ export default function RestaurantPage() {
 
       {/* 2. RESTAURANT DETAILS FLOATING CARD (SWIGGY STYLE) */}
       <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 -mt-20 relative z-20 space-y-4">
-        <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-xl space-y-3">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-gray-100 dark:border-slate-800 shadow-xl space-y-3">
           <div className="flex justify-between items-start gap-2">
             <div>
-              <h1 className="text-xl font-black text-gray-900 tracking-tight">{restInfo.name}</h1>
-              <p className="text-xs text-gray-500 font-medium mt-0.5">{restInfo.cuisines}</p>
-              <p className="text-[11px] text-gray-400 font-medium flex items-center gap-1 mt-1">
+              <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{restInfo.name}</h1>
+              <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-0.5">{restInfo.cuisines}</p>
+              <p className="text-[11px] text-gray-400 dark:text-slate-500 font-medium flex items-center gap-1 mt-1">
                 <span>📍</span> {restInfo.address}
               </p>
             </div>

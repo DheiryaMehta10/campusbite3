@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface Restaurant {
   id: string;
@@ -321,9 +322,9 @@ export default function HomePage() {
   });
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-32 text-gray-900 font-sans selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-32 text-gray-900 dark:text-slate-100 font-sans selection:bg-orange-500 selection:text-white transition-colors duration-200">
       {/* 1. TOP SWIGGY-STYLE HEADER WITH LOCATION */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 shadow-sm transition-all">
         <div className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between gap-3">
             {/* Location Pill & Brand Emblem */}
@@ -333,24 +334,27 @@ export default function HomePage() {
               </Link>
               <Link href="/profile" className="cursor-pointer group">
                 <div className="flex items-center gap-1">
-                  <span className="text-xs font-black text-gray-900 tracking-tight flex items-center gap-1 group-hover:text-orange-600 transition-colors">
+                  <span className="text-xs font-black text-gray-900 dark:text-white tracking-tight flex items-center gap-1 group-hover:text-orange-600 transition-colors">
                     {userHostel || 'Set Delivery Hostel'}
                     <span className="text-[10px] text-orange-600">▾</span>
                   </span>
                 </div>
-                <p className="text-[11px] font-semibold text-gray-500 truncate max-w-[180px]">
+                <p className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 truncate max-w-[180px]">
                   {userRoom ? `Room ${userRoom} • Scheduled Delivery` : 'Tap to configure hostel & room'}
                 </p>
               </Link>
             </div>
 
-            {/* Profile Avatar / Quick Link */}
-            <Link
-              href="/profile"
-              className="h-9 w-9 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 border border-gray-200 flex items-center justify-center text-gray-700 text-xs font-black shadow-inner hover:ring-2 hover:ring-orange-500 transition-all"
-            >
-              {userName.slice(0, 1).toUpperCase()}
-            </Link>
+            {/* Actions: Theme Toggle + Profile Avatar */}
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <Link
+                href="/profile"
+                className="h-9 w-9 rounded-full bg-gradient-to-br from-gray-100 to-gray-200 dark:from-slate-800 dark:to-slate-700 border border-gray-200 dark:border-slate-750 flex items-center justify-center text-gray-700 dark:text-slate-200 text-xs font-black shadow-inner hover:ring-2 hover:ring-orange-500 transition-all"
+              >
+                {userName.slice(0, 1).toUpperCase()}
+              </Link>
+            </div>
           </div>
 
           {/* Search Bar (Swiggy / Zomato style) */}
@@ -361,12 +365,12 @@ export default function HomePage() {
               placeholder="Search for biryani, butter paneer, cold coffee, snacks..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-10 py-2.5 bg-gray-100/80 hover:bg-gray-100 focus:bg-white text-xs font-medium rounded-2xl border border-transparent focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all outline-none text-gray-800 placeholder-gray-400 shadow-inner"
+              className="w-full pl-10 pr-10 py-2.5 bg-gray-100/80 dark:bg-slate-800/90 hover:bg-gray-100 dark:hover:bg-slate-800 focus:bg-white dark:focus:bg-slate-900 text-xs font-medium rounded-2xl border border-transparent focus:border-orange-500 focus:ring-4 focus:ring-orange-500/10 transition-all outline-none text-gray-800 dark:text-slate-100 placeholder-gray-400 shadow-inner"
             />
             {searchQuery && (
               <button
                 onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 text-xs font-bold bg-gray-200 rounded-full h-4 w-4 flex items-center justify-center"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 text-xs font-bold bg-gray-200 dark:bg-slate-700 rounded-full h-4 w-4 flex items-center justify-center"
               >
                 ✕
               </button>

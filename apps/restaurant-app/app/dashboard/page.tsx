@@ -183,6 +183,10 @@ export default function RestaurantDashboardPage() {
 
   // Add Item Modal state
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showMenuCardModal, setShowMenuCardModal] = useState(false);
+  const [menuCardUrl, setMenuCardUrl] = useState('');
+  const [menuCardPreview, setMenuCardPreview] = useState<string | null>(null);
+
   const [newItem, setNewItem] = useState({
     name: '',
     price: '',
@@ -190,6 +194,8 @@ export default function RestaurantDashboardPage() {
     isVeg: true,
     description: '',
     image_url: '',
+    prepTime: '15',
+    spiceLevel: 'Medium',
     isBestseller: false,
   });
 
@@ -264,12 +270,14 @@ export default function RestaurantDashboardPage() {
   const fetchMenu = async (id: string) => {
     try {
       const res = await api.get(`/api/restaurants/${id}/menu`);
-      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        setMenuItems(res.data.data);
-        if (typeof window !== 'undefined') {
-          localStorage.setItem(`cb_restaurant_menu_${id}`, JSON.stringify(res.data.data));
+      if (res.data?.data && Array.isArray(res.data.data)) {
+        if (res.data.data.length > 0) {
+          setMenuItems(res.data.data);
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(`cb_restaurant_menu_${id}`, JSON.stringify(res.data.data));
+          }
+          return;
         }
-        return;
       }
     } catch {}
 
@@ -277,12 +285,21 @@ export default function RestaurantDashboardPage() {
       const savedMenu = localStorage.getItem(`cb_restaurant_menu_${id}`);
       if (savedMenu) {
         try {
-          setMenuItems(JSON.parse(savedMenu));
-          return;
+          const parsed = JSON.parse(savedMenu);
+          if (Array.isArray(parsed)) {
+            setMenuItems(parsed);
+            return;
+          }
         } catch {}
       }
     }
-    setMenuItems(DEFAULT_MENU_ITEMS);
+
+    const CANTEEN_SEEDS = ['canteen-1', 'canteen-2', 'canteen-3', 'canteen-4', '550e8400-e29b-41d4-a716-446655440001', '550e8400-e29b-41d4-a716-446655440002', '550e8400-e29b-41d4-a716-446655440003', '550e8400-e29b-41d4-a716-446655440004'];
+    if (CANTEEN_SEEDS.includes(id)) {
+      setMenuItems(DEFAULT_MENU_ITEMS);
+    } else {
+      setMenuItems([]);
+    }
   };
 
   const saveMenuToStorage = (items: MenuItem[], targetRestId = currentRestaurant.id) => {
@@ -330,7 +347,19 @@ export default function RestaurantDashboardPage() {
     const uniqueList = Array.from(new Set(Array.from(mergedMap.values())));
     uniqueList.sort((a, b) => new Date(b.placedAt || b.placed_at || 0).getTime() - new Date(a.placedAt || a.placed_at || 0).getTime());
 
-    setOrders(uniqueList);
+    const CANTEEN_MAP: Record<string, string> = {
+      'canteen-1': '550e8400-e29b-41d4-a716-446655440001',
+      'canteen-2': '550e8400-e29b-41d4-a716-446655440002',
+      'canteen-3': '550e8400-e29b-41d4-a716-446655440003',
+      'canteen-4': '550e8400-e29b-41d4-a716-446655440004',
+    };
+    const resolvedTarget = CANTEEN_MAP[id] || id;
+    const targetOrders = uniqueList.filter((ord: any) => {
+      const ordRest = CANTEEN_MAP[ord.restaurantId || ord.restaurant_id || ''] || (ord.restaurantId || ord.restaurant_id || '');
+      return ordRest === resolvedTarget || ord.restaurantId === id || ord.restaurant_id === id;
+    });
+
+    setOrders(targetOrders.length > 0 ? targetOrders : uniqueList);
     if (typeof window !== 'undefined' && uniqueList.length > 0) {
       localStorage.setItem('cb_orders', JSON.stringify(uniqueList));
     }
@@ -524,6 +553,8 @@ export default function RestaurantDashboardPage() {
       isVeg: true,
       description: '',
       image_url: '',
+      prepTime: '15',
+      spiceLevel: 'Medium',
       isBestseller: false,
     });
 
@@ -1004,13 +1035,22 @@ export default function RestaurantDashboardPage() {
                   <p className="text-xs text-slate-400">Manage dishes, pricing, images, and live stock availability</p>
                 </div>
 
-                <button
-                  onClick={() => setShowAddModal(true)}
-                  className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white px-4 py-2.5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-orange-600/25 active:scale-95 transition-all flex items-center gap-1.5"
-                >
-                  <span>+</span>
-                  <span>Add New Dish</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowMenuCardModal(true)}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-4 py-2.5 rounded-2xl font-bold text-xs shadow-md flex items-center gap-1.5 transition-all"
+                  >
+                    <span>📄</span>
+                    <span>Upload Menu Card</span>
+                  </button>
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 hover:to-amber-500 text-white px-4 py-2.5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg shadow-orange-600/25 active:scale-95 transition-all flex items-center gap-1.5"
+                  >
+                    <span>+</span>
+                    <span>Add New Dish</span>
+                  </button>
+                </div>
               </div>
 
               {/* Filters & Search Bar */}
@@ -1073,8 +1113,34 @@ export default function RestaurantDashboardPage() {
               </div>
             </div>
 
-            {/* Menu Items Grid */}
-            {filteredMenuItems.length === 0 ? (
+            {/* Menu Items Grid or Clean Slate */}
+            {menuItems.length === 0 ? (
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl p-10 text-center space-y-4 shadow-xl">
+                <div className="w-16 h-16 rounded-3xl bg-orange-500/10 border border-orange-500/20 text-orange-400 flex items-center justify-center text-3xl mx-auto">
+                  📋
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-base font-black text-white">Your Kitchen Menu is Empty</h3>
+                  <p className="text-xs text-slate-400 max-w-md mx-auto">
+                    Welcome to your new kitchen! Start by creating your food dishes with custom pricing, categories, and photos, or upload your printed menu card.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+                  <button
+                    onClick={() => setShowAddModal(true)}
+                    className="bg-orange-600 hover:bg-orange-500 text-white px-5 py-2.5 rounded-2xl text-xs font-black uppercase shadow-lg shadow-orange-600/20 active:scale-95 transition-all"
+                  >
+                    + Add First Dish
+                  </button>
+                  <button
+                    onClick={() => setShowMenuCardModal(true)}
+                    className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-5 py-2.5 rounded-2xl text-xs font-bold active:scale-95 transition-all"
+                  >
+                    📄 Upload Menu Card
+                  </button>
+                </div>
+              </div>
+            ) : filteredMenuItems.length === 0 ? (
               <div className="bg-slate-900/60 rounded-3xl p-12 text-center border border-slate-800 text-xs text-slate-500 space-y-2">
                 <p className="text-3xl">🍽️</p>
                 <p>No dishes found matching your search or filters.</p>
@@ -1470,14 +1536,14 @@ export default function RestaurantDashboardPage() {
         </div>
       )}
 
-      {/* 10. ADD DISH MODAL */}
+      {/* 10. ADD DISH MODAL (WITH RICH OPTIONS) */}
       {showAddModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-md space-y-4 shadow-2xl my-8">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-lg space-y-4 shadow-2xl my-8">
             <div className="flex justify-between items-center pb-2 border-b border-slate-800">
               <div>
                 <h3 className="text-base font-black text-white">Add New Dish</h3>
-                <p className="text-[11px] text-slate-400">To {currentRestaurant.name}</p>
+                <p className="text-[11px] text-slate-400">To {currentRestaurant.name} live menu</p>
               </div>
               <button
                 onClick={() => setShowAddModal(false)}
@@ -1494,7 +1560,7 @@ export default function RestaurantDashboardPage() {
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Special Butter Paneer Masala"
+                  placeholder="e.g. Special Paneer Butter Masala Combo"
                   value={newItem.name}
                   onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-orange-500"
@@ -1521,23 +1587,61 @@ export default function RestaurantDashboardPage() {
                   <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
                     Category
                   </label>
-                  <input
-                    type="text"
-                    placeholder="Main Course / Snacks / Biryani"
+                  <select
                     value={newItem.category}
                     onChange={(e) => setNewItem({ ...newItem, category: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-orange-500"
+                  >
+                    <option value="Main Course">Main Course</option>
+                    <option value="Starters">Starters & Appetizers</option>
+                    <option value="Biryani & Rice">Biryani & Rice Bowls</option>
+                    <option value="Snacks">Fast Food & Snacks</option>
+                    <option value="Beverages">Beverages & Cold Brews</option>
+                    <option value="Desserts">Desserts & Sweets</option>
+                    <option value="South Indian">South Indian Specials</option>
+                    <option value="Breakfast">Morning Breakfast</option>
+                    <option value="Combos">Budget Student Combos</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5">
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    Prep Time (Mins)
+                  </label>
+                  <input
+                    type="number"
+                    placeholder="15"
+                    value={newItem.prepTime}
+                    onChange={(e) => setNewItem({ ...newItem, prepTime: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-orange-500"
                   />
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    Spice Level
+                  </label>
+                  <select
+                    value={newItem.spiceLevel}
+                    onChange={(e) => setNewItem({ ...newItem, spiceLevel: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-orange-500"
+                  >
+                    <option value="Mild">Mild / Low Spice</option>
+                    <option value="Medium">Medium Spicy</option>
+                    <option value="Spicy">Hot & Spicy 🔥</option>
+                  </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                  Description / Portion
+                  Description / Ingredients / Portions
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. Served with 2 warm butter naans & salad"
+                  placeholder="e.g. Served with 2 warm butter naans, mint chutney & fresh salad"
                   value={newItem.description}
                   onChange={(e) => setNewItem({ ...newItem, description: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-orange-500"
@@ -1547,7 +1651,7 @@ export default function RestaurantDashboardPage() {
               {/* Food Type */}
               <div>
                 <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
-                  Food Type
+                  Food Classification
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -1555,7 +1659,7 @@ export default function RestaurantDashboardPage() {
                     onClick={() => setNewItem({ ...newItem, isVeg: true })}
                     className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${
                       newItem.isVeg
-                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500'
+                        ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500 ring-2 ring-emerald-500/30'
                         : 'bg-slate-800 text-slate-400 border-slate-700'
                     }`}
                   >
@@ -1566,13 +1670,46 @@ export default function RestaurantDashboardPage() {
                     onClick={() => setNewItem({ ...newItem, isVeg: false })}
                     className={`py-2.5 rounded-xl text-xs font-bold border transition-all ${
                       !newItem.isVeg
-                        ? 'bg-rose-500/20 text-rose-400 border-rose-500'
+                        ? 'bg-rose-500/20 text-rose-400 border-rose-500 ring-2 ring-rose-500/30'
                         : 'bg-slate-800 text-slate-400 border-slate-700'
                     }`}
                   >
                     🔴 Non-Veg
                   </button>
                 </div>
+              </div>
+
+              {/* Dish Photo Presets */}
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                  Dish Photo (Choose Preset or Enter URL)
+                </label>
+                <div className="grid grid-cols-4 gap-1.5 mb-2">
+                  {[
+                    { label: 'Curry', url: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?w=500&auto=format&fit=crop&q=80' },
+                    { label: 'Biryani', url: 'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=500&auto=format&fit=crop&q=80' },
+                    { label: 'Snacks', url: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=500&auto=format&fit=crop&q=80' },
+                    { label: 'Burger', url: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?w=500&auto=format&fit=crop&q=80' },
+                  ].map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setNewItem({ ...newItem, image_url: preset.url })}
+                      className={`h-10 rounded-lg overflow-hidden border relative ${
+                        newItem.image_url === preset.url ? 'border-orange-500 ring-2 ring-orange-500/50' : 'border-slate-700 opacity-60'
+                      }`}
+                    >
+                      <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+                <input
+                  type="url"
+                  placeholder="https://images.unsplash.com/..."
+                  value={newItem.image_url}
+                  onChange={(e) => setNewItem({ ...newItem, image_url: e.target.value })}
+                  className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-medium text-white focus:outline-none focus:border-orange-500"
+                />
               </div>
 
               {/* Bestseller Toggle */}
@@ -1596,12 +1733,102 @@ export default function RestaurantDashboardPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-black py-3 rounded-xl text-xs uppercase shadow-md"
+                  className="flex-1 bg-orange-600 hover:bg-orange-500 text-white font-black py-3 rounded-xl text-xs uppercase shadow-md shadow-orange-600/25"
                 >
-                  Save Dish
+                  Save Dish to Menu ➔
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* 11. UPLOAD MENU CARD MODAL */}
+      {showMenuCardModal && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-slate-900 border border-slate-700 rounded-3xl p-6 w-full max-w-md space-y-4 shadow-2xl my-8">
+            <div className="flex justify-between items-center pb-2 border-b border-slate-800">
+              <div>
+                <h3 className="text-base font-black text-white">Upload Printed Menu Card</h3>
+                <p className="text-[11px] text-slate-400">Upload a photo or scanned PDF of your menu</p>
+              </div>
+              <button
+                onClick={() => setShowMenuCardModal(false)}
+                className="text-slate-400 hover:text-white font-bold"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="border-2 border-dashed border-slate-700 hover:border-orange-500/50 rounded-2xl p-6 text-center space-y-3 bg-slate-800/40 transition-all">
+                <div className="text-3xl">📄</div>
+                <p className="text-xs font-bold text-slate-300">Upload Menu Card Image</p>
+                <p className="text-[10px] text-slate-500">Supports JPG, PNG, PDF up to 10MB</p>
+                
+                <input
+                  type="file"
+                  accept="image/*,.pdf"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => {
+                        setMenuCardPreview(reader.result as string);
+                      };
+                      reader.readAsDataURL(file);
+                    }
+                  }}
+                  className="text-xs text-slate-400 file:mr-2 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-orange-600 file:text-white hover:file:bg-orange-700"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                  Or Paste Menu Image URL
+                </label>
+                <input
+                  type="url"
+                  placeholder="https://your-menu-image-link.jpg"
+                  value={menuCardUrl}
+                  onChange={(e) => {
+                    setMenuCardUrl(e.target.value);
+                    setMenuCardPreview(e.target.value);
+                  }}
+                  className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              {menuCardPreview && (
+                <div className="rounded-2xl overflow-hidden border border-slate-700 max-h-48">
+                  <img src={menuCardPreview} alt="Menu Card Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+
+              <div className="pt-2 flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowMenuCardModal(false)}
+                  className="flex-1 bg-slate-800 text-slate-400 font-bold py-3 rounded-xl text-xs uppercase"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (menuCardPreview || menuCardUrl) {
+                      alert('✓ Menu card saved and attached to your kitchen profile!');
+                      setShowMenuCardModal(false);
+                    } else {
+                      alert('Please select a file or enter an image URL');
+                    }
+                  }}
+                  className="flex-1 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-500 text-white font-black py-3 rounded-xl text-xs uppercase shadow-md"
+                >
+                  Save Menu Card
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

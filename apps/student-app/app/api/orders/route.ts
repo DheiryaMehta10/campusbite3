@@ -9,6 +9,17 @@ export async function OPTIONS() {
   return handleCorsOptions();
 }
 
+const CANTEEN_ID_MAP: Record<string, string> = {
+  'canteen-1': '550e8400-e29b-41d4-a716-446655440001',
+  'canteen-2': '550e8400-e29b-41d4-a716-446655440002',
+  'canteen-3': '550e8400-e29b-41d4-a716-446655440003',
+  'canteen-4': '550e8400-e29b-41d4-a716-446655440004',
+};
+
+function resolveRestaurantId(id: string): string {
+  return CANTEEN_ID_MAP[id] || id;
+}
+
 // In-memory cache for ultra-fast instant live sync & fallback across instances
 const MEMORY_ORDERS: any[] = [];
 
@@ -56,6 +67,8 @@ function formatOrder(dbOrder: any) {
   else if (orderStatus === 'cancelled' || upperStatus === 'CANCELLED') orderStatus = 'CANCELLED';
   else if (orderStatus === 'uncollected' || upperStatus === 'UNCOLLECTED') orderStatus = 'UNCOLLECTED';
 
+  const rId = dbOrder.restaurant_id || dbOrder.restaurantId || '550e8400-e29b-41d4-a716-446655440001';
+
   return {
     id: dbOrder.id,
     orderNumber: dbOrder.order_number || dbOrder.orderNumber,
@@ -72,8 +85,8 @@ function formatOrder(dbOrder: any) {
     hostel_name: hostelName,
     roomNumber,
     room_number: roomNumber,
-    restaurantId: dbOrder.restaurant_id || dbOrder.restaurantId,
-    restaurant_id: dbOrder.restaurant_id || dbOrder.restaurantId,
+    restaurantId: rId,
+    restaurant_id: rId,
     restaurantName,
     deliverySlot,
     delivery_slot: { name: deliverySlot },
@@ -105,7 +118,7 @@ export async function POST(request: NextRequest) {
       studentName = 'Student',
       studentPhone = '',
       studentEmail = '',
-      restaurantId = '550e8400-e29b-41d4-a716-446655440000',
+      restaurantId = '550e8400-e29b-41d4-a716-446655440001',
       restaurantName = 'Campus Canteen',
       catalogType = 'food',
       deliverySlotId = '4a511603-db68-4dee-b602-0478566adedd',
@@ -114,7 +127,6 @@ export async function POST(request: NextRequest) {
       paymentMethod = 'cod',
       hostelName = '',
       roomNumber = '',
-      itemTotal,
       deliveryFee: customDeliveryFee,
       platformFee: customPlatformFee,
       discount: customDiscount,
@@ -130,13 +142,13 @@ export async function POST(request: NextRequest) {
 
     let subtotal = 0;
     const validatedItems = items.map((itm: any) => {
-      const unitPrice = Number(itm.price || 50);
+      const unitPrice = Number(itm.price || itm.unitPrice || 50);
       const qty = Math.max(1, Number(itm.quantity || 1));
       subtotal += unitPrice * qty;
       return {
         item_id: itm.id || itm.itemId || 'item-1',
-        name: itm.name || 'Food Item',
-        item_name: itm.name || 'Food Item',
+        name: itm.name || itm.itemName || 'Food Item',
+        item_name: itm.name || itm.itemName || 'Food Item',
         quantity: qty,
         price: unitPrice,
         unit_price: unitPrice,
@@ -188,7 +200,7 @@ export async function POST(request: NextRequest) {
       } else {
         const { data: createdStudent } = await supabaseServer.from('students').insert({
           id: dbStudentId,
-          phone_number: normalizedPhone,
+          phone_number: normalizedPhone || '9876543210',
           full_name: studentName || 'Student',
           college_name: 'Campus University',
           hostel_name: hostelName || '',
@@ -201,16 +213,10 @@ export async function POST(request: NextRequest) {
       console.warn('Student upsert notice:', sErr);
     }
 
-    // 2. Fetch valid restaurant and slot IDs from Supabase
-    let validRestId = restaurantId;
-    try {
-      const { data: rList } = await supabaseServer.from('restaurants').select('id');
-      if (rList && rList.length > 0) {
-        const match = rList.find((r) => r.id === restaurantId);
-        validRestId = match ? match.id : rList[0].id;
-      }
-    } catch {}
+    // 2. Resolve Restaurant ID cleanly
+    const resolvedRestId = resolveRestaurantId(restaurantId);
 
+    // 3. Resolve Slot ID cleanly
     let validSlotId = deliverySlotId;
     try {
       const { data: sList } = await supabaseServer.from('delivery_slots').select('id');
@@ -236,8 +242,8 @@ export async function POST(request: NextRequest) {
       hostel_name: hostelName,
       roomNumber,
       room_number: roomNumber,
-      restaurantId: validRestId,
-      restaurant_id: validRestId,
+      restaurantId: resolvedRestId,
+      restaurant_id: resolvedRestId,
       restaurantName,
       deliverySlotId: validSlotId,
       delivery_slot_id: validSlotId,
@@ -265,13 +271,13 @@ export async function POST(request: NextRequest) {
 
     MEMORY_ORDERS.unshift(newOrderObj);
 
-    // 3. Save persistently to Supabase orders table
+    // 4. Save persistently to Supabase orders table
     try {
       const { error: ordInsertErr } = await supabaseServer.from('orders').insert({
         id: orderId,
         order_number: orderNumber,
         student_id: dbStudentId,
-        restaurant_id: validRestId,
+        restaurant_id: resolvedRestId,
         delivery_slot_id: validSlotId,
         order_type: catalogType || 'food',
         subtotal,
@@ -334,7 +340,7 @@ export async function GET(request: NextRequest) {
       const { data, error } = await supabaseServer
         .from('orders')
         .select('*, students(*), restaurants(*), delivery_slots(*), order_items(*)')
-        .order('created_at', { ascending: false });
+        .order('placed_at', { ascending: false });
 
       if (!error && data) {
         dbOrders = data.map(formatOrder);
@@ -377,7 +383,11 @@ export async function GET(request: NextRequest) {
         return matchId || matchEmail || matchPhone;
       });
     } else if (restaurantId) {
-      result = result.filter((o) => o.restaurantId === restaurantId || o.restaurant_id === restaurantId);
+      const targetResolved = resolveRestaurantId(restaurantId);
+      result = result.filter((o) => {
+        const ordRest = resolveRestaurantId(o.restaurantId || o.restaurant_id || '');
+        return ordRest === targetResolved || o.restaurantId === restaurantId || o.restaurant_id === restaurantId;
+      });
     }
 
     return corsResponse({ success: true, data: result });

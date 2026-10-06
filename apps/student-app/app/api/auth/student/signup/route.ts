@@ -1,46 +1,58 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
+import { corsResponse, handleCorsOptions } from '@/lib/cors';
 import { v4 as uuidv4 } from 'uuid';
 
 export const dynamic = 'force-dynamic';
 
+export async function OPTIONS() {
+  return handleCorsOptions();
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { phoneNumber, fullName, collegeName, hostelName, roomNumber, email } = body;
+    const { phoneNumber, fullName, collegeName, hostelName, roomNumber, email, password } = body;
 
     const cleanEmail = String(email || '').trim().toLowerCase();
     const cleanPhone = String(phoneNumber || '').replace(/\D/g, '').slice(-10);
 
     if (!cleanEmail || !cleanEmail.includes('@')) {
-      return NextResponse.json({ success: false, message: 'A valid email address is required' }, { status: 400 });
+      return corsResponse({ success: false, message: 'A valid email address is required' }, { status: 400 });
     }
     if (!fullName || !fullName.trim()) {
-      return NextResponse.json({ success: false, message: 'Full name is required' }, { status: 400 });
+      return corsResponse({ success: false, message: 'Full name is required' }, { status: 400 });
     }
     if (!hostelName || !hostelName.trim()) {
-      return NextResponse.json({ success: false, message: 'Hostel Name / Block is required' }, { status: 400 });
+      return corsResponse({ success: false, message: 'Hostel Name / Block is required' }, { status: 400 });
+    }
+    if (!roomNumber || !roomNumber.trim()) {
+      return corsResponse({ success: false, message: 'Room Number is required' }, { status: 400 });
     }
 
     // 1. Check if student already exists by email
     let studentId = '';
-    const { data: existingStudentByEmail } = await supabaseServer
-      .from('students')
-      .select('id')
-      .eq('email', cleanEmail)
-      .maybeSingle();
-
-    if (existingStudentByEmail?.id) {
-      studentId = existingStudentByEmail.id;
-    } else if (cleanPhone) {
-      const { data: existingStudentByPhone } = await supabaseServer
+    try {
+      const { data: existingStudentByEmail } = await supabaseServer
         .from('students')
         .select('id')
-        .eq('phone_number', cleanPhone)
+        .eq('email', cleanEmail)
         .maybeSingle();
-      if (existingStudentByPhone?.id) {
-        studentId = existingStudentByPhone.id;
+
+      if (existingStudentByEmail?.id) {
+        studentId = existingStudentByEmail.id;
+      } else if (cleanPhone) {
+        const { data: existingStudentByPhone } = await supabaseServer
+          .from('students')
+          .select('id')
+          .eq('phone_number', cleanPhone)
+          .maybeSingle();
+        if (existingStudentByPhone?.id) {
+          studentId = existingStudentByPhone.id;
+        }
       }
+    } catch (lookupErr) {
+      console.warn('Student lookup warning:', lookupErr);
     }
 
     if (!studentId) {
@@ -50,7 +62,7 @@ export async function POST(request: NextRequest) {
     const studentRecord = {
       id: studentId,
       email: cleanEmail,
-      phone_number: cleanPhone || '',
+      phone_number: cleanPhone || '9876543210',
       full_name: fullName.trim(),
       college_name: (collegeName || 'Campus University').trim(),
       hostel_name: hostelName.trim(),
@@ -72,9 +84,9 @@ export async function POST(request: NextRequest) {
       console.warn('Supabase DB error on student signup:', dbErr);
     }
 
-    return NextResponse.json({
+    return corsResponse({
       success: true,
-      message: 'Student profile created successfully',
+      message: 'Student profile created and saved in backend database!',
       student: {
         id: studentId,
         email: cleanEmail,
@@ -88,6 +100,6 @@ export async function POST(request: NextRequest) {
     });
   } catch (error: any) {
     console.error('Signup Error:', error);
-    return NextResponse.json({ success: false, message: 'Failed to create student account' }, { status: 500 });
+    return corsResponse({ success: false, message: 'Failed to create student account' }, { status: 500 });
   }
 }

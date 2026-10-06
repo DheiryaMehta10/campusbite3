@@ -22,8 +22,15 @@ export default function AdminRestaurantsPage() {
   const [restaurants, setRestaurants] = useState<Restaurant[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [showAddModal, setShowAddModal] = useState(false);
+  const [newRestForm, setNewRestForm] = useState({
+    name: '',
+    description: '',
+    phone: '',
+    cuisines: 'North Indian, Snacks, Beverages',
+  });
 
-  const api = axios.create({ baseURL: process.env.NEXT_PUBLIC_API_URL || '' });
+  const api = axios.create({ baseURL: '' });
 
   useEffect(() => {
     fetchRestaurants();
@@ -35,7 +42,7 @@ export default function AdminRestaurantsPage() {
 
   const fetchRestaurants = async (isPolling = false) => {
     if (!isPolling) setLoading(true);
-    let apiList: Restaurant[] = [];
+    let apiList: any[] = [];
     try {
       const res = await api.get('/api/restaurants');
       if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
@@ -50,7 +57,7 @@ export default function AdminRestaurantsPage() {
       } catch {}
     }
 
-    let localList: Restaurant[] = [];
+    let localList: any[] = [];
     if (typeof window !== 'undefined') {
       try {
         const saved = localStorage.getItem('cb_all_restaurants');
@@ -82,9 +89,9 @@ export default function AdminRestaurantsPage() {
         name: 'Night Canteen & Snacks Hub',
         campusLocation: 'Tagore Hostel Quadrangle',
         contactPhone: '9876500003',
-        operationalStatus: 'temporarily_closed',
+        operationalStatus: 'open',
         closedByAdmin: false,
-        activeOrdersCount: 0,
+        activeOrdersCount: 4,
       },
       {
         id: 'canteen-4',
@@ -99,8 +106,30 @@ export default function AdminRestaurantsPage() {
 
     const map = new Map<string, Restaurant>();
     defaultSeed.forEach((r) => map.set(r.id, r));
-    apiList.forEach((r) => map.set(r.id, r));
-    localList.forEach((r) => map.set(r.id, r));
+
+    apiList.forEach((r: any) => {
+      map.set(r.id, {
+        id: r.id,
+        name: r.name,
+        campusLocation: r.campusLocation || r.address || r.description || 'Campus Food Plaza',
+        contactPhone: r.contactPhone || r.phone_number || r.phone || '9876500000',
+        operationalStatus: r.operationalStatus || r.operational_status || 'open',
+        closedByAdmin: Boolean(r.closedByAdmin || r.closed_by_admin),
+        activeOrdersCount: r.activeOrdersCount || 0,
+      });
+    });
+
+    localList.forEach((r: any) => {
+      map.set(r.id, {
+        id: r.id,
+        name: r.name,
+        campusLocation: r.campusLocation || r.address || r.description || 'Campus Food Plaza',
+        contactPhone: r.contactPhone || r.phone_number || r.phone || '9876500000',
+        operationalStatus: r.operationalStatus || r.operational_status || 'open',
+        closedByAdmin: Boolean(r.closedByAdmin || r.closed_by_admin),
+        activeOrdersCount: r.activeOrdersCount || 0,
+      });
+    });
 
     setRestaurants(Array.from(map.values()));
     if (!isPolling) setLoading(false);
@@ -119,7 +148,7 @@ export default function AdminRestaurantsPage() {
           operationalStatus: newForceState ? 'temporarily_closed' : 'open',
         });
       } catch (e) {
-        console.log('Simulating admin closure patch');
+        console.log('Admin closure patch warning');
       }
 
       setRestaurants((prev) =>
@@ -138,99 +167,249 @@ export default function AdminRestaurantsPage() {
     }
   };
 
+  const handleAddRestaurant = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newRestForm.name.trim()) {
+      alert('Please enter restaurant name');
+      return;
+    }
+
+    try {
+      const payload = {
+        name: newRestForm.name.trim(),
+        description: newRestForm.description.trim() || 'Campus Food Plaza',
+        phone: newRestForm.phone.trim() || '9876543210',
+        cuisines: newRestForm.cuisines.trim(),
+        operational_status: 'open',
+      };
+
+      const res = await api.post('/api/restaurants', payload);
+      if (res.data?.data) {
+        setRestaurants((prev) => [res.data.data, ...prev]);
+        setShowAddModal(false);
+        setNewRestForm({ name: '', description: '', phone: '', cuisines: 'North Indian, Snacks, Beverages' });
+        fetchRestaurants();
+      }
+    } catch (err) {
+      alert('Failed to register restaurant. Please try again.');
+    }
+  };
+
   const filtered = restaurants.filter((r) =>
     r.name.toLowerCase().includes(search.toLowerCase()) ||
     (r.campusLocation || '').toLowerCase().includes(search.toLowerCase())
   );
 
   return (
-    <div className="min-h-screen bg-gray-50 pb-20">
-      {/* Top Header */}
-      <div className="bg-white border-b px-6 py-4 shadow-sm flex flex-wrap justify-between items-center gap-4">
-        <div>
-          <h1 className="text-xl font-black text-gray-900">Partner Canteens & Restaurants</h1>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Monitor canteens, active orders & administer emergency forced closures
-          </p>
+    <div className="min-h-screen bg-[#F8FAFC] pb-20 font-sans selection:bg-orange-500 selection:text-white">
+      {/* 1. TOP HEADER */}
+      <header className="bg-slate-900 text-white border-b border-slate-800 shadow-md">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex justify-between items-center">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-orange-500 to-amber-500 flex items-center justify-center text-xl font-black shadow-lg shadow-orange-500/20">
+              🏪
+            </div>
+            <div>
+              <h1 className="text-base font-black tracking-tight">Canteen Partners & Outlets</h1>
+              <p className="text-[11px] text-slate-400">Live Campus Kitchen Status & Admin Emergency Controls</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setShowAddModal(true)}
+              className="bg-orange-600 hover:bg-orange-700 text-white px-3.5 py-1.5 rounded-xl text-xs font-black transition-all shadow-md shadow-orange-600/20"
+            >
+              + Add New Canteen
+            </button>
+            <button
+              onClick={() => fetchRestaurants()}
+              className="bg-slate-800 hover:bg-slate-700 text-slate-200 px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all border border-slate-700"
+            >
+              ↻ Refresh
+            </button>
+          </div>
         </div>
-        <Link href="/dashboard" className="text-xs font-bold text-gray-600 hover:text-gray-900 border px-3 py-1.5 rounded-xl">
-          ← Back to Dashboard
-        </Link>
-      </div>
 
-      <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
-        {/* Search */}
-        <input
-          type="text"
-          placeholder="Search canteens by name or campus location..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="w-full sm:w-96 bg-white border border-gray-300 rounded-2xl px-4 py-2.5 text-xs font-medium focus:ring-2 focus:ring-orange-500 focus:outline-none shadow-sm"
-        />
+        {/* Navigation Tabs */}
+        <div className="border-t border-slate-800 px-6 py-2.5">
+          <div className="flex gap-2 overflow-x-auto no-scrollbar max-w-7xl mx-auto">
+            <Link href="/dashboard" className="px-4 py-2 hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-300 whitespace-nowrap transition-colors">
+              📊 Analytics Overview
+            </Link>
+            <Link href="/orders" className="px-4 py-2 hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-300 whitespace-nowrap transition-colors">
+              📦 Live Orders Feed
+            </Link>
+            <Link href="/orders/uncollected" className="px-4 py-2 hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-300 whitespace-nowrap transition-colors">
+              🚨 Uncollected Hub
+            </Link>
+            <Link href="/restaurants" className="px-4 py-2 bg-orange-600 text-white rounded-xl text-xs font-black whitespace-nowrap shadow-md shadow-orange-600/20">
+              🏪 Canteen Partners
+            </Link>
+            <Link href="/config" className="px-4 py-2 hover:bg-slate-800 rounded-xl text-xs font-bold text-slate-300 whitespace-nowrap transition-colors">
+              ⚙️ Slots & Fee Config
+            </Link>
+          </div>
+        </div>
+      </header>
 
-        {/* Canteens Grid */}
-        {loading ? (
-          <div className="py-16 text-center text-xs text-gray-500">Loading restaurants...</div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filtered.map((r) => {
-              const isAdminLocked = r.closedByAdmin || r.closed_by_admin;
-              const status = r.operationalStatus || r.operational_status || 'open';
+      {/* 2. SEARCH & LIST */}
+      <main className="p-4 md:p-6 max-w-7xl mx-auto space-y-4">
+        <div className="bg-white rounded-3xl p-4 border border-gray-100 shadow-sm flex flex-col md:flex-row gap-3 items-center justify-between">
+          <p className="text-xs font-bold text-gray-700">
+            Total Active Outlets: <span className="text-orange-600 font-black">{restaurants.length}</span>
+          </p>
 
-              return (
-                <div
-                  key={r.id}
-                  className={`bg-white rounded-3xl p-6 border shadow-sm space-y-4 transition-all ${
-                    isAdminLocked ? 'border-red-300 bg-red-50/20' : 'border-gray-200'
-                  }`}
-                >
-                  <div className="flex justify-between items-start">
+          <div className="relative w-full md:w-72">
+            <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400 text-xs">🔍</span>
+            <input
+              type="text"
+              placeholder="Search canteen name or location..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-900 focus:bg-white focus:border-orange-500 outline-none"
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {filtered.map((rest) => {
+            const isClosed = rest.operationalStatus === 'temporarily_closed' || rest.operational_status === 'temporarily_closed';
+            const isForced = rest.closedByAdmin || rest.closed_by_admin;
+
+            return (
+              <div
+                key={rest.id}
+                className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm hover:shadow-md transition-all space-y-4 flex flex-col justify-between"
+              >
+                <div className="space-y-2">
+                  <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h2 className="font-black text-lg text-gray-900">{r.name}</h2>
-                      <p className="text-xs text-gray-500 mt-0.5">📍 {r.campusLocation}</p>
-                      <p className="text-xs text-gray-600 mt-0.5">📞 Contact: +91 {r.contactPhone}</p>
+                      <h3 className="text-sm font-black text-gray-900">{rest.name}</h3>
+                      <p className="text-xs text-gray-500 font-medium">📍 {rest.campusLocation || 'Campus Food Block'}</p>
                     </div>
 
-                    <div>
-                      {isAdminLocked ? (
-                        <span className="text-[10px] font-black bg-red-100 text-red-800 px-3 py-1 rounded-full uppercase tracking-wider">
-                          🔒 Force Closed
-                        </span>
-                      ) : status === 'open' ? (
-                        <span className="text-[10px] font-black bg-green-100 text-green-800 px-3 py-1 rounded-full uppercase tracking-wider">
-                          ✓ Open
-                        </span>
-                      ) : (
-                        <span className="text-[10px] font-black bg-amber-100 text-amber-800 px-3 py-1 rounded-full uppercase tracking-wider">
-                          ✕ Self-Closed
-                        </span>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="bg-gray-50 rounded-2xl p-3 flex justify-between items-center text-xs">
-                    <span className="text-gray-600">Active Slot Orders:</span>
-                    <span className="font-extrabold text-orange-600">{r.activeOrdersCount ?? 0} Orders</span>
-                  </div>
-
-                  <div className="pt-2 border-t">
-                    <button
-                      onClick={() => toggleAdminForceClosure(r.id, !!isAdminLocked)}
-                      className={`w-full py-2.5 rounded-xl font-bold text-xs transition-all ${
-                        isAdminLocked
-                          ? 'bg-green-600 hover:bg-green-700 text-white shadow-md'
-                          : 'bg-red-50 hover:bg-red-100 text-red-600 border border-red-200'
+                    <span
+                      className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        isForced
+                          ? 'bg-rose-100 text-rose-800 border border-rose-200'
+                          : isClosed
+                          ? 'bg-amber-100 text-amber-800 border border-amber-200'
+                          : 'bg-emerald-100 text-emerald-800 border border-emerald-200'
                       }`}
                     >
-                      {isAdminLocked ? '✓ Lift Admin Lock (Allow Reopening)' : '🔒 Admin Force Closure'}
-                    </button>
+                      {isForced ? '🔒 Admin Force Closed' : isClosed ? '⏸️ Store Paused' : '🟢 Open Live'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-4 text-xs text-gray-600 pt-1">
+                    <span>📞 {rest.contactPhone ? `+91 ${rest.contactPhone}` : 'No phone'}</span>
+                    <span className="text-gray-300">•</span>
+                    <span>📦 <strong className="text-gray-900">{rest.activeOrdersCount || 0}</strong> active orders</span>
                   </div>
                 </div>
-              );
-            })}
+
+                <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                  <span className="text-[11px] font-bold text-slate-400">
+                    ID: {rest.id.length > 15 ? rest.id.slice(0, 8) + '...' : rest.id}
+                  </span>
+
+                  <button
+                    onClick={() => toggleAdminForceClosure(rest.id, Boolean(isForced))}
+                    className={`px-4 py-2 rounded-xl text-xs font-black transition-all ${
+                      isForced
+                        ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20'
+                        : 'bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200'
+                    }`}
+                  >
+                    {isForced ? '🔓 Unlock Canteen' : '🚨 Force Close'}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </main>
+
+      {/* ADD RESTAURANT MODAL */}
+      {showAddModal && (
+        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-gray-100 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex justify-between items-center border-b pb-3">
+              <h2 className="text-base font-black text-gray-900">Add New Canteen Outlet</h2>
+              <button
+                onClick={() => setShowAddModal(false)}
+                className="h-8 w-8 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center text-xs font-black"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAddRestaurant} className="space-y-3">
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Outlet / Canteen Name *</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g., Green Garden Food Court"
+                  value={newRestForm.name}
+                  onChange={(e) => setNewRestForm({ ...newRestForm, name: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Campus Location / Block *</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Engineering Block 2 Ground Floor"
+                  value={newRestForm.description}
+                  onChange={(e) => setNewRestForm({ ...newRestForm, description: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Contact Phone Number *</label>
+                <input
+                  type="tel"
+                  placeholder="10-digit mobile number"
+                  value={newRestForm.phone}
+                  onChange={(e) => setNewRestForm({ ...newRestForm, phone: e.target.value.slice(0, 10) })}
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-gray-700 mb-1">Cuisines / Specialties</label>
+                <input
+                  type="text"
+                  placeholder="e.g., Biryani, Chinese, Beverages, Combos"
+                  value={newRestForm.cuisines}
+                  onChange={(e) => setNewRestForm({ ...newRestForm, cuisines: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold focus:outline-none focus:border-orange-500"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold bg-gray-100 hover:bg-gray-200 text-gray-700"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2.5 rounded-xl text-xs font-black bg-orange-600 hover:bg-orange-700 text-white shadow-md shadow-orange-600/20"
+                >
+                  Save to Database
+                </button>
+              </div>
+            </form>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

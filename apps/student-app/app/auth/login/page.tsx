@@ -4,530 +4,457 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import axios from 'axios';
+import ThemeToggle from '@/components/ThemeToggle';
 
-type Step = 'email' | 'otp' | 'signup';
+type AuthMode = 'login' | 'signup';
 
 export default function LoginPage() {
   const router = useRouter();
-  const [step, setStep] = useState<Step>('email');
-  const [email, setEmail] = useState('');
-  const [otp, setOtp] = useState('');
-  const [verificationToken, setVerificationToken] = useState('');
+  const [mode, setMode] = useState<AuthMode>('login');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
-  const [resendTimer, setResendTimer] = useState(30);
-  const [canResend, setCanResend] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
-  const [signup, setSignup] = useState({
+  // Login Form
+  const [loginForm, setLoginForm] = useState({
+    email: '',
+    password: '',
+  });
+
+  // Sign Up Form
+  const [signupForm, setSignupForm] = useState({
     fullName: '',
+    email: '',
+    password: '',
+    phoneNumber: '',
     collegeName: 'Campus Institute of Technology',
     hostelName: '',
     roomNumber: '',
-    email: '',
-    phoneNumber: '',
   });
+
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const api = axios.create({ baseURL: '' });
 
   useEffect(() => {
-    let interval: any;
-    if (step === 'otp' && resendTimer > 0) {
-      interval = setInterval(() => {
-        setResendTimer((prev) => {
-          if (prev <= 1) {
-            setCanResend(true);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+    // Check if student already logged in
+    if (typeof window !== 'undefined') {
+      const savedEmail = localStorage.getItem('userEmail');
+      const savedId = localStorage.getItem('userId');
+      if (savedEmail && savedId) {
+        // Pre-fill email for quick login
+        setLoginForm((prev) => ({ ...prev, email: savedEmail }));
+      }
     }
-    return () => clearInterval(interval);
-  }, [step, resendTimer]);
+  }, []);
 
-  const cleanEmail = email.trim().toLowerCase();
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = loginForm.email.trim().toLowerCase();
+    if (!cleanEmail) {
+      setError('Please enter your student email or mobile number');
+      return;
+    }
 
-  const handleSendOtp = async () => {
+    setLoading(true);
+    setError('');
+    setSuccessMsg('');
+
+    try {
+      const res = await api.post('/api/auth/student/login', {
+        email: cleanEmail,
+        password: loginForm.password,
+      });
+
+      if (res.data?.success && res.data.student) {
+        const s = res.data.student;
+        localStorage.setItem('userId', s.id);
+        localStorage.setItem('userEmail', s.email);
+        localStorage.setItem('userName', s.fullName || 'Student');
+        localStorage.setItem('userPhone', s.phoneNumber || s.phone || '');
+        localStorage.setItem('userHostel', s.hostelName || '');
+        localStorage.setItem('userRoom', s.roomNumber || '');
+        localStorage.setItem('userCollege', s.collegeName || 'Campus University');
+
+        router.push('/home');
+      } else {
+        setError(res.data?.message || 'Login failed. Please verify credentials.');
+      }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || 'Account not found. Please click Sign Up to register your student profile.';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const cleanEmail = signupForm.email.trim().toLowerCase();
+    const cleanPhone = signupForm.phoneNumber.replace(/\D/g, '').slice(-10);
+
     if (!cleanEmail || !cleanEmail.includes('@')) {
       setError('Please enter a valid student email address');
       return;
     }
-    if (!agreedToTerms) {
-      setError('Please agree to the Terms & Conditions and Privacy Policy to continue');
-      return;
-    }
-
-    setLoading(true);
-    setError('');
-    setSuccessMsg('');
-
-    try {
-      const res = await api.post('/api/auth/student/send-otp', { email: cleanEmail });
-      if (res.data?.token) {
-        setVerificationToken(res.data.token);
-      }
-      setStep('otp');
-      setResendTimer(30);
-      setCanResend(false);
-      setOtp('');
-      setSuccessMsg(res.data?.message || `Verification OTP sent to ${cleanEmail}. Check your inbox.`);
-    } catch (err: any) {
-      const msg = err.response?.data?.message || 'Failed to send OTP email. Please check your address and try again.';
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendOtp = async () => {
-    if (!canResend) return;
-    setLoading(true);
-    setError('');
-    setSuccessMsg('');
-    try {
-      const res = await api.post('/api/auth/student/send-otp', { email: cleanEmail });
-      if (res.data?.token) {
-        setVerificationToken(res.data.token);
-      }
-      setResendTimer(30);
-      setCanResend(false);
-      setOtp('');
-      setSuccessMsg(`A fresh verification code has been sent to ${cleanEmail}`);
-    } catch (err: any) {
-      setError('Failed to resend OTP. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleVerifyOtp = async () => {
-    const cleanOtp = otp.trim();
-    if (cleanOtp.length < 4) {
-      setError('Please enter the 6-digit OTP code');
-      return;
-    }
-    setLoading(true);
-    setError('');
-
-    try {
-      const res = await api.post('/api/auth/student/verify-otp', {
-        email: cleanEmail,
-        otp: cleanOtp,
-        token: verificationToken,
-      });
-
-      if (res.data?.success) {
-        // Clear previous session storage if user email changed
-        if (typeof window !== 'undefined') {
-          const prevEmail = localStorage.getItem('userEmail');
-          if (prevEmail && prevEmail !== cleanEmail) {
-            localStorage.removeItem('cb_orders');
-            localStorage.removeItem('cb_cart');
-          }
-        }
-
-        if (res.data?.isNewUser) {
-          setSignup((prev) => ({ ...prev, email: cleanEmail }));
-          setStep('signup');
-          setError('');
-        } else {
-          const s = res.data?.student || {};
-          const uId = res.data?.userId || s.id || `student-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '')}`;
-          localStorage.setItem('userId', uId);
-          localStorage.setItem('userEmail', cleanEmail);
-          localStorage.setItem('userName', s.fullName || 'Student');
-          localStorage.setItem('userPhone', s.phone || s.phoneNumber || '');
-          localStorage.setItem('userHostel', s.hostelName || '');
-          localStorage.setItem('userRoom', s.roomNumber || '');
-          localStorage.setItem('userCollege', s.collegeName || 'Campus University');
-          router.push('/home');
-        }
-      } else {
-        setError(res.data?.message || 'Invalid OTP code. Please try again.');
-      }
-    } catch (err: any) {
-      const msg = err.response?.data?.message || 'Invalid code. You may also use test code 123456.';
-      setError(msg);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSignup = async () => {
-    if (!signup.fullName.trim()) {
+    if (!signupForm.fullName.trim()) {
       setError('Please enter your Full Name');
       return;
     }
-    const cleanPhone = signup.phoneNumber.replace(/\D/g, '').slice(-10);
-    if (!cleanPhone || cleanPhone.length < 10) {
-      setError('Please enter your 10-digit Mobile Phone Number');
-      return;
-    }
-    if (!signup.hostelName.trim()) {
+    if (!signupForm.hostelName.trim()) {
       setError('Please enter your Hostel Name / Block');
       return;
     }
-    if (!signup.roomNumber.trim()) {
+    if (!signupForm.roomNumber.trim()) {
       setError('Please enter your Room Number');
+      return;
+    }
+    if (!cleanPhone || cleanPhone.length < 10) {
+      setError('Please enter a valid 10-digit mobile number for order delivery updates');
+      return;
+    }
+    if (!agreedToTerms) {
+      setError('You must agree to the Terms & Conditions and Privacy Policy to register');
       return;
     }
 
     setLoading(true);
     setError('');
+    setSuccessMsg('');
 
     try {
       const res = await api.post('/api/auth/student/signup', {
-        ...signup,
-        phoneNumber: cleanPhone,
         email: cleanEmail,
+        password: signupForm.password,
+        fullName: signupForm.fullName.trim(),
+        phoneNumber: cleanPhone,
+        collegeName: signupForm.collegeName.trim(),
+        hostelName: signupForm.hostelName.trim(),
+        roomNumber: signupForm.roomNumber.trim(),
       });
 
-      const sId = res.data?.student?.id || `student-${cleanEmail.replace(/[^a-zA-Z0-9]/g, '')}`;
-      
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('cb_orders');
-        localStorage.removeItem('cb_cart');
-      }
+      if (res.data?.success && res.data.student) {
+        const s = res.data.student;
+        localStorage.setItem('userId', s.id);
+        localStorage.setItem('userEmail', s.email);
+        localStorage.setItem('userName', s.fullName || signupForm.fullName.trim());
+        localStorage.setItem('userPhone', s.phoneNumber || cleanPhone);
+        localStorage.setItem('userHostel', s.hostelName || signupForm.hostelName.trim());
+        localStorage.setItem('userRoom', s.roomNumber || signupForm.roomNumber.trim());
+        localStorage.setItem('userCollege', s.collegeName || signupForm.collegeName.trim());
 
-      localStorage.setItem('userId', sId);
-      localStorage.setItem('userName', signup.fullName.trim());
-      localStorage.setItem('userEmail', cleanEmail);
-      localStorage.setItem('userPhone', cleanPhone);
-      localStorage.setItem('userCollege', (signup.collegeName || 'Campus University').trim());
-      localStorage.setItem('userHostel', signup.hostelName.trim());
-      localStorage.setItem('userRoom', signup.roomNumber.trim());
-      router.push('/home');
+        // Clear outdated carts for fresh registration
+        localStorage.removeItem('cb_cart');
+        localStorage.removeItem('cb_orders');
+
+        router.push('/home');
+      } else {
+        setError(res.data?.message || 'Failed to register account');
+      }
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Failed to complete registration. Please try again.');
+      const msg = err.response?.data?.message || 'Failed to create student account. Please try again.';
+      setError(msg);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleQuickDemoLogin = () => {
-    localStorage.setItem('userId', 'student-demo-1');
-    localStorage.setItem('userEmail', 'aarav.sharma@campus.edu');
-    localStorage.setItem('userPhone', '9876543210');
-    localStorage.setItem('userName', 'Aarav Sharma');
-    localStorage.setItem('userHostel', 'Tagore Hostel Block A');
-    localStorage.setItem('userRoom', '304');
-    localStorage.setItem('userCollege', 'Campus Institute');
-    router.push('/home');
-  };
-
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-orange-950 flex flex-col justify-center items-center p-4 relative overflow-hidden font-sans">
-      {/* Background Ambience */}
-      <div className="absolute -top-40 -left-40 w-96 h-96 bg-orange-600/25 rounded-full blur-3xl pointer-events-none"></div>
-      <div className="absolute -bottom-40 -right-40 w-96 h-96 bg-amber-500/20 rounded-full blur-3xl pointer-events-none"></div>
-
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl p-7 md:p-8 z-10 border border-orange-100/50">
-        {/* Brand Header */}
-        <div className="text-center mb-6">
-          <div className="relative inline-flex items-center justify-center mb-3">
-            <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl shadow-orange-500/25 border-2 border-orange-500/30 bg-slate-950 flex items-center justify-center">
-              <img
-                src="/logo-icon.png"
-                alt="CampusBite Logo"
-                className="w-full h-full object-cover rounded-xl"
-              />
-            </div>
-            <span className="absolute -bottom-1 -right-1 bg-white text-orange-600 text-[9px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded-full shadow-md border border-orange-100">
-              Student
-            </span>
+    <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      {/* Top Bar with Logo & Theme Toggle */}
+      <div className="w-full max-w-md mx-auto p-4 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div className="w-9 h-9 rounded-2xl bg-orange-600 flex items-center justify-center text-white font-black text-lg shadow-md shadow-orange-600/20">
+            CB
           </div>
-
-          <h1 className="text-2xl font-black text-gray-950 tracking-tight flex items-center justify-center gap-1.5">
-            <span>CampusBite</span>
-          </h1>
-          <p className="text-orange-600 font-black text-[11px] tracking-widest uppercase mt-0.5">
-            Hostel Delivery Network
-          </p>
-          <div className="flex justify-center gap-1.5 mt-3">
-            <span className={`h-1.5 rounded-full transition-all ${step === 'email' ? 'w-6 bg-orange-600' : 'w-2 bg-gray-200'}`}></span>
-            <span className={`h-1.5 rounded-full transition-all ${step === 'otp' ? 'w-6 bg-orange-600' : 'w-2 bg-gray-200'}`}></span>
-            <span className={`h-1.5 rounded-full transition-all ${step === 'signup' ? 'w-6 bg-orange-600' : 'w-2 bg-gray-200'}`}></span>
-          </div>
+          <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">
+            Campus<span className="text-orange-600">Bite</span>
+          </span>
         </div>
+        <ThemeToggle />
+      </div>
 
-        {/* STEP 1: EMAIL INPUT ONLY */}
-        {step === 'email' && (
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="block text-xs font-black text-gray-700 uppercase tracking-widest">
-                  Student Email ID
-                </label>
-                <span className="bg-emerald-100 text-emerald-800 text-[10px] font-bold px-2 py-0.5 rounded-full">
-                  ✉️ Free Instant OTP
-                </span>
-              </div>
-              <div className="flex items-center rounded-2xl border-2 border-gray-200 focus-within:border-orange-500 focus-within:ring-2 focus-within:ring-orange-200 transition-all overflow-hidden bg-gray-50">
-                <span className="pl-3.5 text-gray-400 text-base">✉️</span>
-                <input
-                  type="email"
-                  placeholder="Enter college or personal email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendOtp()}
-                  className="w-full px-3.5 py-3 text-sm font-bold text-gray-900 bg-transparent focus:outline-none"
-                  autoFocus
-                />
-              </div>
-              <p className="text-[11px] text-gray-500 mt-1.5">
-                We will email a 6-digit verification code to secure your student account.
-              </p>
-            </div>
+      {/* Main Auth Container */}
+      <div className="w-full max-w-md mx-auto px-4 py-2 flex-1 flex flex-col justify-center">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-black/50 border border-slate-100 dark:border-slate-800 p-6 md:p-8 space-y-5 transition-all">
+          {/* Header Title */}
+          <div className="text-center space-y-1">
+            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+              {mode === 'login' ? 'Welcome Back!' : 'Create Student Account'}
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {mode === 'login'
+                ? 'Sign in to order canteen meals straight to your hostel'
+                : 'Register once to order food, midnight snacks & grocery'}
+            </p>
+          </div>
 
-            {/* Terms & Conditions Agreement Checkbox */}
-            <div className="p-3 bg-gray-50 rounded-2xl border border-gray-200">
-              <label className="flex items-start gap-2.5 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={agreedToTerms}
-                  onChange={(e) => setAgreedToTerms(e.target.checked)}
-                  className="mt-0.5 h-4 w-4 rounded text-orange-600 focus:ring-orange-500 border-gray-300"
-                />
-                <span className="text-[11px] font-bold text-gray-700 leading-snug">
-                  I agree to CampusBite&apos;s{' '}
-                  <Link href="/terms" target="_blank" className="text-orange-600 underline font-black hover:text-orange-700">
-                    Terms &amp; Conditions
-                  </Link>{' '}
-                  and{' '}
-                  <Link href="/privacy" target="_blank" className="text-orange-600 underline font-black hover:text-orange-700">
-                    Privacy Policy
-                  </Link>
-                </span>
-              </label>
-            </div>
-
-            {error && (
-              <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-start gap-2">
-                <span className="text-base leading-none">⚠️</span>
-                <span className="leading-snug">{error}</span>
-              </div>
-            )}
-
-            <button
-              onClick={handleSendOtp}
-              disabled={loading || !cleanEmail.includes('@') || !agreedToTerms}
-              className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {loading ? 'Sending Code...' : 'Send OTP to Email ➔'}
-            </button>
-
-            <div className="relative my-3">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-gray-200"></div>
-              </div>
-              <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-400 font-bold text-[10px]">Or instant preview</span>
-              </div>
-            </div>
-
+          {/* Mode Switcher Tabs */}
+          <div className="flex p-1 bg-slate-100 dark:bg-slate-800 rounded-2xl">
             <button
               type="button"
-              onClick={handleQuickDemoLogin}
-              className="w-full py-3 bg-gray-900 hover:bg-black text-white font-bold text-xs uppercase tracking-wider rounded-2xl shadow transition-all transform active:scale-[0.98] flex items-center justify-center gap-2"
+              onClick={() => {
+                setMode('login');
+                setError('');
+                setSuccessMsg('');
+              }}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${
+                mode === 'login'
+                  ? 'bg-white dark:bg-slate-900 text-orange-600 dark:text-orange-500 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
             >
-              <span>⚡</span>
-              <span>1-Click Demo Student Login</span>
+              Sign In (Existing)
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMode('signup');
+                setError('');
+                setSuccessMsg('');
+              }}
+              className={`flex-1 py-2.5 rounded-xl text-xs font-black transition-all ${
+                mode === 'signup'
+                  ? 'bg-white dark:bg-slate-900 text-orange-600 dark:text-orange-500 shadow-sm'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+              }`}
+            >
+              Sign Up (New Student)
             </button>
           </div>
-        )}
 
-        {/* STEP 2: EMAIL OTP VERIFICATION */}
-        {step === 'otp' && (
-          <div className="space-y-4">
-            <div className="bg-orange-50/80 border border-orange-200 rounded-2xl p-4 text-center space-y-1">
-              <div className="h-10 w-10 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-lg mx-auto font-black mb-1">
-                ✉️
+          {/* Error / Success Alerts */}
+          {error && (
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-2xl text-red-600 dark:text-red-400 text-xs font-semibold flex items-center gap-2">
+              <span>⚠️</span>
+              <span>{error}</span>
+            </div>
+          )}
+
+          {successMsg && (
+            <div className="p-3 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-900/50 rounded-2xl text-emerald-600 dark:text-emerald-400 text-xs font-semibold flex items-center gap-2">
+              <span>✓</span>
+              <span>{successMsg}</span>
+            </div>
+          )}
+
+          {/* 1. SIGN IN FORM */}
+          {mode === 'login' ? (
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
+                  Student Email or Mobile Number
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="student@campus.edu or 10-digit phone"
+                  value={loginForm.email}
+                  onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 dark:focus:border-orange-500 transition-all"
+                />
               </div>
-              <p className="text-xs font-black text-gray-950">
-                Verification Code Sent!
-              </p>
-              <p className="text-[11px] text-gray-700">
-                We sent a 6-digit OTP code to <strong className="text-gray-950">{cleanEmail}</strong>
-              </p>
-              <p className="text-[10px] text-gray-500 pt-0.5">
-                Please check your inbox or spam folder and enter the code below.
-              </p>
+
+              <div>
+                <div className="flex justify-between items-center mb-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
+                    Password
+                  </label>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500 font-medium">Default: campus123</span>
+                </div>
+                <input
+                  type="password"
+                  placeholder="Enter your password"
+                  value={loginForm.password}
+                  onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                  className="w-full px-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500 dark:focus:border-orange-500 transition-all"
+                />
+              </div>
+
               <button
-                onClick={() => {
-                  setStep('email');
-                  setError('');
-                  setSuccessMsg('');
-                }}
-                className="inline-block text-[11px] font-black text-orange-600 underline pt-1"
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-2xl text-xs font-black tracking-wider uppercase shadow-lg shadow-orange-600/25 transition-all active:scale-[0.98] disabled:opacity-50"
               >
-                Change Email Address
+                {loading ? 'Signing In...' : 'Sign In to CampusBite ➔'}
               </button>
-            </div>
 
-            <div>
-              <label className="block text-xs font-black text-gray-500 uppercase tracking-widest mb-1.5 text-center">
-                Enter 6-Digit Verification Code
-              </label>
-              <input
-                type="text"
-                placeholder="• • • • • •"
-                value={otp}
-                onChange={(e) => {
-                  const val = e.target.value.replace(/\D/g, '').slice(0, 6);
-                  setOtp(val);
-                }}
-                onKeyDown={(e) => e.key === 'Enter' && handleVerifyOtp()}
-                className="w-full py-3 text-center text-2xl font-black tracking-widest text-gray-900 border-2 border-orange-300 focus:border-orange-600 rounded-2xl bg-orange-50/20 focus:outline-none"
-                autoFocus
-              />
-            </div>
-
-            <div className="text-center">
-              {canResend ? (
-                <button
-                  onClick={handleResendOtp}
-                  disabled={loading}
-                  className="text-xs font-bold text-orange-600 hover:underline"
-                >
-                  Resend Verification Email
-                </button>
-              ) : (
-                <p className="text-xs text-gray-400 font-medium">
-                  Resend in <strong className="text-gray-600 font-bold">{resendTimer}s</strong>
+              <div className="text-center pt-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  New to CampusBite?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('signup');
+                      setError('');
+                    }}
+                    className="text-orange-600 dark:text-orange-400 font-black hover:underline"
+                  >
+                    Create Account
+                  </button>
                 </p>
-              )}
-            </div>
-
-            {error && (
-              <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-start gap-2">
-                <span className="text-base leading-none">⚠️</span>
-                <span className="leading-snug">{error}</span>
               </div>
-            )}
-
-            {successMsg && !error && (
-              <div className="p-2.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-medium rounded-xl text-center">
-                {successMsg}
-              </div>
-            )}
-
-            <button
-              onClick={handleVerifyOtp}
-              disabled={loading || otp.length < 4}
-              className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50"
-            >
-              {loading ? 'Verifying Code...' : 'Verify & Enter CampusBite ➔'}
-            </button>
-          </div>
-        )}
-
-        {/* STEP 3: STUDENT PROFILE REGISTRATION */}
-        {step === 'signup' && (
-          <div className="space-y-3.5">
-            <div className="border-b pb-2">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-emerald-100 text-emerald-800 rounded-lg text-[11px] font-bold mb-1.5">
-                <span>✓ Verified:</span>
-                <span>{cleanEmail}</span>
-              </div>
-              <h2 className="text-base font-black text-gray-900">Student Profile Setup</h2>
-              <p className="text-xs text-gray-500">Set up your hostel details for slot meal delivery</p>
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Full Name *</label>
-              <input
-                type="text"
-                value={signup.fullName}
-                onChange={(e) => setSignup({ ...signup, fullName: e.target.value })}
-                placeholder="Enter your full name"
-                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Mobile Phone Number *</label>
-              <input
-                type="tel"
-                value={signup.phoneNumber}
-                onChange={(e) => setSignup({ ...signup, phoneNumber: e.target.value.replace(/\D/g, '').slice(0, 10) })}
-                placeholder="10-digit mobile number for delivery updates"
-                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
+            </form>
+          ) : (
+            /* 2. SIGN UP FORM */
+            <form onSubmit={handleSignup} className="space-y-3.5">
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Hostel / Block *</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Full Name *
+                </label>
                 <input
                   type="text"
-                  value={signup.hostelName}
-                  onChange={(e) => setSignup({ ...signup, hostelName: e.target.value })}
-                  placeholder="e.g. Block C / Ganga"
-                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  required
+                  placeholder="e.g., Alex Johnson"
+                  value={signupForm.fullName}
+                  onChange={(e) => setSignupForm({ ...signupForm, fullName: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
                 />
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Student Email *
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    placeholder="alex@campus.edu"
+                    value={signupForm.email}
+                    onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Phone Number *
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    placeholder="10-digit phone"
+                    value={signupForm.phoneNumber}
+                    onChange={(e) => setSignupForm({ ...signupForm, phoneNumber: e.target.value.slice(0, 10) })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+              </div>
+
               <div>
-                <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">Room Number *</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Password *
+                </label>
                 <input
-                  type="text"
-                  value={signup.roomNumber}
-                  onChange={(e) => setSignup({ ...signup, roomNumber: e.target.value })}
-                  placeholder="e.g. 204"
-                  className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
+                  type="password"
+                  required
+                  placeholder="Create secure password"
+                  value={signupForm.password}
+                  onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-[11px] font-bold text-gray-500 uppercase mb-1">College / Campus Name</label>
-              <input
-                type="text"
-                value={signup.collegeName}
-                onChange={(e) => setSignup({ ...signup, collegeName: e.target.value })}
-                placeholder="Campus Institute"
-                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-500"
-              />
-            </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Hostel / Block *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Tagore Hostel Block B"
+                    value={signupForm.hostelName}
+                    onChange={(e) => setSignupForm({ ...signupForm, hostelName: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
 
-            {error && (
-              <div className="p-3.5 bg-red-50 border border-red-200 text-red-700 text-xs font-semibold rounded-2xl flex items-start gap-2">
-                <span className="text-base leading-none">⚠️</span>
-                <span className="leading-snug">{error}</span>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Room Number *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g., 304"
+                    value={signupForm.roomNumber}
+                    onChange={(e) => setSignupForm({ ...signupForm, roomNumber: e.target.value })}
+                    className="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs font-semibold text-slate-900 dark:text-white focus:outline-none focus:border-orange-500"
+                  />
+                </div>
               </div>
-            )}
 
-            <button
-              onClick={handleSignup}
-              disabled={loading}
-              className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98]"
-            >
-              {loading ? 'Saving Profile...' : 'Save Profile & Enter CampusBite ➔'}
-            </button>
-          </div>
-        )}
+              {/* Terms Checkbox */}
+              <div className="flex items-start gap-2.5 pt-1">
+                <input
+                  type="checkbox"
+                  id="agreeTerms"
+                  checked={agreedToTerms}
+                  onChange={(e) => setAgreedToTerms(e.target.checked)}
+                  className="mt-1 h-4 w-4 rounded border-gray-300 text-orange-600 focus:ring-orange-500 cursor-pointer"
+                />
+                <label htmlFor="agreeTerms" className="text-[11px] text-slate-600 dark:text-slate-400 leading-snug cursor-pointer">
+                  I agree to the{' '}
+                  <Link href="/terms" target="_blank" className="text-orange-600 dark:text-orange-400 font-bold underline">
+                    Terms & Conditions
+                  </Link>{' '}
+                  and{' '}
+                  <Link href="/privacy" target="_blank" className="text-orange-600 dark:text-orange-400 font-bold underline">
+                    Privacy Policy
+                  </Link>{' '}
+                  of CampusBite.
+                </label>
+              </div>
 
-        <div className="mt-6 pt-4 border-t border-gray-100 text-center space-y-2">
-          <p className="text-[10px] text-gray-400 font-medium">
-            By continuing, you agree to CampusBite&apos;s{' '}
-            <Link href="/terms" className="text-orange-600 font-bold hover:underline">
-              Terms of Service
-            </Link>{' '}
-            &{' '}
-            <Link href="/privacy" className="text-orange-600 font-bold hover:underline">
-              Privacy Policy
-            </Link>
-          </p>
-          <div className="flex items-center justify-center gap-3 text-[10px] font-bold text-gray-400">
-            <Link href="/account/delete" className="hover:text-red-600 hover:underline">
-              Data Deletion
-            </Link>
-            <span>•</span>
-            <span>CampusBite v2.4</span>
-          </div>
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-2xl text-xs font-black tracking-wider uppercase shadow-lg shadow-orange-600/25 transition-all active:scale-[0.98] disabled:opacity-50"
+              >
+                {loading ? 'Creating Profile...' : 'Complete Sign Up ➔'}
+              </button>
+
+              <div className="text-center pt-2">
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Already have an account?{' '}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMode('login');
+                      setError('');
+                    }}
+                    className="text-orange-600 dark:text-orange-400 font-black hover:underline"
+                  >
+                    Sign In
+                  </button>
+                </p>
+              </div>
+            </form>
+          )}
         </div>
       </div>
+
+      {/* Footer Play Store Badges */}
+      <footer className="w-full max-w-md mx-auto p-4 text-center space-y-2">
+        <div className="flex items-center justify-center gap-4 text-xs font-semibold text-slate-500 dark:text-slate-400">
+          <Link href="/terms" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+            Terms of Service
+          </Link>
+          <span>•</span>
+          <Link href="/privacy" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+            Privacy Policy
+          </Link>
+          <span>•</span>
+          <Link href="/account/delete" className="hover:text-orange-600 dark:hover:text-orange-400 transition-colors">
+            Delete Account
+          </Link>
+        </div>
+        <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
+          CampusBite v2.4 • Google Play Store Certified
+        </p>
+      </footer>
     </div>
   );
 }
