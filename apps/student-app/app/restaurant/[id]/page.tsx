@@ -170,7 +170,18 @@ export default function RestaurantPage() {
   const router = useRouter();
   const params = useParams();
   const rawId = (params?.id as string) || '550e8400-e29b-41d4-a716-446655440001';
-  const restInfo = RESTAURANT_DETAILS[rawId] || RESTAURANT_DETAILS['550e8400-e29b-41d4-a716-446655440001'];
+
+  const [restInfo, setRestInfo] = useState<{
+    name: string;
+    cuisines: string;
+    rating: number;
+    address: string;
+    image: string;
+    deliveryTime?: string;
+  }>(() => {
+    const base = RESTAURANT_DETAILS[rawId] || RESTAURANT_DETAILS['550e8400-e29b-41d4-a716-446655440001'];
+    return { ...base };
+  });
 
   const [menuItems, setMenuItems] = useState<FoodItem[]>(DEFAULT_MENU_ITEMS);
   const [loading, setLoading] = useState(false);
@@ -188,16 +199,77 @@ export default function RestaurantPage() {
         if (savedCart) setCart(JSON.parse(savedCart));
       } catch (e) {}
     }
+    loadRestaurantProfile();
     fetchMenu();
+
+    const interval = setInterval(() => {
+      loadRestaurantProfile();
+      fetchMenu();
+    }, 3000);
+    return () => clearInterval(interval);
   }, [rawId]);
+
+  const loadRestaurantProfile = async () => {
+    try {
+      const res = await api.get('/api/restaurants');
+      if (res.data?.data && Array.isArray(res.data.data)) {
+        const match = res.data.data.find((r: any) => r.id === rawId);
+        if (match) {
+          setRestInfo({
+            name: match.name,
+            cuisines: match.cuisines || 'Multi-Cuisine',
+            rating: match.rating || 4.8,
+            address: match.description || 'Campus Food Block',
+            image: match.image_url || match.image || RESTAURANT_DETAILS['550e8400-e29b-41d4-a716-446655440001'].image,
+            deliveryTime: match.delivery_time || 'Slot 6:00 - 7:00 PM',
+          });
+          return;
+        }
+      }
+    } catch {}
+
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('cb_all_restaurants');
+        if (saved) {
+          const list = JSON.parse(saved);
+          const match = list.find((r: any) => r.id === rawId);
+          if (match) {
+            setRestInfo({
+              name: match.name,
+              cuisines: match.cuisines || 'Multi-Cuisine',
+              rating: match.rating || 4.8,
+              address: match.description || 'Campus Food Block',
+              image: match.image_url || match.image || RESTAURANT_DETAILS['550e8400-e29b-41d4-a716-446655440001'].image,
+              deliveryTime: match.delivery_time || 'Slot 6:00 - 7:00 PM',
+            });
+          }
+        }
+      } catch {}
+    }
+  };
 
   const fetchMenu = async () => {
     try {
       const res = await api.get(`/api/restaurants/${rawId}/menu`);
       if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
         setMenuItems(res.data.data);
+        return;
       }
     } catch (e) {}
+
+    if (typeof window !== 'undefined') {
+      try {
+        const localMenu = localStorage.getItem(`cb_restaurant_menu_${rawId}`);
+        if (localMenu) {
+          const parsed = JSON.parse(localMenu);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setMenuItems(parsed);
+            return;
+          }
+        }
+      } catch {}
+    }
   };
 
   const updateCartStorage = (newCart: CartItem[]) => {

@@ -27,62 +27,83 @@ export default function AdminRestaurantsPage() {
 
   useEffect(() => {
     fetchRestaurants();
+    const interval = setInterval(() => {
+      fetchRestaurants(true);
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
-  const fetchRestaurants = async () => {
-    setLoading(true);
-    let fetched = false;
+  const fetchRestaurants = async (isPolling = false) => {
+    if (!isPolling) setLoading(true);
+    let apiList: Restaurant[] = [];
     try {
       const res = await api.get('/api/restaurants');
-      if (res.data?.data && res.data.data.length > 0) {
-        setRestaurants(res.data.data);
-        fetched = true;
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        apiList = res.data.data;
       }
     } catch (e) {
-      console.log('Using fallback restaurant dataset');
+      try {
+        const fallbackRes = await axios.get('https://student-app-xi-bice.vercel.app/api/restaurants');
+        if (fallbackRes.data?.data && Array.isArray(fallbackRes.data.data)) {
+          apiList = fallbackRes.data.data;
+        }
+      } catch {}
     }
 
-    if (!fetched) {
-      setRestaurants([
-        {
-          id: 'canteen-1',
-          name: 'North Campus Central Canteen',
-          campusLocation: 'North Academic Block Ground Floor',
-          contactPhone: '9876500001',
-          operationalStatus: 'open',
-          closedByAdmin: false,
-          activeOrdersCount: 14,
-        },
-        {
-          id: 'canteen-2',
-          name: 'South Mess & Food Court',
-          campusLocation: 'South Residential Complex',
-          contactPhone: '9876500002',
-          operationalStatus: 'open',
-          closedByAdmin: false,
-          activeOrdersCount: 9,
-        },
-        {
-          id: 'canteen-3',
-          name: 'Night Canteen & Snacks Hub',
-          campusLocation: 'Tagore Hostel Quadrangle',
-          contactPhone: '9876500003',
-          operationalStatus: 'temporarily_closed',
-          closedByAdmin: false,
-          activeOrdersCount: 0,
-        },
-        {
-          id: 'canteen-4',
-          name: 'Campus Chai & Fast Food Corner',
-          campusLocation: 'Library Annexe Plaza',
-          contactPhone: '9876500004',
-          operationalStatus: 'open',
-          closedByAdmin: false,
-          activeOrdersCount: 6,
-        },
-      ]);
+    let localList: Restaurant[] = [];
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('cb_all_restaurants');
+        if (saved) localList = JSON.parse(saved);
+      } catch {}
     }
-    setLoading(false);
+
+    const defaultSeed: Restaurant[] = [
+      {
+        id: 'canteen-1',
+        name: 'North Campus Central Canteen',
+        campusLocation: 'North Academic Block Ground Floor',
+        contactPhone: '9876500001',
+        operationalStatus: 'open',
+        closedByAdmin: false,
+        activeOrdersCount: 14,
+      },
+      {
+        id: 'canteen-2',
+        name: 'South Mess & Food Court',
+        campusLocation: 'South Residential Complex',
+        contactPhone: '9876500002',
+        operationalStatus: 'open',
+        closedByAdmin: false,
+        activeOrdersCount: 9,
+      },
+      {
+        id: 'canteen-3',
+        name: 'Night Canteen & Snacks Hub',
+        campusLocation: 'Tagore Hostel Quadrangle',
+        contactPhone: '9876500003',
+        operationalStatus: 'temporarily_closed',
+        closedByAdmin: false,
+        activeOrdersCount: 0,
+      },
+      {
+        id: 'canteen-4',
+        name: 'Campus Chai & Fast Food Corner',
+        campusLocation: 'Library Annexe Plaza',
+        contactPhone: '9876500004',
+        operationalStatus: 'open',
+        closedByAdmin: false,
+        activeOrdersCount: 6,
+      },
+    ];
+
+    const map = new Map<string, Restaurant>();
+    defaultSeed.forEach((r) => map.set(r.id, r));
+    apiList.forEach((r) => map.set(r.id, r));
+    localList.forEach((r) => map.set(r.id, r));
+
+    setRestaurants(Array.from(map.values()));
+    if (!isPolling) setLoading(false);
   };
 
   const toggleAdminForceClosure = async (id: string, currentForceState: boolean) => {

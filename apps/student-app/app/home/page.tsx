@@ -216,15 +216,36 @@ export default function HomePage() {
     }
 
     loadRestaurants();
+    const interval = setInterval(() => {
+      loadRestaurants();
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadRestaurants = async () => {
+    let apiList: Restaurant[] = [];
     try {
       const res = await api.get('/api/restaurants');
       if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
-        setRestaurants(res.data.data);
+        apiList = res.data.data;
       }
     } catch (e) {}
+
+    let localList: Restaurant[] = [];
+    if (typeof window !== 'undefined') {
+      try {
+        const saved = localStorage.getItem('cb_all_restaurants');
+        if (saved) localList = JSON.parse(saved);
+      } catch {}
+    }
+
+    const map = new Map<string, Restaurant>();
+    DEFAULT_RESTAURANTS.forEach((r) => map.set(r.id, r));
+    apiList.forEach((r) => map.set(r.id, r));
+    localList.forEach((r) => map.set(r.id, r));
+
+    const merged = Array.from(map.values());
+    setRestaurants(merged);
   };
 
   const updateCartStorage = (newCart: CartItem[]) => {
