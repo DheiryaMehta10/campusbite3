@@ -57,54 +57,23 @@ export default function RestaurantLoginPage() {
         phoneNumber: cleanPhone,
         password: loginForm.password,
       });
-      if (res.data?.restaurant?.id) {
+      if (res.data?.success && res.data?.restaurant?.id) {
         const rest = res.data.restaurant;
         localStorage.setItem('restaurantId', rest.id);
         localStorage.setItem('restaurantName', rest.name || 'Campus Canteen');
         localStorage.setItem('restaurantEmail', rest.email || cleanEmail);
-        localStorage.setItem('restaurantPhone', rest.phone || rest.phoneNumber || cleanPhone || '9876543210');
+        localStorage.setItem('restaurantPhone', rest.phone || rest.phoneNumber || cleanPhone || '');
         router.push('/dashboard');
         return;
+      } else {
+        setError(res.data?.message || 'Login failed. Please verify credentials.');
       }
     } catch (err: any) {
-      console.warn('Network login fallback active:', err);
+      const msg = err.response?.data?.message || 'No registered restaurant partner found with these credentials. Please switch to "Register Outlet" to create your canteen account.';
+      setError(msg);
+    } finally {
+      setLoading(false);
     }
-
-    // Graceful offline/direct login fallback
-    const fallbackId = cleanEmail.includes('canteen2')
-      ? '550e8400-e29b-41d4-a716-446655440002'
-      : cleanEmail.includes('canteen3')
-      ? '550e8400-e29b-41d4-a716-446655440003'
-      : cleanEmail.includes('samosa')
-      ? '550e8400-e29b-41d4-a716-446655440000'
-      : '550e8400-e29b-41d4-a716-446655440001';
-
-    const fallbackName = cleanEmail.includes('canteen2')
-      ? 'South Mess & Food Court'
-      : cleanEmail.includes('canteen3')
-      ? 'Night Canteen & Snacks Hub'
-      : cleanEmail.includes('samosa')
-      ? 'Samosa Cafe'
-      : cleanEmail.includes('@')
-      ? cleanEmail.split('@')[0].toUpperCase() + ' Kitchen'
-      : 'North Campus Central Canteen';
-
-    localStorage.setItem('restaurantId', fallbackId);
-    localStorage.setItem('restaurantName', fallbackName);
-    localStorage.setItem('restaurantEmail', cleanEmail || 'canteen1@campusbite.local');
-    localStorage.setItem('restaurantPhone', cleanPhone || '9876543210');
-    router.push('/dashboard');
-  };
-
-  const handleQuickCanteenLogin = (email: string, name: string, id: string) => {
-    setLoading(true);
-    localStorage.setItem('restaurantId', id);
-    localStorage.setItem('restaurantName', name);
-    localStorage.setItem('restaurantEmail', email);
-    localStorage.setItem('restaurantPhone', '9876543210');
-    setTimeout(() => {
-      router.push('/dashboard');
-    }, 300);
   };
 
   const handleSignup = async (e: React.FormEvent) => {
@@ -293,50 +262,6 @@ export default function RestaurantLoginPage() {
             >
               {loading ? 'Authenticating...' : 'Enter Kitchen Dashboard ➔'}
             </button>
-
-            {/* Quick 1-Click Canteen Presets */}
-            <div className="pt-2 border-t border-gray-100 space-y-2">
-              <p className="text-[10px] font-black uppercase tracking-wider text-gray-400 text-center">
-                ⚡ Quick 1-Click Canteen Logins
-              </p>
-              <div className="grid grid-cols-2 gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleQuickCanteenLogin('canteen1@campusbite.local', 'North Campus Central Canteen', '550e8400-e29b-41d4-a716-446655440001')}
-                  className="p-2.5 bg-orange-50 hover:bg-orange-100 border border-orange-200/70 rounded-xl text-left transition-all group"
-                >
-                  <p className="text-[11px] font-bold text-gray-900 group-hover:text-orange-600 truncate">🥪 North Canteen</p>
-                  <p className="text-[9px] text-gray-500 truncate">canteen1@campusbite.local</p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickCanteenLogin('canteen2@campusbite.local', 'South Mess & Food Court', '550e8400-e29b-41d4-a716-446655440002')}
-                  className="p-2.5 bg-orange-50 hover:bg-orange-100 border border-orange-200/70 rounded-xl text-left transition-all group"
-                >
-                  <p className="text-[11px] font-bold text-gray-900 group-hover:text-orange-600 truncate">🍛 South Mess</p>
-                  <p className="text-[9px] text-gray-500 truncate">canteen2@campusbite.local</p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickCanteenLogin('canteen3@campusbite.local', 'Night Canteen & Snacks Hub', '550e8400-e29b-41d4-a716-446655440003')}
-                  className="p-2.5 bg-orange-50 hover:bg-orange-100 border border-orange-200/70 rounded-xl text-left transition-all group"
-                >
-                  <p className="text-[11px] font-bold text-gray-900 group-hover:text-orange-600 truncate">🌙 Night Canteen</p>
-                  <p className="text-[9px] text-gray-500 truncate">canteen3@campusbite.local</p>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => handleQuickCanteenLogin('samosa@cafe.com', 'Samosa Cafe', '550e8400-e29b-41d4-a716-446655440000')}
-                  className="p-2.5 bg-orange-50 hover:bg-orange-100 border border-orange-200/70 rounded-xl text-left transition-all group"
-                >
-                  <p className="text-[11px] font-bold text-gray-900 group-hover:text-orange-600 truncate">☕ Samosa Cafe</p>
-                  <p className="text-[9px] text-gray-500 truncate">samosa@cafe.com</p>
-                </button>
-              </div>
-            </div>
           </form>
         ) : (
           /* 2. SIGN UP / REGISTER OUTLET FORM */

@@ -63,31 +63,11 @@ export async function POST(request: NextRequest) {
       };
     }
 
-    // Auto-provision if partner is registering on the fly
     if (!restaurant) {
-      const newId = uuidv4();
-      const generatedName = cleanEmail.includes('@')
-        ? cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase()) + ' Canteen'
-        : 'Campus Canteen Partner';
-
-      const newRestaurant = {
-        id: newId,
-        name: generatedName,
-        email: cleanEmail || `partner-${Date.now()}@campusbite.local`,
-        phone_number: cleanPhone || '9876543210',
-        address: 'Campus Food Court',
-        operational_status: 'open',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      try {
-        await supabaseServer.from('restaurants').upsert(newRestaurant, { onConflict: 'id' });
-      } catch (dbErr) {
-        console.warn('Auto-provisioning DB save warning for restaurant:', dbErr);
-      }
-
-      restaurant = newRestaurant;
+      return corsResponse({
+        success: false,
+        message: 'No registered restaurant partner found with these credentials. Please switch to "Register Outlet" to create your canteen account.',
+      }, { status: 404 });
     }
 
     return corsResponse({
@@ -96,8 +76,8 @@ export async function POST(request: NextRequest) {
         id: restaurant.id,
         name: restaurant.name,
         email: restaurant.email || cleanEmail,
-        phone: restaurant.phone_number || cleanPhone || '9876543210',
-        phoneNumber: restaurant.phone_number || cleanPhone || '9876543210',
+        phone: restaurant.phone_number || cleanPhone,
+        phoneNumber: restaurant.phone_number || cleanPhone,
         description: restaurant.address || 'Campus Canteen',
         operational_status: restaurant.operational_status || 'open',
       },

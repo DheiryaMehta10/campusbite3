@@ -45,33 +45,28 @@ export async function POST(request: NextRequest) {
       console.warn('Supabase student lookup warning:', e);
     }
 
-    // If not found in Supabase, auto-provision and save to Supabase
     if (!student) {
-      const newId = uuidv4();
-      const generatedName = cleanEmail.includes('@')
-        ? cleanEmail.split('@')[0].replace(/[._]/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase())
-        : 'Student User';
+      return corsResponse({
+        success: false,
+        message: 'No registered student account found with this email or mobile number. Please switch to "Sign Up" tab to register your profile.',
+      }, { status: 404 });
+    }
 
-      const newStudent = {
-        id: newId,
-        email: cleanEmail || `student-${Date.now()}@campus.edu`,
-        phone_number: cleanPhone || '9876543210',
-        full_name: generatedName,
-        college_name: 'Campus University',
-        hostel_name: 'Hostel Block A',
-        room_number: '101',
-        account_status: 'active',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-      };
-
-      try {
-        await supabaseServer.from('students').upsert(newStudent, { onConflict: 'id' });
-      } catch (dbErr) {
-        console.warn('Auto-provisioning DB save warning:', dbErr);
-      }
-
-      student = newStudent;
+    // Parse hostel and room number accurately from DB
+    let parsedHostel = student.hostel_name || '';
+    let parsedRoom = '';
+    if (parsedHostel.includes(' | Room ')) {
+      const parts = parsedHostel.split(' | Room ');
+      parsedHostel = parts[0];
+      parsedRoom = parts[1];
+    } else if (parsedHostel.includes(' (Room ')) {
+      const parts = parsedHostel.split(' (Room ');
+      parsedHostel = parts[0];
+      parsedRoom = parts[1].replace(')', '');
+    } else if (parsedHostel.includes(', Room ')) {
+      const parts = parsedHostel.split(', Room ');
+      parsedHostel = parts[0];
+      parsedRoom = parts[1];
     }
 
     return corsResponse({
@@ -81,11 +76,11 @@ export async function POST(request: NextRequest) {
         id: student.id,
         fullName: student.full_name || 'Student',
         email: student.email || cleanEmail,
-        phoneNumber: student.phone_number || cleanPhone || '9876543210',
-        phone: student.phone_number || cleanPhone || '9876543210',
-        hostelName: student.hostel_name || 'Hostel Block A',
-        roomNumber: student.room_number || '101',
-        collegeName: student.college_name || 'Campus University',
+        phoneNumber: student.phone_number || cleanPhone,
+        phone: student.phone_number || cleanPhone,
+        hostelName: parsedHostel,
+        roomNumber: parsedRoom,
+        collegeName: student.college_name || 'Campus Institute of Technology',
       },
     });
   } catch (error: any) {

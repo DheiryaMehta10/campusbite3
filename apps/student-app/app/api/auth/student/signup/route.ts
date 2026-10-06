@@ -55,7 +55,10 @@ export async function POST(request: NextRequest) {
       console.warn('Student lookup warning:', lookupErr);
     }
 
-    if (!studentId) {
+    let isExisting = false;
+    if (studentId) {
+      isExisting = true;
+    } else {
       studentId = uuidv4();
     }
 
@@ -65,23 +68,42 @@ export async function POST(request: NextRequest) {
       phone_number: cleanPhone || '9876543210',
       full_name: fullName.trim(),
       college_name: (collegeName || 'Campus University').trim(),
-      hostel_name: hostelName.trim(),
-      room_number: (roomNumber || '').trim(),
+      hostel_name: (roomNumber || '').trim()
+        ? `${hostelName.trim()} | Room ${roomNumber.trim()}`
+        : hostelName.trim(),
       account_status: 'active',
       updated_at: new Date().toISOString(),
     };
 
-    // Save to Supabase
+    // Save to Supabase (safe insert or update)
     try {
-      const { error: studentError } = await supabaseServer
-        .from('students')
-        .upsert(studentRecord, { onConflict: 'id' });
+      let studentError = null;
+      if (isExisting) {
+        const { error } = await supabaseServer
+          .from('students')
+          .update(studentRecord)
+          .eq('id', studentId);
+        studentError = error;
+      } else {
+        const { error } = await supabaseServer
+          .from('students')
+          .insert(studentRecord);
+        studentError = error;
+      }
 
       if (studentError) {
-        console.warn('Supabase signup upsert error:', studentError);
+        console.error('Supabase student signup error:', studentError);
+        return corsResponse({
+          success: false,
+          message: `Database error: ${studentError.message || 'Failed to save student profile'}`,
+        }, { status: 500 });
       }
-    } catch (dbErr) {
-      console.warn('Supabase DB error on student signup:', dbErr);
+    } catch (dbErr: any) {
+      console.error('Supabase DB exception on student signup:', dbErr);
+      return corsResponse({
+        success: false,
+        message: 'Database connection error during registration',
+      }, { status: 500 });
     }
 
     return corsResponse({

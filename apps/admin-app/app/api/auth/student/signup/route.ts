@@ -14,28 +14,58 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'All required profile fields must be provided' }, { status: 400 });
     }
 
-    // Check if student exists
-    const { data: existingStudent } = await supabaseServer
+
+    let isExisting = false;
+    let studentId = '';
+    const { data: existingByEmail } = await supabaseServer
       .from('students')
       .select('id')
-      .eq('phone_number', cleanPhone)
+      .eq('email', email.trim().toLowerCase())
       .maybeSingle();
 
-    const studentId = existingStudent?.id || uuidv4();
+    if (existingByEmail?.id) {
+      studentId = existingByEmail.id;
+      isExisting = true;
+    } else {
+      const { data: existingStudent } = await supabaseServer
+        .from('students')
+        .select('id')
+        .eq('phone_number', cleanPhone)
+        .maybeSingle();
+      if (existingStudent?.id) {
+        studentId = existingStudent.id;
+        isExisting = true;
+      } else {
+        studentId = uuidv4();
+      }
+    }
 
-    const { error: studentError } = await supabaseServer
-      .from('students')
-      .upsert({
-        id: studentId,
-        phone_number: cleanPhone,
-        full_name: fullName.trim(),
-        college_name: (collegeName || 'Campus University').trim(),
-        hostel_name: hostelName.trim(),
-        room_number: (roomNumber || '').trim(),
-        email: email.trim(),
-        account_status: 'active',
-        updated_at: new Date().toISOString(),
-      }, { onConflict: 'phone_number' });
+    const studentRecord = {
+      id: studentId,
+      phone_number: cleanPhone,
+      full_name: fullName.trim(),
+      college_name: (collegeName || 'Campus University').trim(),
+      hostel_name: (roomNumber || '').trim()
+        ? `${hostelName.trim()} | Room ${roomNumber.trim()}`
+        : hostelName.trim(),
+      email: email.trim().toLowerCase(),
+      account_status: 'active',
+      updated_at: new Date().toISOString(),
+    };
+
+    let studentError = null;
+    if (isExisting) {
+      const { error } = await supabaseServer
+        .from('students')
+        .update(studentRecord)
+        .eq('id', studentId);
+      studentError = error;
+    } else {
+      const { error } = await supabaseServer
+        .from('students')
+        .insert(studentRecord);
+      studentError = error;
+    }
 
     if (studentError) {
       console.error('Supabase signup upsert error:', studentError);
@@ -51,7 +81,7 @@ export async function POST(request: NextRequest) {
         collegeName: (collegeName || 'Campus University').trim(),
         hostelName: hostelName.trim(),
         roomNumber: (roomNumber || '').trim(),
-        email: email.trim(),
+        email: email.trim().toLowerCase(),
       },
     });
   } catch (error: any) {
