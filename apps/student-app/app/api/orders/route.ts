@@ -179,6 +179,7 @@ export async function POST(request: NextRequest) {
 
     // 1. Ensure student exists in Supabase
     let dbStudentId: string = studentId || uuidv4();
+    const cleanHostelData = roomNumber ? `${hostelName.trim()} | Room ${roomNumber.trim()}` : hostelName.trim();
     try {
       let existingStudent = null;
       if (cleanEmail) {
@@ -193,9 +194,9 @@ export async function POST(request: NextRequest) {
         dbStudentId = existingStudent.id;
         await supabaseServer.from('students').update({
           full_name: studentName || 'Student',
-          hostel_name: hostelName || '',
-          room_number: roomNumber || '',
+          hostel_name: cleanHostelData || undefined,
           phone_number: normalizedPhone || undefined,
+          updated_at: new Date().toISOString(),
         }).eq('id', dbStudentId);
       } else {
         const { data: createdStudent } = await supabaseServer.from('students').insert({
@@ -203,9 +204,10 @@ export async function POST(request: NextRequest) {
           phone_number: normalizedPhone || '9876543210',
           full_name: studentName || 'Student',
           college_name: 'Campus University',
-          hostel_name: hostelName || '',
-          room_number: roomNumber || '',
+          hostel_name: cleanHostelData || 'Hostel Block A',
           email: cleanEmail || `${normalizedPhone || 'student'}@campus.edu`,
+          account_status: 'active',
+          updated_at: new Date().toISOString(),
         }).select().single();
         if (createdStudent?.id) dbStudentId = createdStudent.id;
       }
