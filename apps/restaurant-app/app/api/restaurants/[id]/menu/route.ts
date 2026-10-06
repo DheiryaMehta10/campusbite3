@@ -4,26 +4,56 @@ import { randomUUID } from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
+const CANTEEN_ID_MAP: Record<string, string> = {
+  'canteen-1': '550e8400-e29b-41d4-a716-446655440001',
+  'canteen-2': '550e8400-e29b-41d4-a716-446655440002',
+  'canteen-3': '550e8400-e29b-41d4-a716-446655440003',
+  'canteen-4': '550e8400-e29b-41d4-a716-446655440004',
+};
+
+function resolveRestaurantId(id: string): string {
+  return CANTEEN_ID_MAP[id] || id;
+}
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;
+    const resolvedId = resolveRestaurantId(id);
+
     const { data, error } = await supabaseServer
       .from('food_items')
       .select('*')
-      .eq('restaurant_id', id)
-      .eq('active', true);
+      .eq('restaurant_id', resolvedId)
+      .eq('active', true)
+      .order('created_at', { ascending: false });
 
     if (error) {
       console.warn('Supabase menu query warning:', error.message);
     }
 
-    return NextResponse.json({
-      success: true,
-      data: data && data.length > 0 ? data : [],
-    });
+    if (data && data.length > 0) {
+      const formatted = data.map((item) => ({
+        id: item.id,
+        name: item.name,
+        price: Number(item.price || 0),
+        description: item.description || '',
+        category: item.category || 'Main Course',
+        isVeg: Boolean(item.is_veg),
+        is_veg: Boolean(item.is_veg),
+        isAvailable: !item.is_sold_out,
+        is_available: !item.is_sold_out,
+        is_sold_out: Boolean(item.is_sold_out),
+        active: Boolean(item.active),
+        restaurantId: item.restaurant_id,
+        restaurant_id: item.restaurant_id,
+      }));
+      return NextResponse.json({ success: true, data: formatted });
+    }
+
+    return NextResponse.json({ success: true, data: [] });
   } catch (error) {
     return NextResponse.json({ success: true, data: [] });
   }
@@ -35,6 +65,7 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
+    const resolvedId = resolveRestaurantId(id);
     const body = await request.json();
     const {
       name,
@@ -43,7 +74,7 @@ export async function POST(
       isVeg = true,
       is_veg = true,
       category = 'Main Course',
-      image_url = 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80',
+      image_url = '',
       image = '',
       isAvailable = true,
       is_available = true,
@@ -55,46 +86,56 @@ export async function POST(
       return NextResponse.json({ success: false, message: 'Item name is required' }, { status: 400 });
     }
 
-    const itemId = `dish-${Date.now()}-${randomUUID().slice(0, 6)}`;
+    const itemId = randomUUID();
     const finalVeg = isVeg !== undefined ? Boolean(isVeg) : Boolean(is_veg);
     const finalAvailable = isAvailable !== undefined ? Boolean(isAvailable) : Boolean(is_available);
     const finalBestseller = isBestseller !== undefined ? Boolean(isBestseller) : Boolean(is_bestseller);
     const finalImage = image_url || image || 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=500&auto=format&fit=crop&q=80';
 
-    const newItem = {
+    const dbItem = {
       id: itemId,
-      restaurant_id: id,
+      restaurant_id: resolvedId,
       name: name.trim(),
-      price: Number(price) || 100,
       description: description.trim(),
-      is_veg: finalVeg,
-      isVeg: finalVeg,
+      price: Number(price) || 100,
       category: category.trim() || 'Main Course',
+      is_veg: finalVeg,
+      is_sold_out: !finalAvailable,
+      active: true,
+    };
+
+    const clientItem = {
+      ...dbItem,
+      isVeg: finalVeg,
+      isAvailable: finalAvailable,
+      is_available: finalAvailable,
+      isBestseller: finalBestseller,
+      is_bestseller: finalBestseller,
       image_url: finalImage,
       image: finalImage,
-      is_available: finalAvailable,
-      isAvailable: finalAvailable,
-      is_bestseller: finalBestseller,
-      isBestseller: finalBestseller,
-      active: true,
-      created_at: new Date().toISOString(),
     };
 
     try {
       const { data, error } = await supabaseServer
         .from('food_items')
-        .insert([newItem])
+        .insert(dbItem)
         .select()
         .single();
 
       if (!error && data) {
-        return NextResponse.json({ success: true, data, message: 'Dish added to menu' });
+        return NextResponse.json({
+          success: true,
+          data: { ...clientItem, ...data },
+          message: 'Dish successfully saved in database',
+        });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase food item insert error:', e);
+    }
 
     return NextResponse.json({
       success: true,
-      data: newItem,
+      data: clientItem,
       message: 'Dish added to menu',
     });
   } catch (error: any) {
@@ -118,12 +159,8 @@ export async function PUT(
       isVeg,
       is_veg,
       category,
-      image_url,
-      image,
       isAvailable,
       is_available,
-      isBestseller,
-      is_bestseller,
     } = body;
 
     const targetId = itemId || bodyItemId;
@@ -136,14 +173,11 @@ export async function PUT(
     if (price !== undefined) updates.price = Number(price);
     if (description !== undefined) updates.description = description.trim();
     if (category !== undefined) updates.category = category.trim();
-    if (isVeg !== undefined) { updates.is_veg = Boolean(isVeg); updates.isVeg = Boolean(isVeg); }
-    if (is_veg !== undefined) { updates.is_veg = Boolean(is_veg); updates.isVeg = Boolean(is_veg); }
-    if (image_url !== undefined) { updates.image_url = image_url; updates.image = image_url; }
-    if (image !== undefined) { updates.image_url = image; updates.image = image; }
-    if (isAvailable !== undefined) { updates.is_available = Boolean(isAvailable); updates.isAvailable = Boolean(isAvailable); }
-    if (is_available !== undefined) { updates.is_available = Boolean(is_available); updates.isAvailable = Boolean(is_available); }
-    if (isBestseller !== undefined) { updates.is_bestseller = Boolean(isBestseller); updates.isBestseller = Boolean(isBestseller); }
-    if (is_bestseller !== undefined) { updates.is_bestseller = Boolean(is_bestseller); updates.isBestseller = Boolean(is_bestseller); }
+    if (isVeg !== undefined || is_veg !== undefined) updates.is_veg = Boolean(isVeg ?? is_veg);
+    if (isAvailable !== undefined || is_available !== undefined) {
+      const avail = Boolean(isAvailable ?? is_available);
+      updates.is_sold_out = !avail;
+    }
 
     try {
       const { data, error } = await supabaseServer
@@ -154,13 +188,13 @@ export async function PUT(
         .single();
 
       if (!error && data) {
-        return NextResponse.json({ success: true, data, message: 'Item updated' });
+        return NextResponse.json({ success: true, data, message: 'Item updated in database' });
       }
     } catch (e) {}
 
     return NextResponse.json({
       success: true,
-      data: { id: targetId, ...updates },
+      data: { id: targetId, ...updates, ...body },
       message: 'Item updated',
     });
   } catch (error: any) {
@@ -190,7 +224,7 @@ export async function DELETE(
 
     return NextResponse.json({
       success: true,
-      message: 'Item deleted from menu',
+      message: 'Item removed from database menu',
     });
   } catch (error: any) {
     return NextResponse.json({ success: false, message: error.message || 'Failed to delete item' }, { status: 500 });

@@ -1,12 +1,23 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseServer } from '@/lib/supabase';
 import { corsResponse, handleCorsOptions } from '@/lib/cors';
-import { v4 as uuidv4 } from 'uuid';
+import { randomUUID } from 'crypto';
 
 export const dynamic = 'force-dynamic';
 
 export async function OPTIONS() {
   return handleCorsOptions();
+}
+
+const CANTEEN_ID_MAP: Record<string, string> = {
+  'canteen-1': '550e8400-e29b-41d4-a716-446655440001',
+  'canteen-2': '550e8400-e29b-41d4-a716-446655440002',
+  'canteen-3': '550e8400-e29b-41d4-a716-446655440003',
+  'canteen-4': '550e8400-e29b-41d4-a716-446655440004',
+};
+
+function resolveRestaurantId(id: string): string {
+  return CANTEEN_ID_MAP[id] || id;
 }
 
 const DEFAULT_MENU_SEED = [
@@ -30,6 +41,7 @@ function formatFoodItem(item: any) {
     isVeg: Boolean(item.is_veg ?? item.isVeg ?? true),
     is_veg: Boolean(item.is_veg ?? item.isVeg ?? true),
     isAvailable: !item.is_sold_out && item.active !== false,
+    is_available: !item.is_sold_out && item.active !== false,
     is_sold_out: Boolean(item.is_sold_out),
     active: item.active !== false,
     restaurantId: item.restaurant_id,
@@ -42,30 +54,29 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: restaurantId } = await params;
+    const { id } = await params;
+    const resolvedId = resolveRestaurantId(id);
 
-    let dbItems: any[] = [];
-    try {
-      const { data, error } = await supabaseServer
-        .from('food_items')
-        .select('*')
-        .eq('active', true)
-        .order('created_at', { ascending: false });
+    const { data, error } = await supabaseServer
+      .from('food_items')
+      .select('*')
+      .eq('restaurant_id', resolvedId)
+      .eq('active', true)
+      .order('created_at', { ascending: false });
 
-      if (!error && data && data.length > 0) {
-        dbItems = data.map(formatFoodItem);
-      }
-    } catch (e) {
-      console.warn('Error fetching food_items from Supabase:', e);
+    if (error) {
+      console.warn('Supabase menu query warning:', error.message);
     }
 
-    if (dbItems.length === 0) {
-      dbItems = DEFAULT_MENU_SEED;
+    if (data && data.length > 0) {
+      const formatted = data.map(formatFoodItem);
+      return corsResponse({ success: true, data: formatted });
     }
 
+    // Fallback if legacy seed
     return corsResponse({
       success: true,
-      data: dbItems,
+      data: DEFAULT_MENU_SEED,
     });
   } catch (error) {
     return corsResponse({
@@ -80,7 +91,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id: restaurantId } = await params;
+    const { id } = await params;
+    const resolvedId = resolveRestaurantId(id);
     const body = await request.json();
     const { name, description = '', price, category = 'Main Course', isVeg = true } = body;
 
@@ -88,23 +100,14 @@ export async function POST(
       return corsResponse({ success: false, message: 'Name and price are required' }, { status: 400 });
     }
 
-    let validRestId = restaurantId;
-    try {
-      const { data: rList } = await supabaseServer.from('restaurants').select('id');
-      if (rList && rList.length > 0) {
-        const match = rList.find((r) => r.id === restaurantId);
-        validRestId = match ? match.id : rList[0].id;
-      }
-    } catch {}
-
-    const newItemId = uuidv4();
+    const newItemId = randomUUID();
     const newFoodItem = {
       id: newItemId,
-      restaurant_id: validRestId,
+      restaurant_id: resolvedId,
       name: name.trim(),
       description: description.trim(),
       price: Number(price),
-      category,
+      category: category.trim() || 'Main Course',
       is_veg: Boolean(isVeg),
       is_sold_out: false,
       active: true,

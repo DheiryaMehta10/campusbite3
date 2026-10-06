@@ -34,8 +34,11 @@ export async function POST(request: NextRequest) {
       cuisines = 'Multi-Cuisine, Campus Meals',
       image_url = 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&auto=format&fit=crop&q=80',
       phone = '',
+      phoneNumber = '',
+      phone_number = '',
       email = '',
       operational_status = 'open',
+      operationalStatus = 'open',
       delivery_time = 'Slot 6:00 - 7:00 PM',
       price_for_two = 150,
     } = body;
@@ -44,38 +47,52 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ success: false, message: 'Restaurant name is required' }, { status: 400 });
     }
 
-    const restaurantId = `rest-${Date.now()}-${randomUUID().slice(0, 8)}`;
-    const newRestaurant = {
+    const restaurantId = randomUUID();
+    const finalPhone = phone_number || phone || phoneNumber || '9876543210';
+    const finalStatus = operational_status || operationalStatus || 'open';
+
+    const dbPayload = {
       id: restaurantId,
       name: name.trim(),
-      description: description.trim(),
+      address: description.trim() || 'Campus Food Plaza',
+      phone_number: finalPhone,
+      email: email.trim() || `partner-${Date.now()}@campusbite.local`,
+      operational_status: finalStatus,
+      active: true,
+      commission_percentage: 10,
+    };
+
+    const clientPayload = {
+      ...dbPayload,
+      description: description.trim() || 'Campus Food Plaza',
       cuisines: cuisines.trim(),
       image_url: image_url.trim(),
-      phone: phone.trim(),
-      email: email.trim(),
-      operational_status,
       delivery_time,
       price_for_two: Number(price_for_two) || 150,
       rating: 4.8,
-      active: true,
-      created_at: new Date().toISOString(),
     };
 
     try {
       const { data, error } = await supabaseServer
         .from('restaurants')
-        .insert([newRestaurant])
+        .insert(dbPayload)
         .select()
         .single();
 
       if (!error && data) {
-        return NextResponse.json({ success: true, data, message: 'Restaurant created successfully' });
+        return NextResponse.json({
+          success: true,
+          data: { ...clientPayload, ...data },
+          message: 'Restaurant successfully saved in database',
+        });
       }
-    } catch (e) {}
+    } catch (e) {
+      console.warn('Supabase restaurant insert warning:', e);
+    }
 
     return NextResponse.json({
       success: true,
-      data: newRestaurant,
+      data: clientPayload,
       message: 'Restaurant created successfully',
     });
   } catch (error: any) {
@@ -86,7 +103,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, name, description, cuisines, image_url, phone, email, operational_status, delivery_time, price_for_two } = body;
+    const { id, name, description, phone, phone_number, email, operational_status, operationalStatus } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, message: 'Restaurant ID is required' }, { status: 400 });
@@ -96,14 +113,10 @@ export async function PUT(request: NextRequest) {
       updated_at: new Date().toISOString(),
     };
     if (name) updatePayload.name = name.trim();
-    if (description !== undefined) updatePayload.description = description.trim();
-    if (cuisines !== undefined) updatePayload.cuisines = cuisines.trim();
-    if (image_url !== undefined) updatePayload.image_url = image_url.trim();
-    if (phone !== undefined) updatePayload.phone = phone.trim();
+    if (description !== undefined) updatePayload.address = description.trim();
+    if (phone || phone_number) updatePayload.phone_number = (phone || phone_number).trim();
     if (email !== undefined) updatePayload.email = email.trim();
-    if (operational_status) updatePayload.operational_status = operational_status;
-    if (delivery_time) updatePayload.delivery_time = delivery_time;
-    if (price_for_two !== undefined) updatePayload.price_for_two = Number(price_for_two);
+    if (operational_status || operationalStatus) updatePayload.operational_status = operational_status || operationalStatus;
 
     try {
       const { data, error } = await supabaseServer
@@ -114,13 +127,13 @@ export async function PUT(request: NextRequest) {
         .single();
 
       if (!error && data) {
-        return NextResponse.json({ success: true, data, message: 'Restaurant profile updated' });
+        return NextResponse.json({ success: true, data, message: 'Restaurant profile updated in database' });
       }
     } catch (e) {}
 
     return NextResponse.json({
       success: true,
-      data: { id, ...updatePayload },
+      data: { id, ...updatePayload, ...body },
       message: 'Restaurant profile updated',
     });
   } catch (error: any) {
