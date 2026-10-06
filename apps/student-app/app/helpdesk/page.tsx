@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface FAQ {
   id: string;
@@ -37,7 +38,7 @@ const FAQS: FAQ[] = [
     category: 'Address',
     question: 'How do I change my hostel room or drop-off location?',
     answer:
-      'You can update your default Hostel and Room Number anytime from your Profile. If you have an active order already en route, please contact the runner hotline immediately below.',
+      'You can update your default Hostel and Room Number anytime from your Profile. If you have an active order already en route, please contact the dedicated language hotline below immediately.',
     actionText: 'Update Profile Address',
     actionHref: '/profile',
   },
@@ -110,30 +111,39 @@ export default function HelpdeskPage() {
   );
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-32 font-sans selection:bg-orange-500 selection:text-white">
-      {/* 1. TOP HEADER */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm px-4 py-3.5">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-32 font-sans selection:bg-orange-500 selection:text-white text-slate-900 dark:text-slate-100 transition-colors duration-200">
+      {/* 1. TOP HEADER WITH LOGO & THEME TOGGLE */}
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 shadow-sm px-4 py-3">
         <div className="max-w-md md:max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => router.back()}
-              className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-bold hover:bg-gray-200 transition-all active:scale-95"
+              className="h-9 w-9 rounded-2xl bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-700 dark:text-slate-200 font-bold hover:bg-gray-200 dark:hover:bg-slate-700 transition-all active:scale-95"
             >
               ←
             </button>
-            <div>
-              <h1 className="text-base font-black text-gray-950 tracking-tight">Campus Helpdesk</h1>
-              <p className="text-[10px] text-gray-400 font-bold">24/7 Student Delivery Support</p>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl overflow-hidden border border-orange-500/30 bg-slate-950 shrink-0">
+                <img src="/logo-icon.png" alt="CampusBite" className="w-full h-full object-cover" />
+              </div>
+              <div>
+                <h1 className="text-base font-black text-gray-950 dark:text-white tracking-tight">Campus Helpdesk</h1>
+                <p className="text-[10px] text-gray-400 dark:text-slate-400 font-bold">24/7 Student Delivery Support</p>
+              </div>
             </div>
           </div>
-          <span className="flex items-center gap-1 text-[10px] font-black text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full uppercase tracking-wider">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            Desk Online
-          </span>
+
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <span className="flex items-center gap-1 text-[10px] font-black text-emerald-700 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 px-2.5 py-1 rounded-full uppercase tracking-wider">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+              Online
+            </span>
+          </div>
         </div>
       </header>
 
-      <main className="max-w-md md:max-w-2xl mx-auto p-4 space-y-4">
+      <main className="max-w-md md:max-w-2xl mx-auto p-4 space-y-5">
         {/* 2. HERO SUPPORT BANNER */}
         <div className="bg-gradient-to-tr from-slate-900 via-orange-950 to-orange-600 rounded-3xl p-5 text-white shadow-xl space-y-3 relative overflow-hidden">
           <div className="flex items-center justify-between relative z-10">
@@ -145,7 +155,7 @@ export default function HelpdeskPage() {
                 Hi {userName.split(' ')[0]} 👋 Need help with an order?
               </h2>
               <p className="text-xs text-orange-100/90 font-medium">
-                Our hostel runners and canteen dispatch managers are standing by.
+                Our multilingual hostel runners and canteen dispatch managers are standing by.
               </p>
             </div>
             <div className="text-3xl">🛟</div>
@@ -163,45 +173,95 @@ export default function HelpdeskPage() {
           </div>
         </div>
 
-        {/* 3. DIRECT CONTACT CHANNELS */}
-        <div className="grid grid-cols-3 gap-2.5">
-          {/* Channel 1: Phone Hotline */}
-          <a
-            href="tel:+919876543210"
-            className="bg-white rounded-2xl p-3.5 border border-gray-100 shadow-sm flex flex-col items-center text-center gap-1.5 hover:border-orange-500 transition-all active:scale-95 group"
-          >
-            <div className="h-10 w-10 rounded-xl bg-orange-50 text-orange-600 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
-              📞
-            </div>
-            <span className="text-xs font-black text-gray-900">Call Desk</span>
-            <span className="text-[9px] font-bold text-gray-400">Direct Runner</span>
-          </a>
+        {/* 3. MULTILINGUAL SUPPORT HELPLINES (OFFICIAL NUMBERS) */}
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between px-1">
+            <h3 className="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
+              <span>📞</span>
+              <span>Official Student Support Helplines</span>
+            </h3>
+            <span className="text-[10px] text-orange-600 dark:text-orange-400 font-black">Live Call & WhatsApp</span>
+          </div>
 
-          {/* Channel 2: WhatsApp Chat */}
-          <a
-            href="https://wa.me/919876543210?text=Hi%20CampusBite%20Support,%20I%20need%20help%20with%20my%20order"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-white rounded-2xl p-3.5 border border-gray-100 shadow-sm flex flex-col items-center text-center gap-1.5 hover:border-emerald-500 transition-all active:scale-95 group"
-          >
-            <div className="h-10 w-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
-              💬
-            </div>
-            <span className="text-xs font-black text-gray-900">WhatsApp</span>
-            <span className="text-[9px] font-bold text-gray-400">Fast Response</span>
-          </a>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {/* HELPLINE 1: HINDI & TELUGU */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-orange-200 dark:border-slate-800 shadow-md hover:shadow-lg transition-all space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-[10px] font-black bg-orange-100 dark:bg-orange-950/60 text-orange-700 dark:text-orange-400 px-2 py-0.5 rounded-md uppercase">
+                      🇮🇳 Hindi & Telugu
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-black text-gray-900 dark:text-white">Hindi & Telugu Desk</h4>
+                  <p className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 mt-0.5">
+                    +91 96061 56053
+                  </p>
+                </div>
+                <div className="h-9 w-9 rounded-2xl bg-orange-50 dark:bg-orange-950/40 text-orange-600 flex items-center justify-center text-base">
+                  🗣️
+                </div>
+              </div>
 
-          {/* Channel 3: Email Ticket */}
-          <a
-            href={`mailto:support@campusbite.local?subject=CampusBite%20Help%20Request%20(${userEmail})`}
-            className="bg-white rounded-2xl p-3.5 border border-gray-100 shadow-sm flex flex-col items-center text-center gap-1.5 hover:border-indigo-500 transition-all active:scale-95 group"
-          >
-            <div className="h-10 w-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg group-hover:scale-110 transition-transform">
-              ✉️
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-100 dark:border-slate-800">
+                <a
+                  href="tel:+919606156053"
+                  className="py-2 px-3 bg-orange-600 hover:bg-orange-700 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                >
+                  <span>📞</span>
+                  <span>Call Now</span>
+                </a>
+                <a
+                  href="https://wa.me/919606156053?text=Hi%20CampusBite%20Support,%20I%20need%20help%20with%20my%20order"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                >
+                  <span>💬</span>
+                  <span>WhatsApp</span>
+                </a>
+              </div>
             </div>
-            <span className="text-xs font-black text-gray-900">Email Us</span>
-            <span className="text-[9px] font-bold text-gray-400">Official Ticket</span>
-          </a>
+
+            {/* HELPLINE 2: TAMIL & ENGLISH */}
+            <div className="bg-white dark:bg-slate-900 rounded-3xl p-4 border border-blue-200 dark:border-slate-800 shadow-md hover:shadow-lg transition-all space-y-3">
+              <div className="flex items-start justify-between">
+                <div>
+                  <div className="flex items-center gap-1.5 mb-1">
+                    <span className="text-[10px] font-black bg-blue-100 dark:bg-blue-950/60 text-blue-700 dark:text-blue-400 px-2 py-0.5 rounded-md uppercase">
+                      🇮🇳 Tamil & English
+                    </span>
+                  </div>
+                  <h4 className="text-xs font-black text-gray-900 dark:text-white">Tamil & English Desk</h4>
+                  <p className="text-[11px] font-semibold text-gray-500 dark:text-slate-400 mt-0.5">
+                    +91 90921 17304
+                  </p>
+                </div>
+                <div className="h-9 w-9 rounded-2xl bg-blue-50 dark:bg-blue-950/40 text-blue-600 flex items-center justify-center text-base">
+                  🗣️
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 pt-1 border-t border-gray-100 dark:border-slate-800">
+                <a
+                  href="tel:+919092117304"
+                  className="py-2 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                >
+                  <span>📞</span>
+                  <span>Call Now</span>
+                </a>
+                <a
+                  href="https://wa.me/919092117304?text=Hi%20CampusBite%20Support,%20I%20need%20help%20with%20my%20order"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
+                >
+                  <span>💬</span>
+                  <span>WhatsApp</span>
+                </a>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* 4. ACTIVE SUPPORT TICKET STATUS (IF SUBMITTED) */}
@@ -225,26 +285,26 @@ export default function HelpdeskPage() {
         )}
 
         {/* 5. SUBMIT AN IN-APP SUPPORT TICKET */}
-        <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-gray-100 dark:border-slate-800 shadow-sm space-y-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="text-xs font-black uppercase tracking-wider text-gray-900 flex items-center gap-1.5">
+              <h3 className="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
                 <span>📝</span>
-                <span>Raise an Instant Support Request</span>
+                <span>Raise an In-App Support Ticket</span>
               </h3>
-              <p className="text-[11px] text-gray-400">Directly alerts campus canteen and runner lead</p>
+              <p className="text-[11px] text-gray-400 dark:text-slate-400">Directly alerts campus canteen and runner lead</p>
             </div>
           </div>
 
           <form onSubmit={handleCreateTicket} className="space-y-3">
             <div>
-              <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">
+              <label className="block text-[10px] font-bold text-gray-600 dark:text-slate-400 uppercase mb-1">
                 Select Issue Category
               </label>
               <select
                 value={issueType}
                 onChange={(e) => setIssueType(e.target.value)}
-                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 focus:bg-white focus:border-orange-500 outline-none transition-all"
+                className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-bold text-gray-900 dark:text-white focus:bg-white dark:focus:bg-slate-900 focus:border-orange-500 outline-none transition-all"
               >
                 <option value="order_delay">🛵 Batch Wave Delay / Order Tracking</option>
                 <option value="missing_item">🍲 Missing Dish / Wrong Item Delivered</option>
@@ -255,20 +315,20 @@ export default function HelpdeskPage() {
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">
+              <label className="block text-[10px] font-bold text-gray-600 dark:text-slate-400 uppercase mb-1">
                 Order Reference / ID (Optional)
               </label>
               <input
                 type="text"
                 value={orderRef}
                 onChange={(e) => setOrderRef(e.target.value)}
-                placeholder="e.g. #ORD-1049 (leave blank for general query)"
-                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-bold text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-orange-500 outline-none transition-all"
+                placeholder="e.g. #CB-1049 (leave blank for general query)"
+                className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-bold text-gray-900 dark:text-white placeholder:text-gray-400 focus:bg-white dark:focus:bg-slate-900 focus:border-orange-500 outline-none transition-all"
               />
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold text-gray-600 uppercase mb-1">
+              <label className="block text-[10px] font-bold text-gray-600 dark:text-slate-400 uppercase mb-1">
                 Describe the Issue *
               </label>
               <textarea
@@ -277,7 +337,7 @@ export default function HelpdeskPage() {
                 rows={3}
                 placeholder="Describe what happened so we can resolve it immediately..."
                 required
-                className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-medium text-gray-900 placeholder:text-gray-400 focus:bg-white focus:border-orange-500 outline-none transition-all"
+                className="w-full px-3.5 py-2.5 bg-gray-50 dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl text-xs font-medium text-gray-900 dark:text-white placeholder:text-gray-400 focus:bg-white dark:focus:bg-slate-900 focus:border-orange-500 outline-none transition-all"
               />
             </div>
 
@@ -292,8 +352,8 @@ export default function HelpdeskPage() {
         </div>
 
         {/* 6. INSTANT FAQ ACCORDION */}
-        <div className="bg-white rounded-3xl p-5 border border-gray-100 shadow-sm space-y-3">
-          <h3 className="text-xs font-black uppercase tracking-wider text-gray-900 flex items-center gap-1.5">
+        <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-gray-100 dark:border-slate-800 shadow-sm space-y-3">
+          <h3 className="text-xs font-black uppercase tracking-wider text-gray-900 dark:text-white flex items-center gap-1.5">
             <span>❓</span>
             <span>Frequently Asked Questions</span>
           </h3>
@@ -305,12 +365,14 @@ export default function HelpdeskPage() {
                 <div
                   key={faq.id}
                   className={`border rounded-2xl transition-all overflow-hidden ${
-                    isOpen ? 'border-orange-300 bg-orange-50/30' : 'border-gray-100 bg-gray-50/50'
+                    isOpen
+                      ? 'border-orange-300 dark:border-orange-900/60 bg-orange-50/30 dark:bg-orange-950/20'
+                      : 'border-gray-100 dark:border-slate-800 bg-gray-50/50 dark:bg-slate-850'
                   }`}
                 >
                   <button
                     onClick={() => setSelectedFaq(isOpen ? null : faq.id)}
-                    className="w-full p-3.5 flex items-center justify-between text-left font-bold text-gray-900 hover:text-orange-600 gap-2"
+                    className="w-full p-3.5 flex items-center justify-between text-left font-bold text-gray-900 dark:text-white hover:text-orange-600 dark:hover:text-orange-400 gap-2"
                   >
                     <span>{faq.question}</span>
                     <span className="text-gray-400 font-black text-sm shrink-0">
@@ -319,12 +381,12 @@ export default function HelpdeskPage() {
                   </button>
 
                   {isOpen && (
-                    <div className="px-3.5 pb-3.5 space-y-2.5 text-xs text-gray-600 border-t border-gray-100/80 pt-2">
+                    <div className="px-3.5 pb-3.5 space-y-2.5 text-xs text-gray-600 dark:text-slate-300 border-t border-gray-100/80 dark:border-slate-800 pt-2">
                       <p>{faq.answer}</p>
                       {faq.actionText && faq.actionHref && (
                         <Link
                           href={faq.actionHref}
-                          className="inline-block font-black text-orange-600 text-[11px] underline"
+                          className="inline-block font-black text-orange-600 dark:text-orange-400 text-[11px] underline"
                         >
                           {faq.actionText} ➔
                         </Link>
@@ -339,31 +401,31 @@ export default function HelpdeskPage() {
 
         {/* 7. PLAY STORE LEGAL LINKS */}
         <div className="text-center pt-2 space-y-2">
-          <div className="flex justify-center gap-4 text-xs font-bold text-gray-400">
-            <Link href="/privacy" className="hover:text-orange-600 hover:underline">Privacy Policy</Link>
+          <div className="flex justify-center gap-4 text-xs font-bold text-gray-400 dark:text-slate-500">
+            <Link href="/privacy" className="hover:text-orange-600 dark:hover:text-orange-400 hover:underline">Privacy Policy</Link>
             <span>•</span>
-            <Link href="/terms" className="hover:text-orange-600 hover:underline">Terms of Service</Link>
+            <Link href="/terms" className="hover:text-orange-600 dark:hover:text-orange-400 hover:underline">Terms of Service</Link>
             <span>•</span>
             <Link href="/account/delete" className="hover:text-red-600 hover:underline">Delete Account</Link>
           </div>
-          <p className="text-[10px] text-gray-400">© 2026 CampusBite Technologies • Helpdesk Support</p>
+          <p className="text-[10px] text-gray-400 dark:text-slate-500">© 2026 CampusBite Technologies • Helpdesk Support</p>
         </div>
       </main>
 
       {/* 8. BOTTOM NAVIGATION BAR */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-lg border-t border-gray-200 py-2">
+      <nav className="fixed bottom-0 left-0 right-0 z-50 bg-white/95 dark:bg-slate-900/95 backdrop-blur-lg border-t border-gray-200 dark:border-slate-800 py-2">
         <div className="max-w-md md:max-w-2xl mx-auto px-6 flex justify-around items-center">
-          <Link href="/home" className="flex flex-col items-center text-gray-400 hover:text-gray-900 font-bold text-[10px] gap-0.5">
+          <Link href="/home" className="flex flex-col items-center text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white font-bold text-[10px] gap-0.5">
             <span className="text-lg">🍔</span>
             <span>Explore</span>
           </Link>
 
-          <Link href="/orders" className="flex flex-col items-center text-gray-400 hover:text-gray-900 font-bold text-[10px] gap-0.5">
+          <Link href="/orders" className="flex flex-col items-center text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white font-bold text-[10px] gap-0.5">
             <span className="text-lg">📜</span>
             <span>Orders</span>
           </Link>
 
-          <Link href="/profile" className="flex flex-col items-center text-gray-400 hover:text-gray-900 font-bold text-[10px] gap-0.5">
+          <Link href="/profile" className="flex flex-col items-center text-gray-400 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white font-bold text-[10px] gap-0.5">
             <span className="text-lg">👤</span>
             <span>Profile</span>
           </Link>

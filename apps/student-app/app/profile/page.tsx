@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -61,22 +62,30 @@ export default function ProfilePage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F8FAFC] pb-32 font-sans selection:bg-orange-500 selection:text-white">
+    <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-32 font-sans selection:bg-orange-500 selection:text-white text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* 1. TOP HEADER */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm px-4 py-3">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 shadow-sm px-4 py-3">
         <div className="max-w-md md:max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => router.push('/home')}
-              className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-bold hover:bg-gray-200 transition-all active:scale-95"
+              className="h-8 w-8 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-700 dark:text-slate-200 font-bold hover:bg-gray-200 dark:hover:bg-slate-700 transition-all active:scale-95"
             >
               ←
             </button>
-            <h1 className="text-base font-black text-gray-900 tracking-tight">Student Account</h1>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl overflow-hidden border border-orange-500/30 bg-slate-950 shrink-0">
+                <img src="/logo-icon.png" alt="CampusBite" className="w-full h-full object-cover" />
+              </div>
+              <h1 className="text-base font-black text-gray-900 dark:text-white tracking-tight">Student Account</h1>
+            </div>
           </div>
-          <span className="text-[10px] font-bold text-orange-600 bg-orange-50 border border-orange-200 px-2 py-0.5 rounded-full">
-            Campus ID Verified
-          </span>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <span className="text-[10px] font-bold text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/50 border border-orange-200 dark:border-orange-800 px-2 py-0.5 rounded-full">
+              Campus ID Verified
+            </span>
+          </div>
         </div>
       </header>
 

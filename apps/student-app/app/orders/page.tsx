@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import axios from 'axios';
 import Link from 'next/link';
+import ThemeToggle from '@/components/ThemeToggle';
 
 interface OrderItem {
   id?: string;
@@ -168,28 +169,34 @@ export default function OrdersPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] pb-32 font-sans selection:bg-orange-500 selection:text-white">
       {/* 1. TOP HEADER */}
-      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm px-4 py-3">
+      <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-gray-100 dark:border-slate-800 shadow-sm px-4 py-3">
         <div className="max-w-md md:max-w-2xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2.5">
             <button
               onClick={() => router.push('/home')}
-              className="h-8 w-8 rounded-full bg-gray-100 flex items-center justify-center text-gray-700 font-bold hover:bg-gray-200 transition-all active:scale-95"
+              className="h-8 w-8 rounded-full bg-gray-100 dark:bg-slate-800 flex items-center justify-center text-gray-700 dark:text-slate-200 font-bold hover:bg-gray-200 dark:hover:bg-slate-700 transition-all active:scale-95"
             >
               ←
             </button>
-            <h1 className="text-base font-black text-gray-900 tracking-tight">Your Orders</h1>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl overflow-hidden border border-orange-500/30 bg-slate-950 shrink-0">
+                <img src="/logo-icon.png" alt="CampusBite" className="w-full h-full object-cover" />
+              </div>
+              <h1 className="text-base font-black text-gray-900 dark:text-white tracking-tight">Your Orders</h1>
+            </div>
           </div>
           <div className="flex items-center gap-2">
+            <ThemeToggle />
             <Link
               href="/helpdesk"
-              className="text-[10px] font-black text-orange-600 bg-orange-50 border border-orange-200 px-2.5 py-1 rounded-full flex items-center gap-1 hover:bg-orange-100 transition-all"
+              className="text-[10px] font-black text-orange-600 dark:text-orange-400 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800/60 px-2.5 py-1 rounded-full flex items-center gap-1 hover:bg-orange-100 dark:hover:bg-orange-900/50 transition-all"
             >
               <span>💬</span>
               <span>Helpdesk</span>
             </Link>
             <div className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-green-500 animate-ping"></span>
-              <span className="text-[10px] font-bold text-green-700 uppercase tracking-wider">Live Sync</span>
+              <span className="text-[10px] font-bold text-green-700 dark:text-emerald-400 uppercase tracking-wider">Live Sync</span>
             </div>
           </div>
         </div>

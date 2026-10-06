@@ -163,13 +163,16 @@ export default function LoginPage() {
     <div className="min-h-screen flex flex-col justify-between bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-200">
       {/* Top Bar with Logo & Theme Toggle */}
       <div className="w-full max-w-md mx-auto p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-9 h-9 rounded-2xl bg-orange-600 flex items-center justify-center text-white font-black text-lg shadow-md shadow-orange-600/20">
-            CB
+        <div className="flex items-center gap-2.5">
+          <div className="w-10 h-10 rounded-2xl overflow-hidden border border-orange-500/30 bg-slate-950 flex-shrink-0 shadow-md shadow-orange-500/15">
+            <img src="/logo-icon.png" alt="CampusBite" className="w-full h-full object-cover" />
           </div>
-          <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">
-            Campus<span className="text-orange-600">Bite</span>
-          </span>
+          <div>
+            <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">
+              Campus<span className="text-orange-600">Bite</span>
+            </span>
+            <p className="text-[10px] font-bold text-orange-600 uppercase tracking-wider">Student App</p>
+          </div>
         </div>
         <ThemeToggle />
       </div>
@@ -177,16 +180,24 @@ export default function LoginPage() {
       {/* Main Auth Container */}
       <div className="w-full max-w-md mx-auto px-4 py-2 flex-1 flex flex-col justify-center">
         <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl dark:shadow-2xl dark:shadow-black/50 border border-slate-100 dark:border-slate-800 p-6 md:p-8 space-y-5 transition-all">
-          {/* Header Title */}
-          <div className="text-center space-y-1">
-            <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
-              {mode === 'login' ? 'Welcome Back!' : 'Create Student Account'}
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {mode === 'login'
-                ? 'Sign in to order canteen meals straight to your hostel'
-                : 'Register once to order food, midnight snacks & grocery'}
-            </p>
+          {/* Header Emblem & Title */}
+          <div className="text-center space-y-2">
+            <div className="inline-block mx-auto">
+              <div className="w-20 h-20 rounded-3xl overflow-hidden border-2 border-orange-500/30 shadow-xl shadow-orange-600/15 bg-slate-950 p-1 mx-auto">
+                <img src="/logo-icon.png" alt="CampusBite Logo" className="w-full h-full object-cover rounded-2xl" />
+              </div>
+            </div>
+
+            <div className="space-y-0.5">
+              <h1 className="text-2xl font-black tracking-tight text-slate-900 dark:text-white">
+                {mode === 'login' ? 'Welcome Back!' : 'Create Student Account'}
+              </h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {mode === 'login'
+                  ? 'Sign in to order canteen meals straight to your hostel'
+                  : 'Register once to order food, midnight snacks & grocery'}
+              </p>
+            </div>
           </div>
 
           {/* Mode Switcher Tabs */}
