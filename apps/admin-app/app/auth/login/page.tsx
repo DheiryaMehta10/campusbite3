@@ -68,7 +68,7 @@ export default function AdminLoginPage() {
             </span>
           </div>
 
-          <h1 className="text-2xl font-black text-gray-950 tracking-tight">CampusBite Control</h1>
+          <h1 className="text-2xl font-black text-gray-950 tracking-tight">UniBite Control</h1>
           <p className="text-[11px] font-black text-indigo-600 uppercase tracking-widest">
             Administration Portal
           </p>
@@ -82,7 +82,7 @@ export default function AdminLoginPage() {
             </label>
             <input
               type="email"
-              placeholder="admin@campusbite.local"
+              placeholder="admin@unibite.local"
               value={form.email}
               onChange={(e) => setForm({ ...form, email: e.target.value })}
               required
@@ -127,7 +127,7 @@ export default function AdminLoginPage() {
             <Link href="/privacy" className="text-indigo-600 font-bold hover:underline">Privacy Policy</Link>
           </p>
           <p className="text-[10px] font-medium text-gray-400">
-            CampusBite Admin HQ v2.4 • Authorized Access
+            UniBite Admin HQ v2.4 • Authorized Access
           </p>
         </div>
       </div>

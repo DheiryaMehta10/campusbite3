@@ -82,7 +82,7 @@ export default function AdminOrdersPage() {
     let localOrders: Order[] = [];
     if (typeof window !== 'undefined') {
       try {
-        const local = localStorage.getItem('cb_orders');
+        const local = (localStorage.getItem('ub_orders') || localStorage.getItem('cb_orders'));
         if (local) localOrders = JSON.parse(local);
       } catch {}
     }
@@ -102,7 +102,7 @@ export default function AdminOrdersPage() {
 
     setOrders(uniqueList);
     if (typeof window !== 'undefined' && uniqueList.length > 0) {
-      localStorage.setItem('cb_orders', JSON.stringify(uniqueList));
+      localStorage.setItem('ub_orders', JSON.stringify(uniqueList));
     }
     if (!isPolling) setLoading(false);
   };
@@ -113,7 +113,7 @@ export default function AdminOrdersPage() {
     );
     setOrders(updated);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cb_orders', JSON.stringify(updated));
+      localStorage.setItem('ub_orders', JSON.stringify(updated));
     }
     try {
       await api.patch(`/api/orders/${orderId}/status`, { orderStatus: newStatus });

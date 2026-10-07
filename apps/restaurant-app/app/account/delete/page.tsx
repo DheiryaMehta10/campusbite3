@@ -97,7 +97,7 @@ export default function PartnerAccountDeletionPage() {
               <input
                 type="email"
                 required
-                placeholder="partner@campusbite.local"
+                placeholder="partner@unibite.local"
                 value={partnerEmail}
                 onChange={(e) => setPartnerEmail(e.target.value)}
                 className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:outline-none focus:border-orange-500"
@@ -170,7 +170,7 @@ export default function PartnerAccountDeletionPage() {
             <span>•</span>
             <Link href="/auth/login" className="hover:underline">Partner Login</Link>
           </div>
-          <p className="text-[10px] text-gray-400">© 2026 CampusBite Technologies • Data Safety Department</p>
+          <p className="text-[10px] text-gray-400">© 2026 UniBite Technologies • Data Safety Department</p>
         </div>
       </main>
     </div>

@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'CampusBite Student — Order Smart. Delivered by Slot.',
+  title: 'UniBite Student — Order Smart. Delivered by Slot.',
   description: 'Hostel delivery platform for college campus students.',
   manifest: '/manifest.json',
   icons: {

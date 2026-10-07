@@ -1,13 +1,13 @@
 import nodemailer from 'nodemailer';
 
 export async function sendOtpEmail(toEmail: string, otp: string): Promise<{ success: boolean; message?: string }> {
-  const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER || 'campusbite.app@gmail.com';
+  const emailUser = process.env.EMAIL_USER || process.env.SMTP_USER || 'unibite.app@gmail.com';
   const emailPass = process.env.EMAIL_PASS || process.env.SMTP_PASS || '';
 
   const htmlContent = `
     <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; max-width: 460px; margin: 0 auto; border: 1px solid #fed7aa; border-radius: 20px; padding: 32px 24px; background: #ffffff; text-align: center;">
       <div style="margin-bottom: 24px;">
-        <h1 style="color: #ea580c; margin: 0; font-size: 28px; font-weight: 900;">🍔 CampusBite</h1>
+        <h1 style="color: #ea580c; margin: 0; font-size: 28px; font-weight: 900;">🍔 UniBite</h1>
         <p style="color: #6b7280; font-size: 13px; margin: 4px 0 0 0; font-weight: 500;">Order Smart. Delivered by Slot.</p>
       </div>
 
@@ -18,14 +18,14 @@ export async function sendOtpEmail(toEmail: string, otp: string): Promise<{ succ
       </div>
 
       <p style="color: #4b5563; font-size: 13px; line-height: 1.5; margin: 0 0 16px 0;">
-        Enter this code in your CampusBite app to verify your account and place your slot meal orders.
+        Enter this code in your UniBite app to verify your account and place your slot meal orders.
       </p>
 
       <hr style="border: 0; border-top: 1px solid #f3f4f6; margin: 20px 0;" />
 
       <p style="color: #9ca3af; font-size: 11px; margin: 0;">
         If you did not request this OTP, please ignore this email.<br />
-        CampusBite • Smart Campus Food Delivery
+        UniBite • Smart Campus Food Delivery
       </p>
     </div>
   `;
@@ -42,10 +42,10 @@ export async function sendOtpEmail(toEmail: string, otp: string): Promise<{ succ
       });
 
       await transporter.sendMail({
-        from: `"CampusBite" <${emailUser}>`,
+        from: `"UniBite" <${emailUser}>`,
         to: toEmail,
-        subject: `🔐 Your CampusBite Verification Code: ${otp}`,
-        text: `Your CampusBite verification OTP is ${otp}. Valid for 10 minutes.`,
+        subject: `🔐 Your UniBite Verification Code: ${otp}`,
+        text: `Your UniBite verification OTP is ${otp}. Valid for 10 minutes.`,
         html: htmlContent,
       });
 
@@ -66,9 +66,9 @@ export async function sendOtpEmail(toEmail: string, otp: string): Promise<{ succ
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'CampusBite <onboarding@resend.dev>',
+          from: 'UniBite <onboarding@resend.dev>',
           to: [toEmail],
-          subject: `🔐 Your CampusBite Verification Code: ${otp}`,
+          subject: `🔐 Your UniBite Verification Code: ${otp}`,
           html: htmlContent,
         }),
       });

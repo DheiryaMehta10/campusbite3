@@ -92,7 +92,7 @@ export default function OrdersPage() {
     let localOrders: any[] = [];
     if (typeof window !== 'undefined') {
       try {
-        const local = localStorage.getItem('cb_orders');
+        const local = (localStorage.getItem('ub_orders') || localStorage.getItem('cb_orders'));
         if (local) localOrders = JSON.parse(local);
       } catch (e) {}
     }
@@ -180,7 +180,7 @@ export default function OrdersPage() {
             </button>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl overflow-hidden border border-orange-500/30 bg-slate-950 shrink-0">
-                <img src="/logo-icon.png" alt="CampusBite" className="w-full h-full object-cover" />
+                <img src="/logo-icon.png" alt="UniBite" className="w-full h-full object-cover" />
               </div>
               <h1 className="text-base font-black text-gray-900 dark:text-white tracking-tight">Your Orders</h1>
             </div>

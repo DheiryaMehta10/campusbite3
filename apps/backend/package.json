@@ -1,5 +1,5 @@
 {
-  "name": "campusbite-backend",
+  "name": "unibite-backend",
   "version": "1.0.0",
   "scripts": {
     "dev": "next dev -p 3001",

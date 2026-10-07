@@ -206,7 +206,7 @@ export default function LoginPage() {
             <div className="w-16 h-16 rounded-2xl overflow-hidden shadow-xl shadow-orange-500/25 border-2 border-orange-500/30 bg-slate-950 flex items-center justify-center">
               <img
                 src="/logo-icon.png"
-                alt="CampusBite Logo"
+                alt="UniBite Logo"
                 className="w-full h-full object-cover rounded-xl"
               />
             </div>
@@ -214,7 +214,7 @@ export default function LoginPage() {
               Student
             </span>
           </div>
-          <h1 className="text-2xl font-black text-gray-950 tracking-tight">CampusBite</h1>
+          <h1 className="text-2xl font-black text-gray-950 tracking-tight">UniBite</h1>
           <p className="text-orange-600 font-bold text-xs tracking-wider uppercase mt-0.5">
             Order Smart • Delivered by Slot
           </p>
@@ -264,7 +264,7 @@ export default function LoginPage() {
                   className="mt-0.5 h-4 w-4 rounded text-orange-600 focus:ring-orange-500 border-gray-300"
                 />
                 <span className="text-[11px] font-bold text-gray-700 leading-snug">
-                  I agree to CampusBite&apos;s{' '}
+                  I agree to UniBite&apos;s{' '}
                   <Link href="/terms" target="_blank" className="text-orange-600 underline font-black hover:text-orange-700">
                     Terms &amp; Conditions
                   </Link>{' '}
@@ -391,7 +391,7 @@ export default function LoginPage() {
               disabled={loading || otp.length < 4}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98] disabled:opacity-50"
             >
-              {loading ? 'Verifying Code...' : 'Verify & Enter CampusBite ➔'}
+              {loading ? 'Verifying Code...' : 'Verify & Enter UniBite ➔'}
             </button>
           </div>
         )}
@@ -465,14 +465,14 @@ export default function LoginPage() {
               disabled={loading}
               className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white font-black text-xs uppercase tracking-wider rounded-2xl shadow-lg shadow-orange-500/30 transition-all transform active:scale-[0.98]"
             >
-              {loading ? 'Saving Profile...' : 'Save Profile & Enter CampusBite ➔'}
+              {loading ? 'Saving Profile...' : 'Save Profile & Enter UniBite ➔'}
             </button>
           </div>
         )}
 
         <div className="mt-6 pt-4 border-t border-gray-100 text-center">
           <p className="text-[11px] text-gray-400 font-medium">
-            CampusBite Scheduled Slot Delivery Platform
+            UniBite Scheduled Slot Delivery Platform
           </p>
         </div>
       </div>

@@ -45,7 +45,7 @@ export default function ProfilePage() {
   };
 
   const handleLogout = () => {
-    if (confirm('Are you sure you want to log out from CampusBite?')) {
+    if (confirm('Are you sure you want to log out from UniBite?')) {
       if (typeof window !== 'undefined') {
         localStorage.removeItem('userId');
         localStorage.removeItem('userName');
@@ -75,7 +75,7 @@ export default function ProfilePage() {
             </button>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl overflow-hidden border border-orange-500/30 bg-slate-950 shrink-0">
-                <img src="/logo-icon.png" alt="CampusBite" className="w-full h-full object-cover" />
+                <img src="/logo-icon.png" alt="UniBite" className="w-full h-full object-cover" />
               </div>
               <h1 className="text-base font-black text-gray-900 dark:text-white tracking-tight">Student Account</h1>
             </div>
@@ -303,12 +303,12 @@ export default function ProfilePage() {
             onClick={handleLogout}
             className="w-full bg-red-50 hover:bg-red-100 text-red-600 font-black text-xs py-3.5 rounded-2xl border border-red-200 shadow-sm transition-all active:scale-95 uppercase tracking-wider"
           >
-            Log Out from CampusBite
+            Log Out from UniBite
           </button>
 
           <div className="flex items-center justify-center gap-2 text-[10px] font-bold text-gray-400">
-            <img src="/logo-icon.png" alt="CampusBite" className="h-4 w-4 object-contain rounded-md" />
-            <span>CampusBite v2.4.0 • Android PlayStore Release</span>
+            <img src="/logo-icon.png" alt="UniBite" className="h-4 w-4 object-contain rounded-md" />
+            <span>UniBite v2.4.0 • Android PlayStore Release</span>
           </div>
         </div>
       </main>

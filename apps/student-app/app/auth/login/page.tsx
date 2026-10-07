@@ -170,7 +170,7 @@ export default function LoginPage() {
       <div className="w-full max-w-md mx-auto p-4 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
           <div className="w-10 h-10 rounded-2xl overflow-hidden border border-orange-500/30 bg-slate-950 flex-shrink-0 shadow-md shadow-orange-500/15">
-            <img src="/logo-icon.png" alt="CampusBite" className="w-full h-full object-cover" />
+            <img src="/logo-icon.png" alt="UniBite" className="w-full h-full object-cover" />
           </div>
           <div>
             <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">
@@ -189,7 +189,7 @@ export default function LoginPage() {
           <div className="text-center space-y-2">
             <div className="inline-block mx-auto">
               <div className="w-20 h-20 rounded-3xl overflow-hidden border-2 border-orange-500/30 shadow-xl shadow-orange-600/15 bg-slate-950 p-1 mx-auto">
-                <img src="/logo-icon.png" alt="CampusBite Logo" className="w-full h-full object-cover rounded-2xl" />
+                <img src="/logo-icon.png" alt="UniBite Logo" className="w-full h-full object-cover rounded-2xl" />
               </div>
             </div>
 
@@ -289,12 +289,12 @@ export default function LoginPage() {
                 disabled={loading}
                 className="w-full py-3.5 bg-gradient-to-r from-orange-600 to-amber-600 hover:from-orange-700 hover:to-amber-700 text-white rounded-2xl text-xs font-black tracking-wider uppercase shadow-lg shadow-orange-600/25 transition-all active:scale-[0.98] disabled:opacity-50"
               >
-                {loading ? 'Signing In...' : 'Sign In to CampusBite ➔'}
+                {loading ? 'Signing In...' : 'Sign In to UniBite ➔'}
               </button>
 
               <div className="text-center pt-2">
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  New to CampusBite?{' '}
+                  New to UniBite?{' '}
                   <button
                     type="button"
                     onClick={() => {
@@ -417,7 +417,7 @@ export default function LoginPage() {
                   <Link href="/privacy" target="_blank" className="text-orange-600 dark:text-orange-400 font-bold underline">
                     Privacy Policy
                   </Link>{' '}
-                  of CampusBite.
+                  of UniBite.
                 </label>
               </div>
 
@@ -465,7 +465,7 @@ export default function LoginPage() {
           </Link>
         </div>
         <p className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-          CampusBite v2.4 • Google Play Store Certified
+          UniBite v2.4 • Google Play Store Certified
         </p>
       </footer>
     </div>

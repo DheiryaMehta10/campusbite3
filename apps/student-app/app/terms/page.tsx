@@ -31,14 +31,14 @@ export default function TermsAndConditionsPage() {
         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-orange-600 uppercase tracking-widest">
             <span>📜</span>
-            <span>CampusBite Terms of Service</span>
+            <span>UniBite Terms of Service</span>
           </div>
           <h2 className="text-xl font-black text-gray-950">Student & Partner Service Agreement</h2>
           <p className="text-xs text-gray-500">
             Last Updated: October 5, 2026 • Governing all campus ordering and scheduled delivery slot services.
           </p>
           <p className="text-xs text-gray-600 leading-relaxed">
-            By downloading, accessing, or placing an order through the CampusBite application, you agree to comply with and be bound by the following terms, conditions, and delivery guidelines.
+            By downloading, accessing, or placing an order through the UniBite application, you agree to comply with and be bound by the following terms, conditions, and delivery guidelines.
           </p>
         </div>
 
@@ -50,7 +50,7 @@ export default function TermsAndConditionsPage() {
               <span>1.</span> User Eligibility & Account Responsibility
             </h3>
             <p>
-              CampusBite services are designated specifically for active students, faculty, and authorized staff residing within or visiting the campus premises.
+              UniBite services are designated specifically for active students, faculty, and authorized staff residing within or visiting the campus premises.
             </p>
             <ul className="list-disc pl-5 space-y-1 text-gray-600">
               <li>Users must verify their identity using a valid student email address via OTP.</li>
@@ -102,7 +102,7 @@ export default function TermsAndConditionsPage() {
               <span>4.</span> Pricing, Fees & Promotional Coupons
             </h3>
             <p>
-              All prices listed on CampusBite reflect actual canteen partner menus.
+              All prices listed on UniBite reflect actual canteen partner menus.
             </p>
             <ul className="list-disc pl-5 space-y-1 text-gray-600">
               <li><strong>Delivery Fee:</strong> Batch scheduled delivery to hostel collection points is free or subsidized by the campus partner program.</li>
@@ -135,7 +135,7 @@ export default function TermsAndConditionsPage() {
             <span>•</span>
             <Link href="/home" className="hover:underline">Return to App</Link>
           </div>
-          <p className="text-[10px] text-gray-400">© 2026 CampusBite Technologies. All rights reserved.</p>
+          <p className="text-[10px] text-gray-400">© 2026 UniBite Technologies. All rights reserved.</p>
         </div>
       </main>
     </div>

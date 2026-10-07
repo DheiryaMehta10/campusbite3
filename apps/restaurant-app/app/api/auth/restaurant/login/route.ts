@@ -10,12 +10,12 @@ export async function OPTIONS() {
 }
 
 const DEFAULT_PARTNERS: Record<string, { id: string; name: string; cuisines: string }> = {
-  'canteen1@campusbite.local': { id: '550e8400-e29b-41d4-a716-446655440001', name: 'North Campus Central Canteen', cuisines: 'North Indian, Street Food, Chinese' },
-  'canteen2@campusbite.local': { id: '550e8400-e29b-41d4-a716-446655440002', name: 'South Mess & Food Court', cuisines: 'Biryani, South Indian, Dosa' },
-  'canteen3@campusbite.local': { id: '550e8400-e29b-41d4-a716-446655440003', name: 'Night Canteen & Snacks Hub', cuisines: 'Snacks, Burgers, Fast Food' },
-  'canteen4@campusbite.local': { id: '550e8400-e29b-41d4-a716-446655440004', name: 'Campus Chai & Fast Food Corner', cuisines: 'Beverages, Tea, Snacks' },
+  'canteen1@unibite.local': { id: '550e8400-e29b-41d4-a716-446655440001', name: 'North Campus Central Canteen', cuisines: 'North Indian, Street Food, Chinese' },
+  'canteen2@unibite.local': { id: '550e8400-e29b-41d4-a716-446655440002', name: 'South Mess & Food Court', cuisines: 'Biryani, South Indian, Dosa' },
+  'canteen3@unibite.local': { id: '550e8400-e29b-41d4-a716-446655440003', name: 'Night Canteen & Snacks Hub', cuisines: 'Snacks, Burgers, Fast Food' },
+  'canteen4@unibite.local': { id: '550e8400-e29b-41d4-a716-446655440004', name: 'Campus Chai & Fast Food Corner', cuisines: 'Beverages, Tea, Snacks' },
   'samosa@cafe.com': { id: '550e8400-e29b-41d4-a716-446655440000', name: 'Samosa Cafe', cuisines: 'Street Food, Fast Food' },
-  'canteen@campusbite.local': { id: '550e8400-e29b-41d4-a716-446655440001', name: 'North Campus Central Canteen', cuisines: 'North Indian • Thalis • Butter Naan' },
+  'canteen@unibite.local': { id: '550e8400-e29b-41d4-a716-446655440001', name: 'North Campus Central Canteen', cuisines: 'North Indian • Thalis • Butter Naan' },
 };
 
 export async function POST(request: NextRequest) {

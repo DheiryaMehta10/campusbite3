@@ -29,14 +29,14 @@ export default function PartnerTermsPage() {
         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-orange-600 uppercase tracking-widest">
             <span>📜</span>
-            <span>CampusBite Kitchen Merchant Agreement</span>
+            <span>UniBite Kitchen Merchant Agreement</span>
           </div>
           <h2 className="text-xl font-black text-gray-950">Partner Service Terms</h2>
           <p className="text-xs text-gray-500">
             Last Updated: October 5, 2026 • Governing campus food preparation and order fulfillment.
           </p>
           <p className="text-xs text-gray-600 leading-relaxed">
-            By operating the CampusBite Kitchen POS terminal, restaurant partners agree to maintain campus food quality standards, timely wave prep, and accurate stock management.
+            By operating the UniBite Kitchen POS terminal, restaurant partners agree to maintain campus food quality standards, timely wave prep, and accurate stock management.
           </p>
         </div>
 
@@ -63,7 +63,7 @@ export default function PartnerTermsPage() {
             <span>•</span>
             <Link href="/auth/login" className="hover:underline">Partner Login</Link>
           </div>
-          <p className="text-[10px] text-gray-400">© 2026 CampusBite Technologies • Partner Operations</p>
+          <p className="text-[10px] text-gray-400">© 2026 UniBite Technologies • Partner Operations</p>
         </div>
       </main>
     </div>

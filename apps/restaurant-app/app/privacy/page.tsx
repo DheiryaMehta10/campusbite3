@@ -29,14 +29,14 @@ export default function PartnerPrivacyPolicyPage() {
         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-orange-600 uppercase tracking-widest">
             <span>🛡️</span>
-            <span>CampusBite Kitchen & Partner Data Protection</span>
+            <span>UniBite Kitchen & Partner Data Protection</span>
           </div>
           <h2 className="text-xl font-black text-gray-950">Partner Privacy Policy</h2>
           <p className="text-xs text-gray-500">
             Last Updated: October 5, 2026 • Governing kitchen merchant accounts and canteen operations.
           </p>
           <p className="text-xs text-gray-600 leading-relaxed">
-            CampusBite is dedicated to maintaining the highest security and data privacy standards for all partnered canteens, university vendors, and operational staff.
+            UniBite is dedicated to maintaining the highest security and data privacy standards for all partnered canteens, university vendors, and operational staff.
           </p>
         </div>
 
@@ -58,7 +58,7 @@ export default function PartnerPrivacyPolicyPage() {
           <div className="space-y-2 pt-4">
             <h3 className="text-sm font-black text-gray-900">3. Partner Account Deletion & Data Purge</h3>
             <p>
-              Kitchen partners seeking to offboard or delete operational account data may email our administrative compliance desk at <a href="mailto:privacy@campusbite.local" className="text-orange-600 font-bold underline">privacy@campusbite.local</a>.
+              Kitchen partners seeking to offboard or delete operational account data may email our administrative compliance desk at <a href="mailto:privacy@unibite.local" className="text-orange-600 font-bold underline">privacy@unibite.local</a>.
             </p>
           </div>
         </div>
@@ -69,7 +69,7 @@ export default function PartnerPrivacyPolicyPage() {
             <span>•</span>
             <Link href="/auth/login" className="hover:underline">Partner Login</Link>
           </div>
-          <p className="text-[10px] text-gray-400">© 2026 CampusBite Technologies • Partner Network</p>
+          <p className="text-[10px] text-gray-400">© 2026 UniBite Technologies • Partner Network</p>
         </div>
       </main>
     </div>

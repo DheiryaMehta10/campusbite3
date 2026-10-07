@@ -8,7 +8,7 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
 
   useEffect(() => {
     setMounted(true);
-    const savedTheme = localStorage.getItem('cb_theme');
+    const savedTheme = (localStorage.getItem('ub_theme') || localStorage.getItem('cb_theme'));
     const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
     const shouldBeDark = savedTheme === 'dark' || (!savedTheme && prefersDark);
 
@@ -25,10 +25,10 @@ export default function ThemeToggle({ className = '' }: { className?: string }) 
     setIsDark(nextState);
     if (nextState) {
       document.documentElement.classList.add('dark');
-      localStorage.setItem('cb_theme', 'dark');
+      localStorage.setItem('ub_theme', 'dark');
     } else {
       document.documentElement.classList.remove('dark');
-      localStorage.setItem('cb_theme', 'light');
+      localStorage.setItem('ub_theme', 'light');
     }
   };
 

@@ -31,7 +31,7 @@ export async function PATCH(
     ) {
       return NextResponse.json({
         success: false,
-        message: 'This restaurant was closed by CampusBite Admin. Only an Admin can reopen it.',
+        message: 'This restaurant was closed by UniBite Admin. Only an Admin can reopen it.',
       }, { status: 403 });
     }
 

@@ -84,7 +84,7 @@ export default function CartPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('cb_cart');
+        const saved = (localStorage.getItem('ub_cart') || localStorage.getItem('cb_cart'));
         if (saved) setCart(JSON.parse(saved));
         const savedHostel = localStorage.getItem('userHostel') || '';
         if (savedHostel) setHostelName(savedHostel);
@@ -111,7 +111,7 @@ export default function CartPage() {
   const updateCart = (newCart: CartItem[]) => {
     setCart(newCart);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cb_cart', JSON.stringify(newCart));
+      localStorage.setItem('ub_cart', JSON.stringify(newCart));
     }
   };
 
@@ -141,21 +141,21 @@ export default function CartPage() {
       return;
     }
 
-    if (code === 'FIRSTBITE') {
+    if (code === 'FIRSTBITE' || code === 'UNIBITE20') {
       const calcDiscount = Math.min(50, Math.round(itemTotal * 0.2));
-      setAppliedPromo({ code: 'FIRSTBITE', discount: calcDiscount });
-      setPromoSuccess(`🎉 'FIRSTBITE' applied! Saved ₹${calcDiscount}`);
+      setAppliedPromo({ code, discount: calcDiscount });
+      setPromoSuccess(`🎉 '${code}' applied! Saved ₹${calcDiscount}`);
       setPromoInput('');
-    } else if (code === 'CAMPUS50') {
+    } else if (code === 'CAMPUS50' || code === 'UNIBITE50') {
       if (itemTotal >= 150) {
-        setAppliedPromo({ code: 'CAMPUS50', discount: 50 });
-        setPromoSuccess(`🎉 'CAMPUS50' applied! Saved ₹50`);
+        setAppliedPromo({ code, discount: 50 });
+        setPromoSuccess(`🎉 '${code}' applied! Saved ₹50`);
         setPromoInput('');
       } else {
-        setPromoError("Cart total must be at least ₹150 for 'CAMPUS50'");
+        setPromoError(`Cart total must be at least ₹150 for '${code}'`);
       }
     } else {
-      setPromoError('Invalid coupon code. Try FIRSTBITE or CAMPUS50');
+      setPromoError('Invalid coupon code. Try FIRSTBITE or UNIBITE50');
     }
   };
 
@@ -198,7 +198,7 @@ export default function CartPage() {
       localStorage.setItem('userPhone', cleanPhone);
     }
 
-    const orderNum = `CB-${Math.floor(1000 + Math.random() * 9000)}`;
+    const orderNum = `UB-${Math.floor(1000 + Math.random() * 9000)}`;
     const slotObj = slots.find((s) => s.id === selectedSlotId);
     const slotLabel = slotObj ? slotObj.name : 'Evening Slot 1 (6:00 PM – 7:00 PM)';
 
@@ -267,9 +267,9 @@ export default function CartPage() {
     }
 
     try {
-      const pastOrders = JSON.parse(localStorage.getItem('cb_orders') || '[]');
+      const pastOrders = JSON.parse((localStorage.getItem('ub_orders') || localStorage.getItem('cb_orders')) || '[]');
       pastOrders.unshift(newLocalOrder);
-      localStorage.setItem('cb_orders', JSON.stringify(pastOrders));
+      localStorage.setItem('ub_orders', JSON.stringify(pastOrders));
     } catch {}
 
     updateCart([]);
@@ -527,10 +527,10 @@ export default function CartPage() {
                       FIRSTBITE (20% OFF)
                     </button>
                     <button
-                      onClick={() => applyPromoCode('CAMPUS50')}
+                      onClick={() => applyPromoCode('UNIBITE50')}
                       className="text-[11px] font-bold px-3 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition-all"
                     >
-                      CAMPUS50 (Flat ₹50 OFF)
+                      UNIBITE50 (Flat ₹50 OFF)
                     </button>
                   </div>
                 </div>

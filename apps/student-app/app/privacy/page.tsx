@@ -31,14 +31,14 @@ export default function PrivacyPolicyPage() {
         <div className="bg-white rounded-3xl p-6 border border-gray-100 shadow-sm space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-orange-600 uppercase tracking-widest">
             <span>🛡️</span>
-            <span>CampusBite Data Protection Policy</span>
+            <span>UniBite Data Protection Policy</span>
           </div>
           <h2 className="text-xl font-black text-gray-950">Privacy & Personal Data Guidelines</h2>
           <p className="text-xs text-gray-500">
-            Last Updated: October 5, 2026 • Effective for all CampusBite applications (Student, Kitchen Partner, Admin).
+            Last Updated: October 5, 2026 • Effective for all UniBite applications (Student, Kitchen Partner, Admin).
           </p>
           <p className="text-xs text-gray-600 leading-relaxed">
-            CampusBite (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) is committed to protecting your privacy and ensuring transparency in how your information is collected, used, and safeguarded during campus food ordering and batch hostel delivery operations.
+            UniBite (&quot;we&quot;, &quot;us&quot;, or &quot;our&quot;) is committed to protecting your privacy and ensuring transparency in how your information is collected, used, and safeguarded during campus food ordering and batch hostel delivery operations.
           </p>
         </div>
 
@@ -104,7 +104,7 @@ export default function PrivacyPolicyPage() {
                 2. Or visit our public deletion portal at <Link href="/account/delete" className="font-bold underline text-orange-700">/account/delete</Link>.
               </p>
               <p className="text-orange-900">
-                3. Or email <a href="mailto:privacy@campusbite.local" className="font-bold underline text-orange-700">privacy@campusbite.local</a> with your registered email ID.
+                3. Or email <a href="mailto:privacy@unibite.local" className="font-bold underline text-orange-700">privacy@unibite.local</a> with your registered email ID.
               </p>
             </div>
             <p className="text-[11px] text-gray-500">
@@ -118,7 +118,7 @@ export default function PrivacyPolicyPage() {
               <span>5.</span> Security & Encryption
             </h3>
             <p>
-              All traffic between your device and CampusBite is encrypted using industry-standard TLS 1.3 encryption. Backend database access is protected by service-role authentication keys and row-level security.
+              All traffic between your device and UniBite is encrypted using industry-standard TLS 1.3 encryption. Backend database access is protected by service-role authentication keys and row-level security.
             </p>
           </div>
 
@@ -131,8 +131,8 @@ export default function PrivacyPolicyPage() {
               If you have any questions regarding this Privacy Policy or wish to exercise your data protection rights, please contact our designated Grievance Officer:
             </p>
             <div className="bg-gray-50 p-3.5 rounded-2xl border border-gray-200 space-y-0.5">
-              <p className="font-bold text-gray-900">CampusBite Privacy & Compliance Desk</p>
-              <p className="text-gray-600">Email: <a href="mailto:privacy@campusbite.local" className="text-orange-600 font-bold">privacy@campusbite.local</a></p>
+              <p className="font-bold text-gray-900">UniBite Privacy & Compliance Desk</p>
+              <p className="text-gray-600">Email: <a href="mailto:privacy@unibite.local" className="text-orange-600 font-bold">privacy@unibite.local</a></p>
               <p className="text-gray-600">Campus Delivery Operations Office, North Campus Quadrangle</p>
             </div>
           </div>
@@ -147,7 +147,7 @@ export default function PrivacyPolicyPage() {
             <span>•</span>
             <Link href="/home" className="hover:underline">Return to App</Link>
           </div>
-          <p className="text-[10px] text-gray-400">© 2026 CampusBite Technologies. All rights reserved.</p>
+          <p className="text-[10px] text-gray-400">© 2026 UniBite Technologies. All rights reserved.</p>
         </div>
       </main>
     </div>

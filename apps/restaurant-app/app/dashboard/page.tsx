@@ -230,7 +230,7 @@ export default function RestaurantDashboardPage() {
       }
     } catch {}
 
-    const savedCustomRest = localStorage.getItem('cb_all_restaurants');
+    const savedCustomRest = (localStorage.getItem('ub_all_restaurants') || localStorage.getItem('cb_all_restaurants'));
     if (savedCustomRest) {
       try {
         const parsed = JSON.parse(savedCustomRest);
@@ -329,7 +329,7 @@ export default function RestaurantDashboardPage() {
     let localOrders: Order[] = [];
     if (typeof window !== 'undefined') {
       try {
-        const local = localStorage.getItem('cb_orders');
+        const local = (localStorage.getItem('ub_orders') || localStorage.getItem('cb_orders'));
         if (local) localOrders = JSON.parse(local);
       } catch {}
     }
@@ -361,7 +361,7 @@ export default function RestaurantDashboardPage() {
 
     setOrders(targetOrders.length > 0 ? targetOrders : uniqueList);
     if (typeof window !== 'undefined' && uniqueList.length > 0) {
-      localStorage.setItem('cb_orders', JSON.stringify(uniqueList));
+      localStorage.setItem('ub_orders', JSON.stringify(uniqueList));
     }
     if (!isPolling) setLoading(false);
   };
@@ -379,7 +379,7 @@ export default function RestaurantDashboardPage() {
     const updatedList = restaurantsList.map((r) => (r.id === currentRestaurant.id ? updatedRest : r));
     setRestaurantsList(updatedList);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cb_all_restaurants', JSON.stringify(updatedList));
+      localStorage.setItem('ub_all_restaurants', JSON.stringify(updatedList));
     }
 
     try {
@@ -394,7 +394,7 @@ export default function RestaurantDashboardPage() {
     );
     setOrders(updated);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cb_orders', JSON.stringify(updated));
+      localStorage.setItem('ub_orders', JSON.stringify(updated));
     }
     try {
       await api.patch(`/api/orders/${orderId}/status`, { orderStatus: newStatus });
@@ -429,7 +429,7 @@ export default function RestaurantDashboardPage() {
     const updatedList = [newRestObj, ...restaurantsList];
     setRestaurantsList(updatedList);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cb_all_restaurants', JSON.stringify(updatedList));
+      localStorage.setItem('ub_all_restaurants', JSON.stringify(updatedList));
       localStorage.setItem('restaurantId', newRestObj.id);
       localStorage.setItem('restaurantName', newRestObj.name);
     }
@@ -483,7 +483,7 @@ export default function RestaurantDashboardPage() {
     setRestaurantsList(updatedList);
 
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cb_all_restaurants', JSON.stringify(updatedList));
+      localStorage.setItem('ub_all_restaurants', JSON.stringify(updatedList));
       localStorage.setItem('restaurantName', updated.name);
     }
 

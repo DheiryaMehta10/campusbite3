@@ -1,7 +1,7 @@
 export default function Home() {
   return (
     <div style={{ padding: '40px', fontFamily: 'sans-serif', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
-      <h1 style={{ color: '#ea580c', fontSize: '32px', marginBottom: '8px' }}>🍔 CampusBite</h1>
+      <h1 style={{ color: '#ea580c', fontSize: '32px', marginBottom: '8px' }}>🍔 UniBite</h1>
       <p style={{ color: '#4b5563', fontSize: '16px', marginBottom: '32px' }}>Order Smart. Delivered by Slot.</p>
       
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px', textAlign: 'left' }}>

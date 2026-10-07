@@ -60,7 +60,7 @@ export default function AdminRestaurantsPage() {
     let localList: any[] = [];
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('cb_all_restaurants');
+        const saved = (localStorage.getItem('ub_all_restaurants') || localStorage.getItem('cb_all_restaurants'));
         if (saved) localList = JSON.parse(saved);
       } catch {}
     }

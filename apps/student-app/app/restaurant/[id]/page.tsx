@@ -198,7 +198,7 @@ export default function RestaurantPage() {
   useEffect(() => {
     if (typeof window !== 'undefined') {
       try {
-        const savedCart = localStorage.getItem('cb_cart');
+        const savedCart = (localStorage.getItem('ub_cart') || localStorage.getItem('cb_cart'));
         if (savedCart) setCart(JSON.parse(savedCart));
       } catch (e) {}
     }
@@ -235,7 +235,7 @@ export default function RestaurantPage() {
 
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('cb_all_restaurants');
+        const saved = (localStorage.getItem('ub_all_restaurants') || localStorage.getItem('cb_all_restaurants'));
         if (saved) {
           const list = JSON.parse(saved);
           const match = list.find((r: any) => r.id === rawId);
@@ -282,7 +282,7 @@ export default function RestaurantPage() {
   const updateCartStorage = (newCart: CartItem[]) => {
     setCart(newCart);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cb_cart', JSON.stringify(newCart));
+      localStorage.setItem('ub_cart', JSON.stringify(newCart));
     }
   };
 

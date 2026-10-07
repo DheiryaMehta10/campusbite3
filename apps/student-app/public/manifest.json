@@ -1,6 +1,6 @@
 {
-  "name": "CampusBite — Student Portal",
-  "short_name": "CampusBite",
+  "name": "UniBite — Student Portal",
+  "short_name": "UniBite",
   "description": "Order Smart. Delivered by Slot. Scheduled hostel delivery platform.",
   "start_url": "/home",
   "display": "standalone",

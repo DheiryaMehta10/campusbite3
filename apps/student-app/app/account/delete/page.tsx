@@ -230,7 +230,7 @@ export default function AccountDeletionPage() {
             <span>•</span>
             <Link href="/home" className="hover:underline hover:text-orange-600">Home</Link>
           </div>
-          <p className="text-[10px] text-gray-400">© 2026 CampusBite Technologies • Google Play Compliance</p>
+          <p className="text-[10px] text-gray-400">© 2026 UniBite Technologies • Google Play Compliance</p>
         </div>
       </main>
     </div>

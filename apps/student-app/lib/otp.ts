@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 
-const OTP_SECRET = process.env.OTP_SECRET || 'campusbite-secure-otp-secret-key-2026';
+const OTP_SECRET = process.env.OTP_SECRET || 'unibite-secure-otp-secret-key-2026';
 
 export interface OtpPayload {
   identifier: string;

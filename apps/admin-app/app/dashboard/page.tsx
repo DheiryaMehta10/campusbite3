@@ -57,7 +57,7 @@ export default function DashboardPage() {
       } catch {
         if (typeof window !== 'undefined') {
           try {
-            const orders = JSON.parse(localStorage.getItem('cb_orders') || '[]');
+            const orders = JSON.parse((localStorage.getItem('ub_orders') || localStorage.getItem('cb_orders')) || '[]');
             const uncollected = orders.filter((o: any) => o.orderStatus === 'UNCOLLECTED').length;
             setStats({
               totalOrders: 420 + orders.length,
@@ -83,7 +83,7 @@ export default function DashboardPage() {
               ⚡
             </div>
             <div>
-              <h1 className="text-base font-black tracking-tight">CampusBite Command HQ</h1>
+              <h1 className="text-base font-black tracking-tight">UniBite Command HQ</h1>
               <p className="text-[11px] text-slate-400">Campus Delivery Operations & Kitchen Telemetry</p>
             </div>
           </div>

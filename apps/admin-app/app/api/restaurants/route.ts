@@ -55,7 +55,7 @@ export async function POST(request: NextRequest) {
       name: name.trim(),
       address: description.trim() || 'Campus Food Plaza',
       phone_number: finalPhone,
-      email: email.trim() || `partner-${Date.now()}@campusbite.local`,
+      email: email.trim() || `partner-${Date.now()}@unibite.local`,
       operational_status: finalStatus,
       active: true,
       commission_percentage: 10,

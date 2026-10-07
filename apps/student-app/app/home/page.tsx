@@ -203,12 +203,12 @@ export default function HomePage() {
       setUserRoom(room);
       setUserName(name);
 
-      const savedCart = localStorage.getItem('cb_cart');
+      const savedCart = (localStorage.getItem('ub_cart') || localStorage.getItem('cb_cart'));
       if (savedCart) {
         try { setCart(JSON.parse(savedCart)); } catch {}
       }
 
-      const orders = JSON.parse(localStorage.getItem('cb_orders') || '[]');
+      const orders = JSON.parse((localStorage.getItem('ub_orders') || localStorage.getItem('cb_orders')) || '[]');
       const active = orders.filter((o: any) => {
         const s = String(o.orderStatus || o.order_status || '').toUpperCase();
         return s !== 'DELIVERED' && s !== 'CANCELLED';
@@ -235,7 +235,7 @@ export default function HomePage() {
     let localList: Restaurant[] = [];
     if (typeof window !== 'undefined') {
       try {
-        const saved = localStorage.getItem('cb_all_restaurants');
+        const saved = (localStorage.getItem('ub_all_restaurants') || localStorage.getItem('cb_all_restaurants'));
         if (saved) localList = JSON.parse(saved);
       } catch {}
     }
@@ -252,7 +252,7 @@ export default function HomePage() {
   const updateCartStorage = (newCart: CartItem[]) => {
     setCart(newCart);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('cb_cart', JSON.stringify(newCart));
+      localStorage.setItem('ub_cart', JSON.stringify(newCart));
     }
   };
 
@@ -330,7 +330,7 @@ export default function HomePage() {
             {/* Location Pill & Brand Emblem */}
             <div className="flex items-center gap-2.5">
               <Link href="/home" className="h-9 w-9 rounded-2xl overflow-hidden border border-orange-500/30 shadow-md shadow-orange-500/10 bg-slate-950 flex-shrink-0 flex items-center justify-center hover:scale-105 transition-transform">
-                <img src="/logo-icon.png" alt="CampusBite" className="w-full h-full object-cover" />
+                <img src="/logo-icon.png" alt="UniBite" className="w-full h-full object-cover" />
               </Link>
               <Link href="/profile" className="cursor-pointer group">
                 <div className="flex items-center gap-1">

@@ -20,7 +20,7 @@ const FAQS: FAQ[] = [
     category: 'Delivery',
     question: 'How do scheduled batch delivery waves work?',
     answer:
-      'CampusBite bundles orders into specific campus waves (Evening 6-7 PM, 7-8 PM, and Night Canteen 9:30-10:30 PM) to ensure meals arrive piping hot at your hostel drop-off point with zero delivery fees.',
+      'UniBite bundles orders into specific campus waves (Evening 6-7 PM, 7-8 PM, and Night Canteen 9:30-10:30 PM) to ensure meals arrive piping hot at your hostel drop-off point with zero delivery fees.',
     actionText: 'View Active Orders',
     actionHref: '/orders',
   },
@@ -124,7 +124,7 @@ export default function HelpdeskPage() {
             </button>
             <div className="flex items-center gap-2">
               <div className="w-8 h-8 rounded-xl overflow-hidden border border-orange-500/30 bg-slate-950 shrink-0">
-                <img src="/logo-icon.png" alt="CampusBite" className="w-full h-full object-cover" />
+                <img src="/logo-icon.png" alt="UniBite" className="w-full h-full object-cover" />
               </div>
               <div>
                 <h1 className="text-base font-black text-gray-950 dark:text-white tracking-tight">Campus Helpdesk</h1>
@@ -212,7 +212,7 @@ export default function HelpdeskPage() {
                   <span>Call Now</span>
                 </a>
                 <a
-                  href="https://wa.me/919606156053?text=Hi%20CampusBite%20Support,%20I%20need%20help%20with%20my%20order"
+                  href="https://wa.me/919606156053?text=Hi%20UniBite%20Support,%20I%20need%20help%20with%20my%20order"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
@@ -251,7 +251,7 @@ export default function HelpdeskPage() {
                   <span>Call Now</span>
                 </a>
                 <a
-                  href="https://wa.me/919092117304?text=Hi%20CampusBite%20Support,%20I%20need%20help%20with%20my%20order"
+                  href="https://wa.me/919092117304?text=Hi%20UniBite%20Support,%20I%20need%20help%20with%20my%20order"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="py-2 px-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black flex items-center justify-center gap-1.5 shadow-sm active:scale-95 transition-all"
@@ -408,7 +408,7 @@ export default function HelpdeskPage() {
             <span>•</span>
             <Link href="/account/delete" className="hover:text-red-600 hover:underline">Delete Account</Link>
           </div>
-          <p className="text-[10px] text-gray-400 dark:text-slate-500">© 2026 CampusBite Technologies • Helpdesk Support</p>
+          <p className="text-[10px] text-gray-400 dark:text-slate-500">© 2026 UniBite Technologies • Helpdesk Support</p>
         </div>
       </main>
 

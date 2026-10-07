@@ -35,7 +35,7 @@ export default function AdminConfigPage() {
     { id: 'slot-eve-2', name: 'Evening Slot 2', startTime: '19:00', endTime: '20:00', cutoffTime: '18:50', isActive: true },
   ]);
 
-  const [announcementText, setAnnouncementText] = useState('CampusBite delivers in scheduled slots. Lunch slot is currently disabled.');
+  const [announcementText, setAnnouncementText] = useState('UniBite delivers in scheduled slots. Lunch slot is currently disabled.');
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -91,7 +91,7 @@ export default function AdminConfigPage() {
       {/* Top Header */}
       <div className="bg-white border-b px-6 py-4 shadow-sm flex justify-between items-center">
         <div>
-          <h1 className="text-xl font-black text-gray-900">CampusBite System Configuration</h1>
+          <h1 className="text-xl font-black text-gray-900">UniBite System Configuration</h1>
           <p className="text-xs text-gray-500 mt-0.5">Manage Delivery Fees, Platform Fee Rules, Slots & Announcements</p>
         </div>
         <Link href="/dashboard" className="text-xs font-bold text-gray-600 hover:text-gray-900 border px-3 py-1.5 rounded-xl">

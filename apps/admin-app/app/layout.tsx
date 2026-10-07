@@ -2,8 +2,8 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'CampusBite Admin — Platform Control Center',
-  description: 'Administration portal for CampusBite scheduled slot delivery platform.',
+  title: 'UniBite Admin — Platform Control Center',
+  description: 'Administration portal for UniBite scheduled slot delivery platform.',
   manifest: '/manifest.json',
 };
 

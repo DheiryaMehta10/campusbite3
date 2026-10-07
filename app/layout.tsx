@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'CampusBite — Order Smart. Delivered by Slot.',
+  title: 'UniBite — Order Smart. Delivered by Slot.',
   description: 'Scheduled slot-based hostel delivery platform for food, groceries, and medical essentials.',
 };
 

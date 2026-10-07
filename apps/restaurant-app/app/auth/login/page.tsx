@@ -131,9 +131,9 @@ export default function RestaurantLoginPage() {
 
         // Append to all restaurants list
         try {
-          const currentList = JSON.parse(localStorage.getItem('cb_all_restaurants') || '[]');
+          const currentList = JSON.parse((localStorage.getItem('ub_all_restaurants') || localStorage.getItem('cb_all_restaurants')) || '[]');
           currentList.unshift(rest);
-          localStorage.setItem('cb_all_restaurants', JSON.stringify(currentList));
+          localStorage.setItem('ub_all_restaurants', JSON.stringify(currentList));
         } catch {}
 
         router.push('/dashboard');
@@ -177,7 +177,7 @@ export default function RestaurantLoginPage() {
             </span>
           </div>
 
-          <h1 className="text-2xl font-black text-gray-900 tracking-tight">CampusBite Partner Portal</h1>
+          <h1 className="text-2xl font-black text-gray-900 tracking-tight">UniBite Partner Portal</h1>
           <p className="text-[11px] font-black text-orange-600 uppercase tracking-widest">
             Kitchen POS • Live Orders • Menu Control
           </p>
@@ -234,7 +234,7 @@ export default function RestaurantLoginPage() {
               <input
                 type="text"
                 required
-                placeholder="canteen@campusbite.local or 10-digit mobile"
+                placeholder="canteen@unibite.local or 10-digit mobile"
                 value={loginForm.email}
                 onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
                 className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl text-xs font-semibold text-gray-900 focus:outline-none focus:ring-2 focus:ring-orange-500 focus:bg-white transition-all shadow-sm"
@@ -317,7 +317,7 @@ export default function RestaurantLoginPage() {
                 <input
                   type="email"
                   required
-                  placeholder="partner@campusbite.local"
+                  placeholder="partner@unibite.local"
                   value={signupForm.email}
                   onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-gray-50 border border-gray-200 rounded-xl text-xs font-semibold text-gray-900 focus:outline-none focus:border-orange-500"
@@ -407,7 +407,7 @@ export default function RestaurantLoginPage() {
             <Link href="/account/delete" className="text-gray-500 hover:underline">Data Safety</Link>
           </div>
           <p className="text-[10px] font-medium text-gray-400">
-            CampusBite Kitchen POS v2.4 • Play Store Certified
+            UniBite Kitchen POS v2.4 • Play Store Certified
           </p>
         </div>
       </div>

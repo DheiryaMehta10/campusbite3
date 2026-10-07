@@ -29,7 +29,7 @@ export default function AdminPrivacyPolicyPage() {
         <div className="bg-slate-900 rounded-3xl p-6 border border-slate-800 shadow-sm space-y-3">
           <div className="flex items-center gap-2 text-xs font-bold text-indigo-400 uppercase tracking-widest">
             <span>🛡️</span>
-            <span>CampusBite Administrative Governance</span>
+            <span>UniBite Administrative Governance</span>
           </div>
           <h2 className="text-xl font-black text-white">Platform Privacy & Security Policy</h2>
           <p className="text-xs text-slate-400">
@@ -55,7 +55,7 @@ export default function AdminPrivacyPolicyPage() {
             <span>•</span>
             <Link href="/auth/login" className="hover:underline">Admin Login</Link>
           </div>
-          <p className="text-[10px] text-slate-500">© 2026 CampusBite Technologies • Administrative HQ</p>
+          <p className="text-[10px] text-slate-500">© 2026 UniBite Technologies • Administrative HQ</p>
         </div>
       </main>
     </div>
