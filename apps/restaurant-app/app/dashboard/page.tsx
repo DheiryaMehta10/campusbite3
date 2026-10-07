@@ -1357,6 +1357,7 @@ export default function RestaurantDashboardPage() {
                   >
                     <option value="Slot 6:00 - 7:00 PM">Evening Slot (6:00 - 7:00 PM)</option>
                     <option value="Slot 7:00 - 8:00 PM">Evening Slot (7:00 - 8:00 PM)</option>
+                    <option value="Slot 8:00 - 9:00 PM">Evening Slot (8:00 - 9:00 PM)</option>
                     <option value="Night Slot 9:30 - 10:30 PM">Night Slot (9:30 - 10:30 PM)</option>
                   </select>
                 </div>
@@ -1499,6 +1500,7 @@ export default function RestaurantDashboardPage() {
                   >
                     <option value="Slot 6:00 - 7:00 PM">Evening Slot (6:00 - 7:00 PM)</option>
                     <option value="Slot 7:00 - 8:00 PM">Evening Slot (7:00 - 8:00 PM)</option>
+                    <option value="Slot 8:00 - 9:00 PM">Evening Slot (8:00 - 9:00 PM)</option>
                     <option value="Night Slot 9:30 - 10:30 PM">Night Slot (9:30 - 10:30 PM)</option>
                   </select>
                 </div>

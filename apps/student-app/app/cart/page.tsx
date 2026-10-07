@@ -27,29 +27,47 @@ interface DeliverySlot {
 
 const DEFAULT_SLOTS: DeliverySlot[] = [
   {
-    id: '4a511603-db68-4dee-b602-0478566adedd',
+    id: 'slot-eve-1',
     name: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
     start_time: '18:00',
     end_time: '19:00',
-    cutoff_time: '17:45',
+    cutoff_time: '17:50',
     is_active: true,
     status: 'active',
   },
   {
-    id: 'e5df2f44-35eb-4f99-838e-98570c6536c8',
+    id: 'slot-eve-2',
     name: 'Evening Slot 2 (7:00 PM – 8:00 PM)',
     start_time: '19:00',
     end_time: '20:00',
-    cutoff_time: '18:45',
+    cutoff_time: '18:50',
     is_active: true,
     status: 'active',
   },
   {
-    id: '550e8400-e29b-41d4-a716-446655440103',
+    id: 'slot-eve-3',
+    name: 'Evening Slot 3 (8:00 PM – 9:00 PM)',
+    start_time: '20:00',
+    end_time: '21:00',
+    cutoff_time: '19:50',
+    is_active: true,
+    status: 'active',
+  },
+  {
+    id: 'slot-night',
     name: 'Night Canteen Slot (9:30 PM – 10:30 PM)',
     start_time: '21:30',
     end_time: '22:30',
-    cutoff_time: '21:15',
+    cutoff_time: '21:20',
+    is_active: true,
+    status: 'active',
+  },
+  {
+    id: 'slot-late-night',
+    name: 'Late Night Snack Slot (11:30 PM – 12:30 AM)',
+    start_time: '23:30',
+    end_time: '00:30',
+    cutoff_time: '23:20',
     is_active: true,
     status: 'active',
   },
@@ -119,8 +137,31 @@ export default function CartPage() {
       } catch (e) {}
     };
 
+    const fetchSlots = async () => {
+      try {
+        const res = await api.get('/api/slots');
+        if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+          const activeSlots = res.data.data.filter((s: any) => (s.active ?? s.is_active ?? true));
+          if (activeSlots.length > 0) {
+            setSlots(activeSlots);
+            setSelectedSlotId((prev) => {
+              const exists = activeSlots.some((s: any) => s.id === prev);
+              return exists ? prev : activeSlots[0].id;
+            });
+          }
+        }
+      } catch (e) {}
+    };
+
     fetchFees();
     fetchPromos();
+    fetchSlots();
+
+    const interval = setInterval(() => {
+      fetchFees();
+      fetchSlots();
+    }, 3000);
+    return () => clearInterval(interval);
   }, []);
 
   const updateCart = (newCart: CartItem[]) => {

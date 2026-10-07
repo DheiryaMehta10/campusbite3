@@ -55,9 +55,12 @@ export default function AdminConfigPage() {
   ]);
 
   const [slots, setSlots] = useState<DeliverySlotConfig[]>([
-    { id: 'slot-lunch', name: 'Lunch Slot', startTime: '12:00', endTime: '13:00', cutoffTime: '11:50', isActive: false },
-    { id: 'slot-eve-1', name: 'Evening Slot 1', startTime: '18:00', endTime: '19:00', cutoffTime: '17:50', isActive: true },
-    { id: 'slot-eve-2', name: 'Evening Slot 2', startTime: '19:00', endTime: '20:00', cutoffTime: '18:50', isActive: true },
+    { id: 'slot-lunch', name: 'Lunch Slot (12:00 PM – 1:00 PM)', startTime: '12:00', endTime: '13:00', cutoffTime: '11:50', isActive: false },
+    { id: 'slot-eve-1', name: 'Evening Slot 1 (6:00 PM – 7:00 PM)', startTime: '18:00', endTime: '19:00', cutoffTime: '17:50', isActive: true },
+    { id: 'slot-eve-2', name: 'Evening Slot 2 (7:00 PM – 8:00 PM)', startTime: '19:00', endTime: '20:00', cutoffTime: '18:50', isActive: true },
+    { id: 'slot-eve-3', name: 'Evening Slot 3 (8:00 PM – 9:00 PM)', startTime: '20:00', endTime: '21:00', cutoffTime: '19:50', isActive: true },
+    { id: 'slot-night', name: 'Night Canteen Slot (9:30 PM – 10:30 PM)', startTime: '21:30', endTime: '22:30', cutoffTime: '21:20', isActive: true },
+    { id: 'slot-late-night', name: 'Late Night Snack Slot (11:30 PM – 12:30 AM)', startTime: '23:30', endTime: '00:30', cutoffTime: '23:20', isActive: true },
   ]);
 
   // Promotional Banner State
@@ -93,7 +96,27 @@ export default function AdminConfigPage() {
     fetchConfig();
     fetchBanner();
     fetchPromos();
+    fetchSlots();
   }, []);
+
+  const fetchSlots = async () => {
+    try {
+      const res = await api.get('/api/slots');
+      if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        setSlots(
+          res.data.data.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            startTime: s.start_time || s.startTime,
+            endTime: s.end_time || s.endTime,
+            cutoffTime: s.cutoff_time || s.cutoffTime,
+            isActive: s.active ?? s.is_active ?? true,
+            maxOrders: s.max_orders || 50,
+          }))
+        );
+      }
+    } catch (e) {}
+  };
 
   const fetchConfig = async () => {
     try {
@@ -215,10 +238,20 @@ export default function AdminConfigPage() {
     }
   };
 
-  const toggleSlotActive = (slotId: string) => {
-    setSlots((prev) =>
-      prev.map((s) => (s.id === slotId ? { ...s, isActive: !s.isActive } : s))
-    );
+  const toggleSlotActive = async (slotId: string) => {
+    const updated = slots.map((s) => (s.id === slotId ? { ...s, isActive: !s.isActive } : s));
+    setSlots(updated);
+    try {
+      const target = updated.find((s) => s.id === slotId);
+      if (target) {
+        await api.post('/api/slots', {
+          slotId: target.id,
+          active: target.isActive,
+          is_active: target.isActive,
+          cutoff_time: target.cutoffTime,
+        });
+      }
+    } catch (e) {}
   };
 
   const updateFeeRule = (ruleId: string, amount: number) => {
