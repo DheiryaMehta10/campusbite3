@@ -15,9 +15,9 @@ export interface DeliverySlotItem {
   max_orders?: number;
 }
 
-let inMemorySlots: DeliverySlotItem[] = [
+const DEFAULT_SLOTS: DeliverySlotItem[] = [
   {
-    id: 'slot-lunch',
+    id: '4a7cabf4-a40e-4fa8-92f2-d12586ca69f1',
     name: 'Lunch Slot (12:00 PM – 1:00 PM)',
     start_time: '12:00',
     end_time: '13:00',
@@ -28,7 +28,7 @@ let inMemorySlots: DeliverySlotItem[] = [
     max_orders: 50,
   },
   {
-    id: 'slot-eve-1',
+    id: '4a511603-db68-4dee-b602-0478566adedd',
     name: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
     start_time: '18:00',
     end_time: '19:00',
@@ -39,7 +39,7 @@ let inMemorySlots: DeliverySlotItem[] = [
     max_orders: 50,
   },
   {
-    id: 'slot-eve-2',
+    id: 'e5df2f44-35eb-4f99-838e-98570c6536c8',
     name: 'Evening Slot 2 (7:00 PM – 8:00 PM)',
     start_time: '19:00',
     end_time: '20:00',
@@ -50,7 +50,7 @@ let inMemorySlots: DeliverySlotItem[] = [
     max_orders: 50,
   },
   {
-    id: 'slot-eve-3',
+    id: '550e8400-e29b-41d4-a716-446655440103',
     name: 'Evening Slot 3 (8:00 PM – 9:00 PM)',
     start_time: '20:00',
     end_time: '21:00',
@@ -61,7 +61,7 @@ let inMemorySlots: DeliverySlotItem[] = [
     max_orders: 50,
   },
   {
-    id: 'slot-night',
+    id: '550e8400-e29b-41d4-a716-446655440104',
     name: 'Night Canteen Slot (9:30 PM – 10:30 PM)',
     start_time: '21:30',
     end_time: '22:30',
@@ -72,7 +72,7 @@ let inMemorySlots: DeliverySlotItem[] = [
     max_orders: 50,
   },
   {
-    id: 'slot-late-night',
+    id: '550e8400-e29b-41d4-a716-446655440105',
     name: 'Late Night Snack Slot (11:30 PM – 12:30 AM)',
     start_time: '23:30',
     end_time: '00:30',
@@ -84,36 +84,41 @@ let inMemorySlots: DeliverySlotItem[] = [
   },
 ];
 
+let inMemorySlots: DeliverySlotItem[] = [...DEFAULT_SLOTS];
+
 export async function GET() {
   try {
-    const { data: dbSlots } = await supabaseServer
+    const { data: dbSlots, error } = await supabaseServer
       .from('delivery_slots')
       .select('*')
-      .order('start_time');
+      .order('start_time', { ascending: true });
 
-    if (dbSlots && dbSlots.length > 0) {
-      const merged = inMemorySlots.map((defSlot) => {
-        const found = dbSlots.find((d: any) => d.id === defSlot.id || d.name === defSlot.name);
-        if (found) {
-          const isActive = found.active ?? found.is_active ?? defSlot.active;
-          return {
-            ...defSlot,
-            active: isActive,
-            is_active: isActive,
-            status: (isActive ? 'active' : 'disabled') as any,
-            cutoff_time: found.cutoff_time || defSlot.cutoff_time,
-            max_orders: found.max_orders || defSlot.max_orders,
-          };
-        }
-        return defSlot;
+    if (!error && dbSlots && dbSlots.length > 0) {
+      const mapped = dbSlots.map((d: any) => {
+        const isActive = Boolean(d.active ?? d.is_active);
+        return {
+          id: d.id,
+          name: d.name,
+          start_time: (d.start_time || '').slice(0, 5) || '18:00',
+          end_time: (d.end_time || '').slice(0, 5) || '19:00',
+          cutoff_time: (d.cutoff_time || '').slice(0, 5) || '17:50',
+          active: isActive,
+          is_active: isActive,
+          status: (isActive ? 'active' : 'disabled') as any,
+          max_orders: d.max_orders || 50,
+        };
       });
+
+      inMemorySlots = mapped;
 
       return NextResponse.json({
         success: true,
-        data: merged,
+        data: mapped,
       });
     }
-  } catch (e) {}
+  } catch (e) {
+    console.warn('DB Slots fetch warning:', e);
+  }
 
   return NextResponse.json({
     success: true,
@@ -124,49 +129,18 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { slotId, id, active, is_active, cutoff_time, max_orders, slots } = body;
-
-    if (Array.isArray(slots)) {
-      inMemorySlots = slots.map((s) => ({
-        ...s,
-        active: s.active ?? s.is_active ?? true,
-        is_active: s.active ?? s.is_active ?? true,
-        status: (s.active ?? s.is_active ?? true) ? 'active' : 'disabled',
-      }));
-
-      // Try bulk update in Supabase
-      try {
-        for (const s of inMemorySlots) {
-          await supabaseServer
-            .from('delivery_slots')
-            .upsert({
-              id: s.id,
-              name: s.name,
-              start_time: s.start_time,
-              end_time: s.end_time,
-              cutoff_time: s.cutoff_time,
-              active: s.active,
-              max_orders: s.max_orders || 50,
-            });
-        }
-      } catch (e) {}
-
-      return NextResponse.json({
-        success: true,
-        message: 'All slots updated successfully',
-        data: inMemorySlots,
-      });
-    }
+    const { slotId, id, active, is_active, cutoff_time, max_orders } = body;
 
     const targetId = slotId || id;
     if (!targetId) {
       return NextResponse.json({ success: false, message: 'Slot ID is required' }, { status: 400 });
     }
 
-    const targetActive = active !== undefined ? active : (is_active !== undefined ? is_active : true);
+    const targetActive = active !== undefined ? Boolean(active) : (is_active !== undefined ? Boolean(is_active) : true);
 
+    // Update in-memory fallback
     inMemorySlots = inMemorySlots.map((s) => {
-      if (s.id === targetId) {
+      if (s.id === targetId || s.name.includes(targetId)) {
         return {
           ...s,
           active: targetActive,
@@ -179,20 +153,29 @@ export async function POST(request: NextRequest) {
       return s;
     });
 
+    // Update in Supabase Database
     try {
+      const updatePayload: any = {
+        active: targetActive,
+      };
+      if (cutoff_time) {
+        updatePayload.cutoff_time = cutoff_time.length === 5 ? `${cutoff_time}:00` : cutoff_time;
+      }
+      if (max_orders) {
+        updatePayload.max_orders = max_orders;
+      }
+
       await supabaseServer
         .from('delivery_slots')
-        .update({
-          active: targetActive,
-          ...(cutoff_time ? { cutoff_time } : {}),
-          ...(max_orders ? { max_orders } : {}),
-        })
+        .update(updatePayload)
         .eq('id', targetId);
-    } catch (e) {}
+    } catch (e) {
+      console.warn('DB Slot update warning:', e);
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Slot ${targetId} updated successfully`,
+      message: `Slot updated successfully`,
       data: inMemorySlots,
     });
   } catch (error: any) {

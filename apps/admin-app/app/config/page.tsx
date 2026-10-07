@@ -55,12 +55,12 @@ export default function AdminConfigPage() {
   ]);
 
   const [slots, setSlots] = useState<DeliverySlotConfig[]>([
-    { id: 'slot-lunch', name: 'Lunch Slot (12:00 PM – 1:00 PM)', startTime: '12:00', endTime: '13:00', cutoffTime: '11:50', isActive: false },
-    { id: 'slot-eve-1', name: 'Evening Slot 1 (6:00 PM – 7:00 PM)', startTime: '18:00', endTime: '19:00', cutoffTime: '17:50', isActive: true },
-    { id: 'slot-eve-2', name: 'Evening Slot 2 (7:00 PM – 8:00 PM)', startTime: '19:00', endTime: '20:00', cutoffTime: '18:50', isActive: true },
-    { id: 'slot-eve-3', name: 'Evening Slot 3 (8:00 PM – 9:00 PM)', startTime: '20:00', endTime: '21:00', cutoffTime: '19:50', isActive: true },
-    { id: 'slot-night', name: 'Night Canteen Slot (9:30 PM – 10:30 PM)', startTime: '21:30', endTime: '22:30', cutoffTime: '21:20', isActive: true },
-    { id: 'slot-late-night', name: 'Late Night Snack Slot (11:30 PM – 12:30 AM)', startTime: '23:30', endTime: '00:30', cutoffTime: '23:20', isActive: true },
+    { id: '4a7cabf4-a40e-4fa8-92f2-d12586ca69f1', name: 'Lunch Slot (12:00 PM – 1:00 PM)', startTime: '12:00', endTime: '13:00', cutoffTime: '11:50', isActive: false },
+    { id: '4a511603-db68-4dee-b602-0478566adedd', name: 'Evening Slot 1 (6:00 PM – 7:00 PM)', startTime: '18:00', endTime: '19:00', cutoffTime: '17:50', isActive: true },
+    { id: 'e5df2f44-35eb-4f99-838e-98570c6536c8', name: 'Evening Slot 2 (7:00 PM – 8:00 PM)', startTime: '19:00', endTime: '20:00', cutoffTime: '18:50', isActive: true },
+    { id: '550e8400-e29b-41d4-a716-446655440103', name: 'Evening Slot 3 (8:00 PM – 9:00 PM)', startTime: '20:00', endTime: '21:00', cutoffTime: '19:50', isActive: true },
+    { id: '550e8400-e29b-41d4-a716-446655440104', name: 'Night Canteen Slot (9:30 PM – 10:30 PM)', startTime: '21:30', endTime: '22:30', cutoffTime: '21:20', isActive: true },
+    { id: '550e8400-e29b-41d4-a716-446655440105', name: 'Late Night Snack Slot (11:30 PM – 12:30 AM)', startTime: '23:30', endTime: '00:30', cutoffTime: '23:20', isActive: true },
   ]);
 
   // Promotional Banner State
@@ -86,6 +86,8 @@ export default function AdminConfigPage() {
   const [newPromoOneTime, setNewPromoOneTime] = useState<boolean>(false);
   const [newPromoDesc, setNewPromoDesc] = useState('');
   const [promoNotice, setPromoNotice] = useState('');
+  const [slotNotice, setSlotNotice] = useState('');
+  const [slotUpdating, setSlotUpdating] = useState<string | null>(null);
 
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -239,19 +241,31 @@ export default function AdminConfigPage() {
   };
 
   const toggleSlotActive = async (slotId: string) => {
-    const updated = slots.map((s) => (s.id === slotId ? { ...s, isActive: !s.isActive } : s));
-    setSlots(updated);
+    setSlotUpdating(slotId);
+    const target = slots.find((s) => s.id === slotId);
+    if (!target) return;
+    const newActive = !target.isActive;
+
+    setSlots((prev) =>
+      prev.map((s) => (s.id === slotId ? { ...s, isActive: newActive } : s))
+    );
+
     try {
-      const target = updated.find((s) => s.id === slotId);
-      if (target) {
-        await api.post('/api/slots', {
-          slotId: target.id,
-          active: target.isActive,
-          is_active: target.isActive,
-          cutoff_time: target.cutoffTime,
-        });
+      const res = await api.post('/api/slots', {
+        slotId: target.id,
+        active: newActive,
+        is_active: newActive,
+        cutoff_time: target.cutoffTime,
+      });
+      if (res.data?.success) {
+        setSlotNotice(`✓ ${target.name} is now ${newActive ? 'ENABLED' : 'DISABLED'} & synced across all apps!`);
       }
-    } catch (e) {}
+      setTimeout(() => setSlotNotice(''), 4000);
+    } catch (e: any) {
+      console.warn('Slot toggle error:', e);
+    } finally {
+      setSlotUpdating(null);
+    }
   };
 
   const updateFeeRule = (ruleId: string, amount: number) => {
@@ -683,6 +697,12 @@ export default function AdminConfigPage() {
             </div>
           </div>
 
+          {slotNotice && (
+            <div className="text-xs font-bold text-green-700 bg-green-50 p-2.5 rounded-xl border border-green-200">
+              {slotNotice}
+            </div>
+          )}
+
           <div className="space-y-3">
             {slots.map((s) => (
               <div key={s.id} className="bg-gray-50 rounded-2xl p-4 border flex flex-wrap justify-between items-center gap-4">
@@ -700,13 +720,14 @@ export default function AdminConfigPage() {
 
                 <button
                   onClick={() => toggleSlotActive(s.id)}
+                  disabled={slotUpdating === s.id}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
                     s.isActive
                       ? 'bg-red-50 text-red-600 border border-red-200 hover:bg-red-100'
                       : 'bg-green-600 text-white hover:bg-green-700 shadow-sm'
                   }`}
                 >
-                  {s.isActive ? 'Disable Slot' : 'Enable Slot'}
+                  {slotUpdating === s.id ? 'Updating...' : s.isActive ? 'Disable Slot' : 'Enable Slot'}
                 </button>
               </div>
             ))}

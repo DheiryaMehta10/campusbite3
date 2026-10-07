@@ -27,7 +27,7 @@ interface DeliverySlot {
 
 const DEFAULT_SLOTS: DeliverySlot[] = [
   {
-    id: 'slot-lunch',
+    id: '4a7cabf4-a40e-4fa8-92f2-d12586ca69f1',
     name: 'Lunch Slot (12:00 PM – 1:00 PM)',
     start_time: '12:00',
     end_time: '13:00',
@@ -36,7 +36,7 @@ const DEFAULT_SLOTS: DeliverySlot[] = [
     status: 'disabled',
   },
   {
-    id: 'slot-eve-1',
+    id: '4a511603-db68-4dee-b602-0478566adedd',
     name: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
     start_time: '18:00',
     end_time: '19:00',
@@ -45,7 +45,7 @@ const DEFAULT_SLOTS: DeliverySlot[] = [
     status: 'active',
   },
   {
-    id: 'slot-eve-2',
+    id: 'e5df2f44-35eb-4f99-838e-98570c6536c8',
     name: 'Evening Slot 2 (7:00 PM – 8:00 PM)',
     start_time: '19:00',
     end_time: '20:00',
@@ -54,7 +54,7 @@ const DEFAULT_SLOTS: DeliverySlot[] = [
     status: 'active',
   },
   {
-    id: 'slot-eve-3',
+    id: '550e8400-e29b-41d4-a716-446655440103',
     name: 'Evening Slot 3 (8:00 PM – 9:00 PM)',
     start_time: '20:00',
     end_time: '21:00',
@@ -63,7 +63,7 @@ const DEFAULT_SLOTS: DeliverySlot[] = [
     status: 'active',
   },
   {
-    id: 'slot-night',
+    id: '550e8400-e29b-41d4-a716-446655440104',
     name: 'Night Canteen Slot (9:30 PM – 10:30 PM)',
     start_time: '21:30',
     end_time: '22:30',
@@ -72,7 +72,7 @@ const DEFAULT_SLOTS: DeliverySlot[] = [
     status: 'active',
   },
   {
-    id: 'slot-late-night',
+    id: '550e8400-e29b-41d4-a716-446655440105',
     name: 'Late Night Snack Slot (11:30 PM – 12:30 AM)',
     start_time: '23:30',
     end_time: '00:30',
@@ -86,7 +86,7 @@ export default function CartPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [slots, setSlots] = useState<DeliverySlot[]>(DEFAULT_SLOTS);
-  const [selectedSlotId, setSelectedSlotId] = useState<string>('slot-eve-1');
+  const [selectedSlotId, setSelectedSlotId] = useState<string>('4a511603-db68-4dee-b602-0478566adedd');
   const [loading, setLoading] = useState(false);
 
   // Delivery details (loaded dynamically from logged in student session)
