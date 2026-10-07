@@ -27,6 +27,15 @@ interface DeliverySlot {
 
 const DEFAULT_SLOTS: DeliverySlot[] = [
   {
+    id: 'slot-lunch',
+    name: 'Lunch Slot (12:00 PM – 1:00 PM)',
+    start_time: '12:00',
+    end_time: '13:00',
+    cutoff_time: '11:50',
+    is_active: false,
+    status: 'disabled',
+  },
+  {
     id: 'slot-eve-1',
     name: 'Evening Slot 1 (6:00 PM – 7:00 PM)',
     start_time: '18:00',
@@ -77,7 +86,7 @@ export default function CartPage() {
   const router = useRouter();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [slots, setSlots] = useState<DeliverySlot[]>(DEFAULT_SLOTS);
-  const [selectedSlotId, setSelectedSlotId] = useState<string>(DEFAULT_SLOTS[0].id);
+  const [selectedSlotId, setSelectedSlotId] = useState<string>('slot-eve-1');
   const [loading, setLoading] = useState(false);
 
   // Delivery details (loaded dynamically from logged in student session)
@@ -141,14 +150,22 @@ export default function CartPage() {
       try {
         const res = await api.get('/api/slots');
         if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
-          const activeSlots = res.data.data.filter((s: any) => (s.active ?? s.is_active ?? true));
-          if (activeSlots.length > 0) {
-            setSlots(activeSlots);
-            setSelectedSlotId((prev) => {
-              const exists = activeSlots.some((s: any) => s.id === prev);
-              return exists ? prev : activeSlots[0].id;
-            });
-          }
+          const allSlots = res.data.data.map((s: any) => ({
+            id: s.id,
+            name: s.name,
+            start_time: s.start_time || s.startTime,
+            end_time: s.end_time || s.endTime,
+            cutoff_time: s.cutoff_time || s.cutoffTime,
+            is_active: s.active ?? s.is_active ?? true,
+            status: (s.active ?? s.is_active ?? true) ? 'active' : 'disabled',
+          }));
+          setSlots(allSlots);
+          setSelectedSlotId((prev) => {
+            const current = allSlots.find((s: any) => s.id === prev);
+            if (current && current.is_active) return prev;
+            const firstActive = allSlots.find((s: any) => s.is_active);
+            return firstActive ? firstActive.id : (allSlots[0]?.id || prev);
+          });
         }
       } catch (e) {}
     };
@@ -479,33 +496,53 @@ export default function CartPage() {
               <div className="space-y-2">
                 {slots.map((slot) => {
                   const isSelected = selectedSlotId === slot.id;
+                  const isSlotActive = slot.is_active ?? true;
                   return (
                     <div
                       key={slot.id}
-                      onClick={() => setSelectedSlotId(slot.id)}
-                      className={`p-3 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${
-                        isSelected
-                          ? 'border-orange-500 bg-orange-50/50 shadow-sm'
-                          : 'border-gray-100 hover:border-gray-200 bg-white'
+                      onClick={() => {
+                        if (isSlotActive) {
+                          setSelectedSlotId(slot.id);
+                        }
+                      }}
+                      className={`p-3 rounded-2xl border-2 transition-all flex items-center justify-between ${
+                        !isSlotActive
+                          ? 'border-gray-200 bg-gray-50/70 opacity-60 cursor-not-allowed'
+                          : isSelected
+                          ? 'border-orange-500 bg-orange-50/50 shadow-sm cursor-pointer'
+                          : 'border-gray-100 hover:border-gray-200 bg-white cursor-pointer'
                       }`}
                     >
                       <div className="flex items-center gap-2.5">
                         <div
                           className={`h-4 w-4 rounded-full border-2 flex items-center justify-center ${
-                            isSelected ? 'border-orange-600 bg-orange-600' : 'border-gray-300'
+                            !isSlotActive
+                              ? 'border-gray-300 bg-gray-200'
+                              : isSelected
+                              ? 'border-orange-600 bg-orange-600'
+                              : 'border-gray-300'
                           }`}
                         >
-                          {isSelected && <div className="h-1.5 w-1.5 rounded-full bg-white"></div>}
+                          {isSelected && isSlotActive && <div className="h-1.5 w-1.5 rounded-full bg-white"></div>}
                         </div>
                         <div>
-                          <p className="text-xs font-bold text-gray-900">{slot.name}</p>
+                          <div className="flex items-center gap-2">
+                            <p className={`text-xs font-bold ${!isSlotActive ? 'text-gray-500' : 'text-gray-900'}`}>
+                              {slot.name}
+                            </p>
+                            {!isSlotActive && (
+                              <span className="text-[9px] font-black bg-gray-200 text-gray-600 px-1.5 py-0.5 rounded-md uppercase">
+                                Closed by Admin
+                              </span>
+                            )}
+                          </div>
                           <p className="text-[10px] text-gray-400 font-medium">
                             Orders cutoff at {slot.cutoff_time}
                           </p>
                         </div>
                       </div>
                       <span className="text-xs font-black text-orange-600">
-                        {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`}
+                        {!isSlotActive ? 'CLOSED' : (deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`)}
                       </span>
                     </div>
                   );
