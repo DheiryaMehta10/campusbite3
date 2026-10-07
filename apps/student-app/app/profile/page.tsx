@@ -54,7 +54,9 @@ export default function ProfilePage() {
         localStorage.removeItem('userHostel');
         localStorage.removeItem('userRoom');
         localStorage.removeItem('userCollege');
+        localStorage.removeItem('ub_cart');
         localStorage.removeItem('cb_cart');
+        localStorage.removeItem('ub_orders');
         localStorage.removeItem('cb_orders');
       }
       router.push('/auth/login');

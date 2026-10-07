@@ -141,10 +141,41 @@ export default function CartPage() {
       return;
     }
 
+    // Check if one-time coupon has already been used by this student
+    const studentEmail = (typeof window !== 'undefined' && localStorage.getItem('userEmail')) || '';
+    const studentPhone = (typeof window !== 'undefined' && localStorage.getItem('userPhone')) || '';
+    const studentIdentifier = (studentEmail || studentPhone || 'guest').toLowerCase().trim();
+
+    let usedPromos: string[] = [];
+    let pastOrdersCount = 0;
+    if (typeof window !== 'undefined') {
+      try {
+        const storedUsed = localStorage.getItem(`ub_used_promos_${studentIdentifier}`);
+        if (storedUsed) usedPromos = JSON.parse(storedUsed);
+
+        const pastOrders = JSON.parse((localStorage.getItem('ub_orders') || localStorage.getItem('cb_orders')) || '[]');
+        pastOrdersCount = pastOrders.length;
+        const hasUsedInOrders = pastOrders.some(
+          (o: any) => o.promoCode === code || o.promo_code === code || (o.discount > 0 && (code === 'FIRSTBITE' || code === 'UNIBITE20'))
+        );
+        if (hasUsedInOrders && !usedPromos.includes(code)) {
+          usedPromos.push(code);
+        }
+      } catch {}
+    }
+
+    const ONE_TIME_FIRST_ORDER_PROMOS = ['FIRSTBITE', 'UNIBITE20', 'FIRSTORDER'];
+    if (ONE_TIME_FIRST_ORDER_PROMOS.includes(code)) {
+      if (usedPromos.includes(code) || pastOrdersCount > 0) {
+        setPromoError(`Coupon '${code}' is valid for one-time use only on your first order.`);
+        return;
+      }
+    }
+
     if (code === 'FIRSTBITE' || code === 'UNIBITE20') {
       const calcDiscount = Math.min(50, Math.round(itemTotal * 0.2));
       setAppliedPromo({ code, discount: calcDiscount });
-      setPromoSuccess(`🎉 '${code}' applied! Saved ₹${calcDiscount}`);
+      setPromoSuccess(`🎉 '${code}' applied! Saved ₹${calcDiscount} (1st Order Special)`);
       setPromoInput('');
     } else if (code === 'CAMPUS50' || code === 'UNIBITE50') {
       if (itemTotal >= 150) {
@@ -264,6 +295,19 @@ export default function CartPage() {
       }
     } catch (error: any) {
       console.warn('Order API sync notice:', error);
+    }
+
+    if (appliedPromo) {
+      newLocalOrder.promoCode = appliedPromo.code;
+      newLocalOrder.promo_code = appliedPromo.code;
+      try {
+        const studentIdentifier = (studentEmail || studentPhone || 'guest').toLowerCase().trim();
+        const storedUsed = JSON.parse(localStorage.getItem(`ub_used_promos_${studentIdentifier}`) || '[]');
+        if (!storedUsed.includes(appliedPromo.code)) {
+          storedUsed.push(appliedPromo.code);
+          localStorage.setItem(`ub_used_promos_${studentIdentifier}`, JSON.stringify(storedUsed));
+        }
+      } catch {}
     }
 
     try {

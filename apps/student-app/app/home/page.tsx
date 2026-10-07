@@ -391,7 +391,7 @@ export default function HomePage() {
               Evening Canteen Slots Open!
             </h2>
             <p className="text-[11px] text-orange-100 font-medium">
-              Free delivery to hostel lobbies. Use code <span className="font-bold underline text-white">FIRSTBITE</span> for 20% OFF!
+              Hostel delivery. Code <span className="font-bold underline text-white">FIRSTBITE</span> (20% OFF 1st Order) & <span className="font-bold underline text-white">UNIBITE50</span>!
             </p>
           </div>
 
@@ -439,7 +439,7 @@ export default function HomePage() {
         <div>
           <div className="flex items-center justify-between mb-3 px-1">
             <div>
-              <h3 className="text-sm font-black text-gray-900">Campus Bestsellers</h3>
+              <h3 className="text-sm font-black text-gray-900">UniBite Bestsellers</h3>
               <p className="text-[11px] text-gray-500">Student favorites cooked fresh for your slot</p>
             </div>
           </div>

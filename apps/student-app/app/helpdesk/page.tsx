@@ -90,7 +90,7 @@ export default function HelpdeskPage() {
 
     setTicketSubmitting(true);
     setTimeout(() => {
-      const newTicketId = `CB-${Math.floor(100000 + Math.random() * 900000)}`;
+      const newTicketId = `UB-${Math.floor(100000 + Math.random() * 900000)}`;
       setSubmittedTicket({
         id: newTicketId,
         type: issueType,
