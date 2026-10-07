@@ -101,6 +101,7 @@ export default function AdminConfigPage() {
     const interval = setInterval(() => {
       fetchPromos();
       fetchSlots();
+      fetchBanner();
       fetchConfig();
     }, 4000);
     return () => clearInterval(interval);
@@ -457,6 +458,25 @@ export default function AdminConfigPage() {
                 ))}
               </div>
             </div>
+
+            <div className="sm:col-span-2 pt-1">
+              <label className="flex items-center gap-2 cursor-pointer bg-gray-50 border border-gray-200 rounded-xl p-3">
+                <input
+                  type="checkbox"
+                  checked={banner.isActive}
+                  onChange={(e) => setBanner({ ...banner, isActive: e.target.checked })}
+                  className="h-4 w-4 rounded accent-orange-600 cursor-pointer"
+                />
+                <div>
+                  <span className="text-xs font-bold text-gray-900 block">
+                    {banner.isActive ? '🟢 Visible in Student App (Live)' : '🔴 Hidden in Student App'}
+                  </span>
+                  <span className="text-[10px] text-gray-500 block">
+                    Toggle to immediately display or hide the promotional banner on student home and explore feeds
+                  </span>
+                </div>
+              </label>
+            </div>
           </div>
 
           {bannerNotice && (
@@ -471,7 +491,7 @@ export default function AdminConfigPage() {
             disabled={bannerSaving}
             className="w-full bg-gray-900 hover:bg-black text-white text-xs font-black py-3 rounded-2xl transition-all shadow-md"
           >
-            {bannerSaving ? 'Publishing Banner...' : '🚀 Publish Live Explore Banner'}
+            {bannerSaving ? 'Publishing Banner to Database...' : '🚀 Save & Publish Live Explore Banner'}
           </button>
         </div>
 
