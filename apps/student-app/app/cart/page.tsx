@@ -122,7 +122,7 @@ export default function CartPage() {
     const fetchPromos = async () => {
       try {
         const res = await api.get('/api/promo');
-        if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+        if (res.data?.data && Array.isArray(res.data.data)) {
           setAvailablePromos(res.data.data.filter((p: any) => p.active));
         }
       } catch (e) {}
@@ -159,6 +159,7 @@ export default function CartPage() {
     const interval = setInterval(() => {
       fetchFees();
       fetchSlots();
+      fetchPromos();
     }, 3000);
     return () => clearInterval(interval);
   }, []);
@@ -314,6 +315,7 @@ export default function CartPage() {
         deliveryFee,
         platformFee,
         discount,
+        promoCode: appliedPromo ? appliedPromo.code : undefined,
         totalAmount: toPay,
         paymentMethod,
       };
@@ -619,20 +621,43 @@ export default function CartPage() {
 
                   {/* Dynamic Active Promo Pills */}
                   {availablePromos && availablePromos.length > 0 && (
-                    <div className="flex flex-wrap gap-2 pt-1">
-                      {availablePromos.map((p) => (
-                        <button
-                          key={p.code}
-                          type="button"
-                          onClick={() => applyPromoCode(p.code)}
-                          className="text-[11px] font-bold px-3 py-1 rounded-xl bg-orange-50 text-orange-800 border border-orange-200 hover:bg-orange-100 transition-all flex items-center gap-1"
-                        >
-                          <span className="font-black">{p.code}</span>
-                          <span className="text-[10px] text-orange-600 font-normal">
-                            ({p.discount_type === 'percent' ? `${p.discount_percent}% OFF` : `₹${p.discount_amount} OFF`})
-                          </span>
-                        </button>
-                      ))}
+                    <div className="space-y-1.5 pt-1">
+                      <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">Available Coupons (1-Time Use Per Student)</p>
+                      <div className="flex flex-wrap gap-2">
+                        {availablePromos.map((p) => {
+                          const studentIdentifier = (typeof window !== 'undefined' ? ((localStorage.getItem('userEmail') || localStorage.getItem('userPhone') || 'guest')).toLowerCase().trim() : 'guest');
+                          const usedList: string[] = typeof window !== 'undefined' ? JSON.parse(localStorage.getItem(`ub_used_promos_${studentIdentifier}`) || '[]') : [];
+                          const isUsed = usedList.includes(p.code.toUpperCase());
+
+                          return (
+                            <button
+                              key={p.code}
+                              type="button"
+                              disabled={isUsed}
+                              onClick={() => !isUsed && applyPromoCode(p.code)}
+                              className={`text-[11px] font-bold px-3 py-1.5 rounded-xl border transition-all flex items-center gap-1.5 ${
+                                isUsed
+                                  ? 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed line-through opacity-70'
+                                  : 'bg-orange-50 text-orange-900 border-orange-200 hover:bg-orange-100 active:scale-95 shadow-sm'
+                              }`}
+                            >
+                              <span className="font-black">{p.code}</span>
+                              <span className={`text-[10px] ${isUsed ? 'text-gray-400' : 'text-orange-700 font-medium'}`}>
+                                ({p.discount_type === 'percent' ? `${p.discount_percent}% OFF` : `₹${p.discount_amount} OFF`})
+                              </span>
+                              {isUsed ? (
+                                <span className="text-[9px] bg-gray-200 text-gray-600 px-1 py-0.2 rounded font-black no-underline">
+                                  USED
+                                </span>
+                              ) : (
+                                <span className="text-[9px] bg-amber-200/80 text-amber-900 px-1 py-0.2 rounded font-black">
+                                  1-TIME
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
                   )}
                 </div>

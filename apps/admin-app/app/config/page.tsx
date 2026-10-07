@@ -81,7 +81,7 @@ export default function AdminConfigPage() {
   const [newPromoType, setNewPromoType] = useState<'percent' | 'flat'>('percent');
   const [newPromoValue, setNewPromoValue] = useState<number>(20);
   const [newPromoMinOrder, setNewPromoMinOrder] = useState<number>(0);
-  const [newPromoOneTime, setNewPromoOneTime] = useState<boolean>(false);
+  const [newPromoOneTime, setNewPromoOneTime] = useState<boolean>(true);
   const [newPromoDesc, setNewPromoDesc] = useState('');
   const [promoNotice, setPromoNotice] = useState('');
   const [slotNotice, setSlotNotice] = useState('');
@@ -97,6 +97,13 @@ export default function AdminConfigPage() {
     fetchBanner();
     fetchPromos();
     fetchSlots();
+
+    const interval = setInterval(() => {
+      fetchPromos();
+      fetchSlots();
+      fetchConfig();
+    }, 4000);
+    return () => clearInterval(interval);
   }, []);
 
   const fetchSlots = async () => {
@@ -204,10 +211,17 @@ export default function AdminConfigPage() {
   };
 
   const handleTogglePromoActive = async (p: PromoCodeItem) => {
+    const nextState = !p.active;
+    setPromos((prev) =>
+      prev.map((item) => (item.code === p.code ? { ...item, active: nextState } : item))
+    );
+    setPromoNotice(`✓ Coupon ${p.code} ${nextState ? 'enabled' : 'disabled'} live across Student App`);
+    setTimeout(() => setPromoNotice(''), 3000);
+
     try {
       await api.post('/api/promo', {
         ...p,
-        active: !p.active,
+        active: nextState,
       });
       fetchPromos();
     } catch (e) {}
@@ -215,6 +229,10 @@ export default function AdminConfigPage() {
 
   const handleDeletePromo = async (code: string) => {
     if (!confirm(`Are you sure you want to delete coupon '${code}'?`)) return;
+    setPromos((prev) => prev.filter((item) => item.code !== code));
+    setPromoNotice(`✓ Coupon ${code} deleted live from database & Student App`);
+    setTimeout(() => setPromoNotice(''), 3000);
+
     try {
       await api.delete(`/api/promo?code=${encodeURIComponent(code)}`);
       fetchPromos();

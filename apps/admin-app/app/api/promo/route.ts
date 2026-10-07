@@ -9,6 +9,7 @@ export interface PromoCodeItem {
   discount_type: 'percent' | 'flat';
   discount_percent: number;
   discount_amount: number;
+  discount_value: number;
   min_order_amount: number;
   max_discount?: number;
   is_one_time: boolean;
@@ -17,7 +18,7 @@ export interface PromoCodeItem {
   created_at?: string;
 }
 
-// In-memory resilient cache
+// In-memory fallback
 let inMemoryPromoCodes: PromoCodeItem[] = [
   {
     id: 'promo-1',
@@ -25,6 +26,7 @@ let inMemoryPromoCodes: PromoCodeItem[] = [
     discount_type: 'percent',
     discount_percent: 20,
     discount_amount: 0,
+    discount_value: 20,
     min_order_amount: 0,
     max_discount: 50,
     is_one_time: true,
@@ -38,13 +40,14 @@ let inMemoryPromoCodes: PromoCodeItem[] = [
     discount_type: 'flat',
     discount_percent: 0,
     discount_amount: 30,
+    discount_value: 30,
     min_order_amount: 120,
     max_discount: 30,
-    is_one_time: false,
+    is_one_time: true,
     active: true,
-    description: 'Flat ₹30 OFF on orders above ₹120',
+    description: 'Flat ₹30 OFF on orders above ₹120 (1-Time Use)',
     created_at: new Date().toISOString(),
-  }
+  },
 ];
 
 export async function GET() {
@@ -52,27 +55,37 @@ export async function GET() {
     const { data, error } = await supabaseServer
       .from('promo_codes')
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('code', { ascending: true });
 
     if (!error && data && data.length > 0) {
+      const formatted: PromoCodeItem[] = data.map((p) => {
+        const isPercent = String(p.discount_type || '').toUpperCase() === 'PERCENTAGE' || String(p.discount_type || '').toLowerCase() === 'percent';
+        const val = Number(p.discount_value || 0);
+        return {
+          id: p.id || p.code,
+          code: String(p.code).toUpperCase(),
+          discount_type: isPercent ? 'percent' : 'flat',
+          discount_percent: isPercent ? val : 0,
+          discount_amount: !isPercent ? val : 0,
+          discount_value: val,
+          min_order_amount: Number(p.min_order_value || 0),
+          max_discount: isPercent ? 50 : val,
+          is_one_time: true, // All coupons are 1-time per student
+          active: p.active ?? true,
+          description: isPercent ? `${val}% OFF (Max ₹50) • 1-Time Use` : `Flat ₹${val} OFF • 1-Time Use`,
+          created_at: p.valid_from || new Date().toISOString(),
+        };
+      });
+
+      inMemoryPromoCodes = formatted;
       return NextResponse.json({
         success: true,
-        data: data.map((p) => ({
-          id: p.id || p.code,
-          code: p.code,
-          discount_type: p.discount_percent > 0 ? 'percent' : 'flat',
-          discount_percent: Number(p.discount_percent || 0),
-          discount_amount: Number(p.discount_amount || 0),
-          min_order_amount: Number(p.min_order_amount || 0),
-          max_discount: Number(p.max_discount || p.discount_amount || 50),
-          is_one_time: Boolean(p.is_one_time),
-          active: p.active ?? true,
-          description: p.description || '',
-          created_at: p.created_at || new Date().toISOString(),
-        })),
+        data: formatted,
       });
     }
-  } catch (e) {}
+  } catch (e) {
+    console.error('Admin promo GET error:', e);
+  }
 
   return NextResponse.json({
     success: true,
@@ -83,31 +96,40 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { code, discount_type, discount_value, min_order_amount = 0, is_one_time = false, description = '', active = true } = body;
+    const {
+      code,
+      discount_type = 'percent',
+      discount_value = 0,
+      min_order_amount = 0,
+      description = '',
+      active = true,
+    } = body;
 
     if (!code || !code.trim()) {
-      return NextResponse.json({ success: false, message: 'Promo code string is required' }, { status: 400 });
+      return NextResponse.json({ success: false, message: 'Promo coupon code is required' }, { status: 400 });
     }
 
     const cleanCode = code.trim().toUpperCase();
-    const discountPercent = discount_type === 'percent' ? Number(discount_value) || 0 : 0;
-    const discountAmount = discount_type === 'flat' ? Number(discount_value) || 0 : 0;
+    const isPercent = discount_type === 'percent' || discount_type === 'PERCENTAGE';
+    const numValue = Number(discount_value) || 0;
+    const minOrderVal = Number(min_order_amount) || 0;
 
     const newPromo: PromoCodeItem = {
       id: 'promo-' + Date.now(),
       code: cleanCode,
-      discount_type: discount_type === 'percent' ? 'percent' : 'flat',
-      discount_percent: discountPercent,
-      discount_amount: discountAmount,
-      min_order_amount: Number(min_order_amount) || 0,
-      max_discount: discountPercent > 0 ? 50 : discountAmount,
-      is_one_time: Boolean(is_one_time),
+      discount_type: isPercent ? 'percent' : 'flat',
+      discount_percent: isPercent ? numValue : 0,
+      discount_amount: !isPercent ? numValue : 0,
+      discount_value: numValue,
+      min_order_amount: minOrderVal,
+      max_discount: isPercent ? 50 : numValue,
+      is_one_time: true, // Always 1-time use per student
       active: active ?? true,
-      description: description || `${cleanCode} offer`,
+      description: description || (isPercent ? `${numValue}% OFF • 1-Time Student Coupon` : `Flat ₹${numValue} OFF • 1-Time Student Coupon`),
       created_at: new Date().toISOString(),
     };
 
-    // Update in-memory
+    // Update in-memory fallback
     const existingIdx = inMemoryPromoCodes.findIndex((p) => p.code === cleanCode);
     if (existingIdx > -1) {
       inMemoryPromoCodes[existingIdx] = { ...inMemoryPromoCodes[existingIdx], ...newPromo };
@@ -115,22 +137,35 @@ export async function POST(request: NextRequest) {
       inMemoryPromoCodes.unshift(newPromo);
     }
 
-    // Attempt Supabase upsert
+    // Persist cleanly to Supabase PostgreSQL database
     try {
-      await supabaseServer.from('promo_codes').upsert({
-        code: cleanCode,
-        discount_percent: discountPercent,
-        discount_amount: discountAmount,
-        min_order_amount: Number(min_order_amount) || 0,
-        is_one_time: Boolean(is_one_time),
-        active: active ?? true,
-        description: description,
-      }, { onConflict: 'code' });
-    } catch (e) {}
+      const { data: dbData, error: dbErr } = await supabaseServer
+        .from('promo_codes')
+        .upsert(
+          {
+            code: cleanCode,
+            discount_type: isPercent ? 'PERCENTAGE' : 'FIXED',
+            discount_value: numValue,
+            min_order_value: minOrderVal,
+            max_uses: 1000,
+            active: active ?? true,
+          },
+          { onConflict: 'code' }
+        )
+        .select();
+
+      if (dbErr) {
+        console.error('Supabase promo_codes upsert error:', dbErr);
+      } else if (dbData && dbData[0]) {
+        newPromo.id = dbData[0].id;
+      }
+    } catch (dbEx) {
+      console.error('Supabase promo upsert exception:', dbEx);
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Coupon ${cleanCode} saved successfully`,
+      message: `Coupon ${cleanCode} saved successfully (1-time use per student)`,
       data: newPromo,
     });
   } catch (error: any) {
@@ -141,7 +176,14 @@ export async function POST(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const code = searchParams.get('code');
+    let code = searchParams.get('code');
+
+    if (!code) {
+      try {
+        const body = await request.json();
+        code = body?.code;
+      } catch {}
+    }
 
     if (!code) {
       return NextResponse.json({ success: false, message: 'Code parameter is required' }, { status: 400 });
@@ -151,8 +193,13 @@ export async function DELETE(request: NextRequest) {
     inMemoryPromoCodes = inMemoryPromoCodes.filter((p) => p.code !== cleanCode);
 
     try {
-      await supabaseServer.from('promo_codes').delete().ilike('code', cleanCode);
-    } catch (e) {}
+      const { error } = await supabaseServer.from('promo_codes').delete().ilike('code', cleanCode);
+      if (error) {
+        console.error('Supabase promo delete error:', error);
+      }
+    } catch (e) {
+      console.error('Supabase promo delete exception:', e);
+    }
 
     return NextResponse.json({
       success: true,

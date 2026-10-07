@@ -18,7 +18,6 @@ export interface PromoCodeItem {
   created_at?: string;
 }
 
-// In-memory fallback
 let inMemoryPromoCodes: PromoCodeItem[] = [
   {
     id: 'promo-1',
@@ -71,7 +70,7 @@ export async function GET() {
           discount_value: val,
           min_order_amount: Number(p.min_order_value || 0),
           max_discount: isPercent ? 50 : val,
-          is_one_time: true, // All coupons are 1-time per student
+          is_one_time: true,
           active: true,
           description: isPercent ? `${val}% OFF (Max ₹50) • 1-Time Use` : `Flat ₹${val} OFF • 1-Time Use`,
           created_at: p.valid_from || new Date().toISOString(),
@@ -85,7 +84,7 @@ export async function GET() {
       });
     }
   } catch (e) {
-    console.error('Student promo GET error:', e);
+    console.error('Root promo GET error:', e);
   }
 
   return NextResponse.json({
@@ -150,7 +149,7 @@ export async function POST(request: NextRequest) {
         { onConflict: 'code' }
       );
     } catch (dbEx) {
-      console.error('Supabase student promo upsert error:', dbEx);
+      console.error('Supabase root promo upsert error:', dbEx);
     }
 
     return NextResponse.json({

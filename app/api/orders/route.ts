@@ -252,6 +252,9 @@ export async function POST(request: NextRequest) {
 
     // 3. Save persistently to Supabase orders table
     try {
+      const cleanPromo = promoCode ? String(promoCode).toUpperCase().trim() : null;
+      const promoInfo = cleanPromo ? `COUPON:${cleanPromo}|DISCOUNT:${discount}` : null;
+
       const { error: ordInsertErr } = await supabaseServer.from('orders').insert({
         id: orderId,
         order_number: orderNumber,
@@ -266,10 +269,21 @@ export async function POST(request: NextRequest) {
         payment_method: paymentMethod,
         payment_status: 'pending',
         order_status: 'placed',
+        special_instructions: promoInfo,
       });
 
       if (ordInsertErr) {
         console.error('Supabase order insert error:', ordInsertErr);
+      }
+
+      if (cleanPromo) {
+        try {
+          const { data: pData } = await supabaseServer.from('promo_codes').select('current_uses').eq('code', cleanPromo).maybeSingle();
+          const curr = Number(pData?.current_uses || 0);
+          await supabaseServer.from('promo_codes').update({ current_uses: curr + 1 }).eq('code', cleanPromo);
+        } catch (pUpErr) {
+          console.warn('Promo uses update notice:', pUpErr);
+        }
       }
 
       if (validatedItems.length > 0) {
