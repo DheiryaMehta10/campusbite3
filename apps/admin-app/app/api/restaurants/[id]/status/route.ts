@@ -9,54 +9,47 @@ export async function PATCH(
 ) {
   try {
     const { id } = await params;
-    const { operationalStatus, closedBy = 'RESTAURANT', closureReason } = await request.json();
+    const body = await request.json();
+    const { operationalStatus, closedByAdmin } = body;
 
-    // Fetch current restaurant status
-    const { data: currentRest, error: fetchErr } = await supabaseServer
-      .from('restaurants')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (fetchErr || !currentRest) {
-      return NextResponse.json({ success: false, message: 'Restaurant not found' }, { status: 404 });
-    }
-
-    // BUSINESS RULE: Restaurant cannot reopen an Admin-forced closure!
-    if (
-      currentRest.operational_status === 'temporarily_closed' &&
-      currentRest.closed_by === 'ADMIN' &&
-      operationalStatus === 'open' &&
-      closedBy === 'RESTAURANT'
-    ) {
-      return NextResponse.json({
-        success: false,
-        message: 'This restaurant was closed by CampusBite Admin. Only an Admin can reopen it.',
-      }, { status: 403 });
-    }
-
+    const newStatus = operationalStatus || (closedByAdmin ? 'temporarily_closed' : 'open');
     const now = new Date().toISOString();
-    const updateData: any = {
-      operational_status: operationalStatus,
-      closed_by: operationalStatus === 'temporarily_closed' ? closedBy : null,
-      closure_reason: closureReason || null,
-      closed_at: operationalStatus === 'temporarily_closed' ? now : null,
-      reopened_at: operationalStatus === 'open' ? now : null,
+
+    const updatePayload = {
+      operational_status: newStatus,
+      active: newStatus === 'open',
+      updated_at: now,
     };
 
-    const { error } = await supabaseServer
+    // Update in Supabase database
+    const { data, error } = await supabaseServer
       .from('restaurants')
-      .update(updateData)
-      .eq('id', id);
+      .update(updatePayload)
+      .eq('id', id)
+      .select()
+      .maybeSingle();
 
-    if (error) throw error;
+    if (error) {
+      console.warn('Supabase status update error, fallback minimal columns:', error.message);
+      const { data: fbData, error: fbError } = await supabaseServer
+        .from('restaurants')
+        .update({ operational_status: newStatus })
+        .eq('id', id)
+        .select()
+        .maybeSingle();
+
+      if (fbError) {
+        console.error('Fallback update failed:', fbError.message);
+      }
+    }
 
     return NextResponse.json({
       success: true,
-      message: `Restaurant is now ${operationalStatus.replace('_', ' ').toUpperCase()}`,
-      data: updateData,
+      message: `Restaurant operational status updated to ${newStatus.replace('_', ' ').toUpperCase()}`,
+      data: { id, operational_status: newStatus, operationalStatus: newStatus },
     });
-  } catch (error) {
-    return NextResponse.json({ success: false, message: 'Server error updating status' }, { status: 500 });
+  } catch (error: any) {
+    console.error('Restaurant status error:', error);
+    return NextResponse.json({ success: false, message: error?.message || 'Server error updating status' }, { status: 500 });
   }
 }

@@ -542,41 +542,54 @@ export default function HomePage() {
           </div>
 
           <div className="space-y-4">
-            {filteredRestaurants.map((res) => (
-              <Link
-                key={res.id}
-                href={`/restaurant/${res.id}`}
-                className="block bg-white rounded-3xl p-4 border border-gray-100 shadow-sm hover:shadow-lg transition-all overflow-hidden group"
-              >
-                {/* Banner Image */}
-                <div className="h-44 w-full rounded-2xl overflow-hidden relative bg-gray-100">
-                  <img
-                    src={res.image_url || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800'}
-                    alt={res.name}
-                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent"></div>
+            {filteredRestaurants.map((res) => {
+              const isClosed =
+                (res.operational_status || res.operationalStatus) === 'temporarily_closed' ||
+                (res.operational_status || res.operationalStatus) === 'closed';
 
-                  {/* Rating Badge */}
-                  <div className="absolute top-3 left-3 bg-white/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-[11px] font-black text-gray-900 shadow-sm flex items-center gap-1">
-                    <span className="text-amber-500">★</span> {res.rating || 4.6}
-                  </div>
+              return (
+                <Link
+                  key={res.id}
+                  href={`/restaurant/${res.id}`}
+                  className={`block bg-white dark:bg-slate-900 rounded-3xl p-4 border border-gray-100 dark:border-slate-800 shadow-sm hover:shadow-lg transition-all overflow-hidden group ${
+                    isClosed ? 'opacity-75 grayscale-[30%]' : ''
+                  }`}
+                >
+                  {/* Banner Image */}
+                  <div className="h-44 w-full rounded-2xl overflow-hidden relative bg-gray-100 dark:bg-slate-800">
+                    <img
+                      src={res.image_url || 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800'}
+                      alt={res.name}
+                      className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"></div>
 
-                  {/* Status Badge */}
-                  <div className="absolute top-3 right-3">
-                    <span className="bg-green-600 text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl shadow-md">
-                      OPEN FOR ORDERS
-                    </span>
-                  </div>
+                    {/* Rating Badge */}
+                    <div className="absolute top-3 left-3 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-2.5 py-1 rounded-xl text-[11px] font-black text-gray-900 dark:text-white shadow-sm flex items-center gap-1">
+                      <span className="text-amber-500">★</span> {res.rating || 4.6}
+                    </div>
 
-                  {/* Bottom Text Over Image */}
-                  <div className="absolute bottom-3 left-3 right-3 text-white">
-                    <h4 className="text-base font-black leading-tight drop-shadow-sm">{res.name}</h4>
-                    <p className="text-[11px] text-gray-200 font-medium truncate mt-0.5">
-                      {res.description || res.cuisines}
-                    </p>
+                    {/* Status Badge */}
+                    <div className="absolute top-3 right-3">
+                      {isClosed ? (
+                        <span className="bg-red-600 text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl shadow-md animate-pulse">
+                          🔴 CLOSED NOW
+                        </span>
+                      ) : (
+                        <span className="bg-green-600 text-white text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-xl shadow-md">
+                          🟢 OPEN FOR ORDERS
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Bottom Text Over Image */}
+                    <div className="absolute bottom-3 left-3 right-3 text-white">
+                      <h4 className="text-base font-black leading-tight drop-shadow-sm">{res.name}</h4>
+                      <p className="text-[11px] text-gray-200 font-medium truncate mt-0.5">
+                        {res.description || res.cuisines}
+                      </p>
+                    </div>
                   </div>
-                </div>
 
                 {/* Restaurant Card Details */}
                 <div className="mt-3 flex items-center justify-between text-xs text-gray-500 pt-1">
@@ -589,7 +602,8 @@ export default function HomePage() {
                   </div>
                 </div>
               </Link>
-            ))}
+            );
+          })}
           </div>
         </div>
       </main>

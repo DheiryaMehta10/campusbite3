@@ -274,8 +274,12 @@ export default function AdminRestaurantsPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filtered.map((rest) => {
-            const isClosed = rest.operationalStatus === 'temporarily_closed' || rest.operational_status === 'temporarily_closed';
-            const isForced = rest.closedByAdmin || rest.closed_by_admin;
+            const isClosed =
+              rest.operationalStatus === 'temporarily_closed' ||
+              rest.operational_status === 'temporarily_closed' ||
+              rest.operationalStatus === 'closed' ||
+              rest.operational_status === 'closed';
+            const isForced = isClosed || rest.closedByAdmin || rest.closed_by_admin;
 
             return (
               <div

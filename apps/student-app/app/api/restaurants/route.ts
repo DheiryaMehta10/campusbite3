@@ -9,7 +9,6 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabaseServer
       .from('restaurants')
       .select('*')
-      .eq('active', true)
       .order('created_at', { ascending: false });
 
     if (error) {

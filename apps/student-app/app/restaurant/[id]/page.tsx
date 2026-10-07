@@ -179,9 +179,11 @@ export default function RestaurantPage() {
     address: string;
     image: string;
     deliveryTime?: string;
+    operational_status?: string;
+    operationalStatus?: string;
   }>(() => {
     const base = RESTAURANT_DETAILS[rawId] || RESTAURANT_DETAILS['550e8400-e29b-41d4-a716-446655440001'];
-    return { ...base };
+    return { ...base, operational_status: 'open' };
   });
 
   const [menuItems, setMenuItems] = useState<FoodItem[]>(DEFAULT_MENU_ITEMS);
@@ -220,9 +222,11 @@ export default function RestaurantPage() {
             name: match.name,
             cuisines: match.cuisines || 'Multi-Cuisine',
             rating: match.rating || 4.8,
-            address: match.description || 'Campus Food Block',
+            address: match.description || match.address || 'Campus Food Block',
             image: match.image_url || match.image || RESTAURANT_DETAILS['550e8400-e29b-41d4-a716-446655440001'].image,
             deliveryTime: match.delivery_time || 'Slot 6:00 - 7:00 PM',
+            operational_status: match.operational_status || match.operationalStatus || 'open',
+            operationalStatus: match.operational_status || match.operationalStatus || 'open',
           });
           return;
         }
@@ -240,9 +244,11 @@ export default function RestaurantPage() {
               name: match.name,
               cuisines: match.cuisines || 'Multi-Cuisine',
               rating: match.rating || 4.8,
-              address: match.description || 'Campus Food Block',
+              address: match.description || match.address || 'Campus Food Block',
               image: match.image_url || match.image || RESTAURANT_DETAILS['550e8400-e29b-41d4-a716-446655440001'].image,
               deliveryTime: match.delivery_time || 'Slot 6:00 - 7:00 PM',
+              operational_status: match.operational_status || match.operationalStatus || 'open',
+              operationalStatus: match.operational_status || match.operationalStatus || 'open',
             });
           }
         }
@@ -332,6 +338,10 @@ export default function RestaurantPage() {
     return true;
   });
 
+  const isClosed =
+    (restInfo.operational_status || restInfo.operationalStatus) === 'temporarily_closed' ||
+    (restInfo.operational_status || restInfo.operationalStatus) === 'closed';
+
   return (
     <div className="min-h-screen bg-[#F8FAFC] dark:bg-slate-950 pb-32 font-sans selection:bg-orange-500 selection:text-white transition-colors duration-200 text-slate-900 dark:text-slate-100">
       {/* 1. TOP HERO BANNER & HEADER */}
@@ -339,7 +349,7 @@ export default function RestaurantPage() {
         <img
           src={restInfo.image}
           alt={restInfo.name}
-          className="h-full w-full object-cover opacity-60"
+          className={`h-full w-full object-cover opacity-60 ${isClosed ? 'grayscale' : ''}`}
         />
         <div className="absolute inset-0 bg-gradient-to-t from-[#F8FAFC] dark:from-slate-950 via-black/40 to-black/60"></div>
 
@@ -368,7 +378,14 @@ export default function RestaurantPage() {
         <div className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-gray-100 dark:border-slate-800 shadow-xl space-y-3">
           <div className="flex justify-between items-start gap-2">
             <div>
-              <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{restInfo.name}</h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-xl font-black text-gray-900 dark:text-white tracking-tight">{restInfo.name}</h1>
+                {isClosed && (
+                  <span className="bg-red-600 text-white text-[10px] font-black uppercase px-2 py-0.5 rounded-lg shadow-sm">
+                    CLOSED
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-gray-500 dark:text-slate-400 font-medium mt-0.5">{restInfo.cuisines}</p>
               <p className="text-[11px] text-gray-400 dark:text-slate-500 font-medium flex items-center gap-1 mt-1">
                 <span>📍</span> {restInfo.address}
@@ -380,15 +397,25 @@ export default function RestaurantPage() {
             </div>
           </div>
 
-          <div className="border-t border-dashed border-gray-200 pt-3 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-gray-700">
-            <div className="flex items-center gap-1.5 text-orange-600 font-black">
-              <span>🕒</span>
-              <span>Next Slot: 6:00 PM – 7:00 PM</span>
+          {isClosed ? (
+            <div className="p-3 bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-900/50 rounded-2xl text-xs font-bold text-red-700 dark:text-red-400 flex items-center gap-2">
+              <span className="text-lg">🚫</span>
+              <div>
+                <p className="font-black">Currently Closed by Admin / Kitchen</p>
+                <p className="text-[11px] font-normal opacity-90">This canteen is temporarily not accepting orders right now.</p>
+              </div>
             </div>
-            <div className="bg-orange-50 text-orange-800 px-2.5 py-0.5 rounded-lg text-[10px] uppercase font-black tracking-wider">
-              Free Hostel Delivery
+          ) : (
+            <div className="border-t border-dashed border-gray-200 dark:border-slate-800 pt-3 flex flex-wrap items-center justify-between gap-2 text-xs font-bold text-gray-700 dark:text-slate-300">
+              <div className="flex items-center gap-1.5 text-orange-600 font-black">
+                <span>🕒</span>
+                <span>{restInfo.deliveryTime || 'Next Slot: 6:00 PM – 7:00 PM'}</span>
+              </div>
+              <div className="bg-orange-50 dark:bg-orange-950/40 text-orange-800 dark:text-orange-300 px-2.5 py-0.5 rounded-lg text-[10px] uppercase font-black tracking-wider">
+                Hostel Slot Delivery
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* 3. SEARCH & VEG FILTER BAR */}
@@ -489,7 +516,11 @@ export default function RestaurantPage() {
 
                   {/* Swiggy Button */}
                   <div className="absolute -bottom-1">
-                    {qty === 0 ? (
+                    {isClosed ? (
+                      <span className="px-3 py-1.5 bg-gray-200 dark:bg-slate-800 text-gray-500 dark:text-slate-400 font-black text-[10px] uppercase tracking-wider rounded-xl shadow-sm border border-gray-300 dark:border-slate-700 cursor-not-allowed">
+                        CLOSED
+                      </span>
+                    ) : qty === 0 ? (
                       <button
                         onClick={() => handleAddDish(dish)}
                         className="px-5 py-1.5 bg-white hover:bg-orange-50 text-green-700 hover:text-green-800 font-black text-xs uppercase tracking-wider rounded-xl shadow-md border border-gray-200 hover:border-green-300 active:scale-95 transition-all"

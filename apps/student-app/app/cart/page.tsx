@@ -70,6 +70,9 @@ export default function CartPage() {
   const [cookingInstructions, setCookingInstructions] = useState('');
   const [optOutCutlery, setOptOutCutlery] = useState(true);
 
+  const [deliveryFee, setDeliveryFee] = useState<number>(10);
+  const [basePlatformFee, setBasePlatformFee] = useState<number>(2);
+
   // Promo Code
   const [promoInput, setPromoInput] = useState('');
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null);
@@ -91,6 +94,18 @@ export default function CartPage() {
         if (savedPhone) setPhone(savedPhone);
       } catch (e) {}
     }
+
+    const fetchFees = async () => {
+      try {
+        const res = await api.get('/api/config/fees');
+        if (res.data?.data) {
+          if (res.data.data.deliveryFee !== undefined) {
+            setDeliveryFee(Number(res.data.data.deliveryFee));
+          }
+        }
+      } catch (e) {}
+    };
+    fetchFees();
   }, []);
 
   const updateCart = (newCart: CartItem[]) => {
@@ -112,8 +127,7 @@ export default function CartPage() {
 
   const itemTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const totalItemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const deliveryFee = 0; // Free campus slot delivery
-  const platformFee = totalItemCount >= 4 ? 4.0 : 2.0;
+  const platformFee = totalItemCount >= 4 ? 4.0 : basePlatformFee;
 
   let discount = appliedPromo ? appliedPromo.discount : 0;
   const toPay = Math.max(0, itemTotal + deliveryFee + platformFee - discount);
@@ -410,7 +424,9 @@ export default function CartPage() {
                           </p>
                         </div>
                       </div>
-                      <span className="text-xs font-black text-green-700">FREE</span>
+                      <span className="text-xs font-black text-orange-600">
+                        {deliveryFee === 0 ? 'FREE' : `₹${deliveryFee}`}
+                      </span>
                     </div>
                   );
                 })}
@@ -535,7 +551,7 @@ export default function CartPage() {
 
                 <div className="flex justify-between">
                   <span>Slot Delivery Partner Fee</span>
-                  <span className="font-bold text-green-700">FREE</span>
+                  <span className="font-bold text-gray-900">{deliveryFee === 0 ? 'FREE' : `₹${deliveryFee.toFixed(2)}`}</span>
                 </div>
 
                 <div className="flex justify-between">
