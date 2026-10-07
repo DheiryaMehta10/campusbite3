@@ -1516,6 +1516,97 @@ export default function RestaurantDashboardPage() {
                 </div>
               </div>
 
+              {/* Store Picture Section */}
+              <div className="space-y-2 border-t border-slate-800 pt-3">
+                <div className="flex justify-between items-center">
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase">
+                    📸 Restaurant Store / Outlet Photo
+                  </label>
+                  {editRestaurantForm.image_url && (
+                    <span className="text-[10px] text-emerald-400 font-bold">Image Attached ✓</span>
+                  )}
+                </div>
+
+                {/* Live Photo Preview */}
+                {editRestaurantForm.image_url && (
+                  <div className="relative h-28 rounded-2xl overflow-hidden border border-slate-700 bg-slate-950">
+                    <img
+                      src={editRestaurantForm.image_url}
+                      alt="Store Cover Preview"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-2.5">
+                      <span className="text-[10px] font-bold text-white">Live Storefront Cover Preview</span>
+                    </div>
+                  </div>
+                )}
+
+                {/* Upload from Device */}
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-400 mb-1">
+                    Upload from Device:
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                          const dataUrl = event.target?.result as string;
+                          if (dataUrl) {
+                            setEditRestaurantForm({ ...editRestaurantForm, image_url: dataUrl });
+                          }
+                        };
+                        reader.readAsDataURL(file);
+                      }
+                    }}
+                    className="w-full text-xs text-slate-300 file:mr-3 file:py-1.5 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-black file:bg-purple-600 file:text-white hover:file:bg-purple-500 cursor-pointer bg-slate-800/60 p-2 rounded-xl border border-slate-700"
+                  />
+                </div>
+
+                {/* Or Custom URL */}
+                <div>
+                  <label className="block text-[10px] font-semibold text-slate-400 mb-1">
+                    Or Enter Image URL:
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="https://..."
+                    value={editRestaurantForm.image_url}
+                    onChange={(e) => setEditRestaurantForm({ ...editRestaurantForm, image_url: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-700 rounded-xl text-xs font-semibold text-white focus:outline-none focus:border-purple-500"
+                  />
+                </div>
+
+                {/* Presets */}
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-400 uppercase mb-1">
+                    Or Choose Curated Canteen Preset
+                  </label>
+                  <div className="grid grid-cols-3 gap-2">
+                    {PRESET_IMAGES.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setEditRestaurantForm({ ...editRestaurantForm, image_url: preset.url })}
+                        className={`h-12 rounded-xl overflow-hidden border relative group transition-all ${
+                          editRestaurantForm.image_url === preset.url
+                            ? 'border-purple-500 ring-2 ring-purple-500/50 scale-[1.02]'
+                            : 'border-slate-700 opacity-60 hover:opacity-100'
+                        }`}
+                      >
+                        <img src={preset.url} alt={preset.label} className="w-full h-full object-cover" />
+                        <span className="absolute inset-0 bg-black/40 flex items-center justify-center text-[8px] font-black text-white text-center px-1">
+                          {preset.label}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
               <div className="pt-2 flex gap-2">
                 <button
                   type="button"
@@ -1528,7 +1619,7 @@ export default function RestaurantDashboardPage() {
                   type="submit"
                   className="flex-1 bg-purple-600 hover:bg-purple-500 text-white font-black py-3 rounded-xl text-xs uppercase shadow-md"
                 >
-                  Save Changes
+                  Save Store Profile & Photo
                 </button>
               </div>
             </form>

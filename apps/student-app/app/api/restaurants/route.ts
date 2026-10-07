@@ -9,10 +9,11 @@ export async function GET(request: NextRequest) {
     const { data, error } = await supabaseServer
       .from('restaurants')
       .select('*')
+      .eq('active', true)
       .order('created_at', { ascending: false });
 
     if (error) {
-      console.warn('Supabase query error, fallback to demo restaurants:', error.message);
+      console.warn('Supabase query error:', error.message);
     }
 
     return NextResponse.json({
@@ -102,7 +103,7 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { id, name, description, phone, phone_number, email, operational_status, operationalStatus } = body;
+    const { id, name, description, phone, phone_number, email, operational_status, operationalStatus, image_url, imageUrl } = body;
 
     if (!id) {
       return NextResponse.json({ success: false, message: 'Restaurant ID is required' }, { status: 400 });
@@ -116,6 +117,7 @@ export async function PUT(request: NextRequest) {
     if (phone || phone_number) updatePayload.phone_number = (phone || phone_number).trim();
     if (email !== undefined) updatePayload.email = email.trim();
     if (operational_status || operationalStatus) updatePayload.operational_status = operational_status || operationalStatus;
+    if (image_url || imageUrl) updatePayload.image_url = (image_url || imageUrl).trim();
 
     try {
       const { data, error } = await supabaseServer
@@ -126,7 +128,7 @@ export async function PUT(request: NextRequest) {
         .single();
 
       if (!error && data) {
-        return NextResponse.json({ success: true, data, message: 'Restaurant profile updated in database' });
+        return NextResponse.json({ success: true, data: { ...data, ...body }, message: 'Restaurant profile updated in database' });
       }
     } catch (e) {}
 

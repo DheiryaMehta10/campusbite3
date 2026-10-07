@@ -78,6 +78,10 @@ export default function CartPage() {
   const [appliedPromo, setAppliedPromo] = useState<{ code: string; discount: number } | null>(null);
   const [promoError, setPromoError] = useState('');
   const [promoSuccess, setPromoSuccess] = useState('');
+  const [availablePromos, setAvailablePromos] = useState<any[]>([
+    { code: 'FIRSTBITE', description: '20% OFF (1st Order)' },
+    { code: 'HUNGRYSTUDENT', description: 'Flat ₹30 OFF' },
+  ]);
 
   const api = axios.create({ baseURL: '' });
 
@@ -105,7 +109,18 @@ export default function CartPage() {
         }
       } catch (e) {}
     };
+
+    const fetchPromos = async () => {
+      try {
+        const res = await api.get('/api/promo');
+        if (res.data?.data && Array.isArray(res.data.data) && res.data.data.length > 0) {
+          setAvailablePromos(res.data.data.filter((p: any) => p.active));
+        }
+      } catch (e) {}
+    };
+
     fetchFees();
+    fetchPromos();
   }, []);
 
   const updateCart = (newCart: CartItem[]) => {
@@ -132,7 +147,7 @@ export default function CartPage() {
   let discount = appliedPromo ? appliedPromo.discount : 0;
   const toPay = Math.max(0, itemTotal + deliveryFee + platformFee - discount);
 
-  const applyPromoCode = (codeToApply?: string) => {
+  const applyPromoCode = async (codeToApply?: string) => {
     setPromoError('');
     setPromoSuccess('');
     const code = (codeToApply || promoInput).trim().toUpperCase();
@@ -141,52 +156,32 @@ export default function CartPage() {
       return;
     }
 
-    // Check if one-time coupon has already been used by this student
     const studentEmail = (typeof window !== 'undefined' && localStorage.getItem('userEmail')) || '';
     const studentPhone = (typeof window !== 'undefined' && localStorage.getItem('userPhone')) || '';
-    const studentIdentifier = (studentEmail || studentPhone || 'guest').toLowerCase().trim();
+    const studentId = (typeof window !== 'undefined' && localStorage.getItem('userId')) || '';
 
-    let usedPromos: string[] = [];
-    let pastOrdersCount = 0;
-    if (typeof window !== 'undefined') {
-      try {
-        const storedUsed = localStorage.getItem(`ub_used_promos_${studentIdentifier}`);
-        if (storedUsed) usedPromos = JSON.parse(storedUsed);
+    try {
+      const res = await api.post('/api/promo/verify', {
+        code,
+        subtotal: itemTotal,
+        studentEmail,
+        studentPhone,
+        studentId,
+      });
 
-        const pastOrders = JSON.parse((localStorage.getItem('ub_orders') || localStorage.getItem('cb_orders')) || '[]');
-        pastOrdersCount = pastOrders.length;
-        const hasUsedInOrders = pastOrders.some(
-          (o: any) => o.promoCode === code || o.promo_code === code || (o.discount > 0 && (code === 'FIRSTBITE' || code === 'UNIBITE20'))
-        );
-        if (hasUsedInOrders && !usedPromos.includes(code)) {
-          usedPromos.push(code);
-        }
-      } catch {}
-    }
-
-    const ONE_TIME_FIRST_ORDER_PROMOS = ['FIRSTBITE', 'UNIBITE20', 'FIRSTORDER'];
-    if (ONE_TIME_FIRST_ORDER_PROMOS.includes(code)) {
-      if (usedPromos.includes(code) || pastOrdersCount > 0) {
-        setPromoError(`Coupon '${code}' is valid for one-time use only on your first order.`);
-        return;
-      }
-    }
-
-    if (code === 'FIRSTBITE' || code === 'UNIBITE20') {
-      const calcDiscount = Math.min(50, Math.round(itemTotal * 0.2));
-      setAppliedPromo({ code, discount: calcDiscount });
-      setPromoSuccess(`🎉 '${code}' applied! Saved ₹${calcDiscount} (1st Order Special)`);
-      setPromoInput('');
-    } else if (code === 'CAMPUS50' || code === 'UNIBITE50') {
-      if (itemTotal >= 150) {
-        setAppliedPromo({ code, discount: 50 });
-        setPromoSuccess(`🎉 '${code}' applied! Saved ₹50`);
+      if (res.data?.success && res.data?.data) {
+        setAppliedPromo({
+          code: res.data.data.code,
+          discount: res.data.data.discount,
+        });
+        setPromoSuccess(`🎉 ${res.data.data.message || `'${code}' applied successfully!`}`);
         setPromoInput('');
       } else {
-        setPromoError(`Cart total must be at least ₹150 for '${code}'`);
+        setPromoError(res.data?.message || 'Invalid promo code');
       }
-    } else {
-      setPromoError('Invalid coupon code. Try FIRSTBITE or UNIBITE50');
+    } catch (err: any) {
+      const errMsg = err?.response?.data?.message || 'Invalid or expired promo code';
+      setPromoError(errMsg);
     }
   };
 
@@ -562,21 +557,24 @@ export default function CartPage() {
                     <p className="text-xs text-green-600 font-semibold">{promoSuccess}</p>
                   )}
 
-                  {/* Quick Promo Pills */}
-                  <div className="flex gap-2 pt-1">
-                    <button
-                      onClick={() => applyPromoCode('FIRSTBITE')}
-                      className="text-[11px] font-bold px-3 py-1 rounded-xl bg-orange-50 text-orange-800 border border-orange-200 hover:bg-orange-100 transition-all"
-                    >
-                      FIRSTBITE (20% OFF)
-                    </button>
-                    <button
-                      onClick={() => applyPromoCode('UNIBITE50')}
-                      className="text-[11px] font-bold px-3 py-1 rounded-xl bg-amber-50 text-amber-800 border border-amber-200 hover:bg-amber-100 transition-all"
-                    >
-                      UNIBITE50 (Flat ₹50 OFF)
-                    </button>
-                  </div>
+                  {/* Dynamic Active Promo Pills */}
+                  {availablePromos && availablePromos.length > 0 && (
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {availablePromos.map((p) => (
+                        <button
+                          key={p.code}
+                          type="button"
+                          onClick={() => applyPromoCode(p.code)}
+                          className="text-[11px] font-bold px-3 py-1 rounded-xl bg-orange-50 text-orange-800 border border-orange-200 hover:bg-orange-100 transition-all flex items-center gap-1"
+                        >
+                          <span className="font-black">{p.code}</span>
+                          <span className="text-[10px] text-orange-600 font-normal">
+                            ({p.discount_type === 'percent' ? `${p.discount_percent}% OFF` : `₹${p.discount_amount} OFF`})
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
             </div>

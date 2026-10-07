@@ -107,7 +107,7 @@ export default function TermsAndConditionsPage() {
             <ul className="list-disc pl-5 space-y-1 text-gray-600">
               <li><strong>Delivery Fee:</strong> Batch scheduled delivery to hostel collection points is free or subsidized by the campus partner program.</li>
               <li><strong>Platform Fee:</strong> A small technology fee (₹2 to ₹4) supports cloud server operations and live OTP delivery infrastructure.</li>
-              <li><strong>Coupons:</strong> Discount codes such as <code>FIRSTBITE</code> and <code>CAMPUS50</code> are subject to fair use limits and minimum cart thresholds.</li>
+              <li><strong>Coupons:</strong> Discount codes such as <code>FIRSTBITE</code> (one-time first order) and authorized promotional codes are subject to fair use limits and minimum cart thresholds.</li>
             </ul>
           </div>
 

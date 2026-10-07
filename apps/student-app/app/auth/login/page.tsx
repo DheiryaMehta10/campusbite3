@@ -174,7 +174,7 @@ export default function LoginPage() {
           </div>
           <div>
             <span className="text-sm font-black tracking-tight text-slate-900 dark:text-white">
-              Campus<span className="text-orange-600">Bite</span>
+              Uni<span className="text-orange-600">Bite</span>
             </span>
             <p className="text-[10px] font-bold text-orange-600 uppercase tracking-wider">Student App</p>
           </div>

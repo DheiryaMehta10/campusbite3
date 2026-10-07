@@ -180,6 +180,28 @@ const CATEGORIES = [
   { id: 'Desserts', label: 'Sweets', icon: '🍨' },
 ];
 
+interface LiveBanner {
+  id?: string;
+  badgeText?: string;
+  title?: string;
+  subtitle?: string;
+  promoTag?: string;
+  emoji?: string;
+  gradient?: string;
+  isActive?: boolean;
+  imageUrl?: string;
+}
+
+const DEFAULT_BANNER: LiveBanner = {
+  badgeText: '⚡ LIVE SLOT WAVE',
+  title: 'Evening Canteen Slots Open!',
+  subtitle: 'Fresh meals delivered directly to your hostel lobby.',
+  promoTag: 'FIRSTBITE (20% OFF 1st Order)',
+  emoji: '🍱',
+  gradient: 'orange',
+  isActive: true,
+};
+
 export default function HomePage() {
   const router = useRouter();
   const [restaurants, setRestaurants] = useState<Restaurant[]>(DEFAULT_RESTAURANTS);
@@ -191,6 +213,7 @@ export default function HomePage() {
   const [userRoom, setUserRoom] = useState('');
   const [userName, setUserName] = useState('Student');
   const [activeOrdersCount, setActiveOrdersCount] = useState(0);
+  const [banner, setBanner] = useState<LiveBanner>(DEFAULT_BANNER);
 
   const api = axios.create({ baseURL: '' });
 
@@ -217,11 +240,22 @@ export default function HomePage() {
     }
 
     loadRestaurants();
+    loadBanner();
     const interval = setInterval(() => {
       loadRestaurants();
+      loadBanner();
     }, 3000);
     return () => clearInterval(interval);
   }, []);
+
+  const loadBanner = async () => {
+    try {
+      const res = await api.get('/api/banners');
+      if (res.data?.success && res.data?.data) {
+        setBanner(res.data.data);
+      }
+    } catch (e) {}
+  };
 
   const loadRestaurants = async () => {
     let apiList: Restaurant[] = [];
@@ -381,24 +415,43 @@ export default function HomePage() {
 
       {/* MAIN CONTAINER */}
       <main className="max-w-md md:max-w-2xl lg:max-w-4xl mx-auto px-4 pt-3 space-y-6">
-        {/* 2. SWIGGY PROMOTIONAL HERO BANNER */}
-        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-orange-600 via-amber-600 to-orange-500 text-white p-5 shadow-lg shadow-orange-500/15">
-          <div className="relative z-10 max-w-[70%] space-y-1">
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-white text-orange-600 uppercase tracking-widest shadow-sm">
-              ⚡ LIVE SLOT WAVE
-            </span>
-            <h2 className="text-lg font-black tracking-tight leading-snug">
-              Evening Canteen Slots Open!
-            </h2>
-            <p className="text-[11px] text-orange-100 font-medium">
-              Hostel delivery. Code <span className="font-bold underline text-white">FIRSTBITE</span> (20% OFF 1st Order) & <span className="font-bold underline text-white">UNIBITE50</span>!
-            </p>
-          </div>
+        {/* 2. PROMOTIONAL HERO BANNER (CONTROLLED LIVE FROM ADMIN HQ) */}
+        {banner.isActive !== false && (
+          <div
+            className={`relative overflow-hidden rounded-3xl text-white p-5 shadow-lg transition-all ${
+              banner.gradient === 'purple'
+                ? 'bg-gradient-to-r from-purple-700 via-indigo-600 to-purple-600 shadow-purple-500/15'
+                : banner.gradient === 'blue'
+                ? 'bg-gradient-to-r from-blue-700 via-cyan-600 to-blue-600 shadow-blue-500/15'
+                : banner.gradient === 'emerald'
+                ? 'bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-600 shadow-emerald-500/15'
+                : banner.gradient === 'rose'
+                ? 'bg-gradient-to-r from-rose-700 via-red-600 to-rose-600 shadow-rose-500/15'
+                : 'bg-gradient-to-r from-orange-600 via-amber-600 to-orange-500 shadow-orange-500/15'
+            }`}
+          >
+            <div className="relative z-10 max-w-[70%] space-y-1">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-white text-gray-900 uppercase tracking-widest shadow-sm">
+                {banner.badgeText || '⚡ LIVE SLOT WAVE'}
+              </span>
+              <h2 className="text-lg font-black tracking-tight leading-snug">
+                {banner.title || 'Evening Canteen Slots Open!'}
+              </h2>
+              <p className="text-[11px] text-white/90 font-medium">
+                {banner.subtitle || 'Fresh meals delivered directly to your hostel lobby.'}{' '}
+                {banner.promoTag && (
+                  <span className="font-bold underline text-white ml-1">
+                    {banner.promoTag}
+                  </span>
+                )}
+              </p>
+            </div>
 
-          <div className="absolute right-2 -bottom-3 text-7xl opacity-90 select-none pointer-events-none drop-shadow-md">
-            🍱
+            <div className="absolute right-2 -bottom-3 text-7xl opacity-90 select-none pointer-events-none drop-shadow-md">
+              {banner.emoji || '🍱'}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* 3. CATEGORIES HORIZONTAL PILL CAROUSEL */}
         <div>

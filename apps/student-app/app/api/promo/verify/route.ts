@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
 
     const cleanCode = code.trim().toUpperCase();
 
-    // Check one-time usage for FIRSTBITE / UNIBITE20
+    // Check one-time usage for FIRSTBITE / UNIBITE20 / FIRSTORDER
     const ONE_TIME_CODES = ['FIRSTBITE', 'UNIBITE20', 'FIRSTORDER'];
     if (ONE_TIME_CODES.includes(cleanCode)) {
       if (studentEmail || studentPhone || studentId) {
@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
           else if (studentPhone) query = query.eq('student_phone', studentPhone.trim());
           else if (studentId) query = query.eq('student_id', studentId.trim());
 
-          const { count, data } = await query;
+          const { count } = await query;
           if (count && count > 0) {
             return NextResponse.json({
               success: false,
@@ -41,24 +41,25 @@ export async function POST(request: NextRequest) {
         data: {
           code: cleanCode,
           discount,
-          message: `Applied successfully! Saved ₹${discount} (1st Order Special)`,
+          message: `Applied successfully! Saved ₹${discount} (1st Order Special - 20% OFF)`,
         },
       });
     }
 
-    if (cleanCode === 'UNIBITE50' || cleanCode === 'CAMPUS50') {
-      if (subtotal < 150) {
+    // Default fallback coupon: HUNGRYSTUDENT
+    if (cleanCode === 'HUNGRYSTUDENT') {
+      if (subtotal < 120) {
         return NextResponse.json({
           success: false,
-          message: `Cart total must be at least ₹150 for '${cleanCode}'`,
+          message: `Cart total must be at least ₹120 for 'HUNGRYSTUDENT'`,
         }, { status: 400 });
       }
       return NextResponse.json({
         success: true,
         data: {
-          code: cleanCode,
-          discount: 50,
-          message: `Applied successfully! Saved ₹50`,
+          code: 'HUNGRYSTUDENT',
+          discount: 30,
+          message: 'Applied successfully! Flat ₹30 OFF',
         },
       });
     }
@@ -73,6 +74,23 @@ export async function POST(request: NextRequest) {
         .maybeSingle();
 
       if (!error && promo) {
+        if (promo.is_one_time && (studentEmail || studentPhone || studentId)) {
+          try {
+            let query = supabaseServer.from('orders').select('id', { count: 'exact' });
+            if (studentEmail) query = query.eq('student_email', studentEmail.trim().toLowerCase());
+            else if (studentPhone) query = query.eq('student_phone', studentPhone.trim());
+            else if (studentId) query = query.eq('student_id', studentId.trim());
+
+            const { count } = await query;
+            if (count && count > 0) {
+              return NextResponse.json({
+                success: false,
+                message: `Coupon '${cleanCode}' is valid for one-time use only.`,
+              }, { status: 400 });
+            }
+          } catch (e) {}
+        }
+
         if (subtotal < (promo.min_order_amount || 0)) {
           return NextResponse.json({
             success: false,
@@ -85,6 +103,9 @@ export async function POST(request: NextRequest) {
           discount = promo.discount_amount;
         } else if (promo.discount_percent > 0) {
           discount = (subtotal * promo.discount_percent) / 100;
+          if (promo.max_discount && promo.max_discount > 0) {
+            discount = Math.min(discount, promo.max_discount);
+          }
         }
 
         discount = Math.min(discount, subtotal);
