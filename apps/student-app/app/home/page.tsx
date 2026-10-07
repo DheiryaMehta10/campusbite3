@@ -418,16 +418,21 @@ export default function HomePage() {
         {/* 2. PROMOTIONAL HERO BANNER (CONTROLLED LIVE FROM ADMIN HQ) */}
         {banner.isActive !== false && (
           <div
+            style={banner.imageUrl ? { backgroundImage: `linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.7)), url(${banner.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
             className={`relative overflow-hidden rounded-3xl text-white p-5 shadow-lg transition-all ${
-              banner.gradient === 'purple'
-                ? 'bg-gradient-to-r from-purple-700 via-indigo-600 to-purple-600 shadow-purple-500/15'
-                : banner.gradient === 'blue'
-                ? 'bg-gradient-to-r from-blue-700 via-cyan-600 to-blue-600 shadow-blue-500/15'
-                : banner.gradient === 'emerald'
-                ? 'bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-600 shadow-emerald-500/15'
-                : banner.gradient === 'rose'
-                ? 'bg-gradient-to-r from-rose-700 via-red-600 to-rose-600 shadow-rose-500/15'
-                : 'bg-gradient-to-r from-orange-600 via-amber-600 to-orange-500 shadow-orange-500/15'
+              !banner.imageUrl ? (
+                banner.gradient === 'purple'
+                  ? 'bg-gradient-to-r from-purple-700 via-indigo-600 to-purple-600 shadow-purple-500/15'
+                  : banner.gradient === 'blue'
+                  ? 'bg-gradient-to-r from-blue-700 via-cyan-600 to-blue-600 shadow-blue-500/15'
+                  : banner.gradient === 'emerald'
+                  ? 'bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-600 shadow-emerald-500/15'
+                  : banner.gradient === 'rose'
+                  ? 'bg-gradient-to-r from-rose-700 via-red-600 to-rose-600 shadow-rose-500/15'
+                  : banner.gradient === 'midnight'
+                  ? 'bg-gradient-to-r from-gray-900 via-slate-800 to-black shadow-gray-900/20'
+                  : 'bg-gradient-to-r from-orange-600 via-amber-600 to-orange-500 shadow-orange-500/15'
+              ) : 'shadow-black/20'
             }`}
           >
             <div className="relative z-10 max-w-[70%] space-y-1">

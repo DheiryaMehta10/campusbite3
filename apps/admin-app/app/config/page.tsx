@@ -44,6 +44,7 @@ interface BannerConfig {
   emoji: string;
   gradient: string;
   isActive: boolean;
+  imageUrl?: string;
 }
 
 export default function AdminConfigPage() {
@@ -101,7 +102,6 @@ export default function AdminConfigPage() {
     const interval = setInterval(() => {
       fetchPromos();
       fetchSlots();
-      fetchBanner();
       fetchConfig();
     }, 4000);
     return () => clearInterval(interval);
@@ -333,25 +333,113 @@ export default function AdminConfigPage() {
                 onChange={(e) => setBanner({ ...banner, isActive: e.target.checked })}
                 className="h-4 w-4 rounded accent-orange-600 cursor-pointer"
               />
-              <span className="text-xs font-bold text-gray-700">Banner Visible to Students</span>
+              <span className={`text-xs font-bold ${banner.isActive ? 'text-green-700' : 'text-gray-500'}`}>
+                {banner.isActive ? '● Live & Visible' : '○ Hidden from Students'}
+              </span>
             </label>
+          </div>
+
+          {/* Quick Presets / Templates */}
+          <div className="space-y-1.5">
+            <p className="text-[10px] font-black uppercase tracking-wider text-gray-400">⚡ 1-Click Quick Templates</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                {
+                  label: '🍱 Evening Slot Wave',
+                  badge: '⚡ LIVE SLOT WAVE',
+                  title: 'Evening Canteen Slots Open!',
+                  subtitle: 'Fresh meals delivered directly to your hostel lobby.',
+                  tag: 'FIRSTBITE (20% OFF 1st Order)',
+                  emoji: '🍱',
+                  gradient: 'orange',
+                },
+                {
+                  label: '🎉 20% First Order Special',
+                  badge: '🎉 WELCOME DEAL',
+                  title: 'Get 20% OFF on Your 1st Order!',
+                  subtitle: 'Use code FIRSTBITE at checkout for instant savings up to ₹50.',
+                  tag: 'Code: FIRSTBITE',
+                  emoji: '🎉',
+                  gradient: 'purple',
+                },
+                {
+                  label: '🔥 Midnight Maggi & Snacks',
+                  badge: '🔥 HOT SNACKS',
+                  title: 'Midnight Cravings Delivered Fast!',
+                  subtitle: 'Hot burgers, crispy rolls, cheese maggi & fries at your doorstep.',
+                  tag: 'HUNGRYSTUDENT (₹30 OFF)',
+                  emoji: '🍔',
+                  gradient: 'rose',
+                },
+                {
+                  label: '🥤 Chai, Coffee & Shakes',
+                  badge: '☕ BEVERAGE BAR',
+                  title: 'Fresh Chai & Cold Coffee Waves',
+                  subtitle: 'Recharge with hot Kulhad Chai, shakes, and cold coffee combos.',
+                  tag: 'Zero Delivery Fee',
+                  emoji: '☕',
+                  gradient: 'emerald',
+                },
+                {
+                  label: '⚡ Exam Fuel Fest',
+                  badge: '📚 EXAM FUEL',
+                  title: 'Study Night Energy Combos',
+                  subtitle: 'Piping hot late evening meals delivered right to your study desk.',
+                  tag: 'Batch Wave Delivery',
+                  emoji: '⚡',
+                  gradient: 'midnight',
+                },
+              ].map((tpl) => (
+                <button
+                  key={tpl.label}
+                  type="button"
+                  onClick={() =>
+                    setBanner({
+                      ...banner,
+                      badgeText: tpl.badge,
+                      title: tpl.title,
+                      subtitle: tpl.subtitle,
+                      promoTag: tpl.tag,
+                      emoji: tpl.emoji,
+                      gradient: tpl.gradient,
+                      isActive: true,
+                    })
+                  }
+                  className="px-2.5 py-1 text-[11px] font-bold bg-gray-100 hover:bg-orange-50 hover:text-orange-900 border border-gray-200 rounded-xl transition-all active:scale-95"
+                >
+                  {tpl.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Live Preview of Banner */}
           <div>
-            <p className="text-[11px] font-black uppercase tracking-wider text-gray-400 mb-2">Live Student App Preview</p>
+            <div className="flex justify-between items-center mb-1.5">
+              <p className="text-[11px] font-black uppercase tracking-wider text-gray-400">Live Student App Preview</p>
+              {!banner.isActive && (
+                <span className="text-[10px] font-black bg-red-100 text-red-700 px-2 py-0.5 rounded-md">
+                  Currently Hidden in Student App
+                </span>
+              )}
+            </div>
             <div
+              style={banner.imageUrl ? { backgroundImage: `linear-gradient(rgba(0,0,0,0.55), rgba(0,0,0,0.7)), url(${banner.imageUrl})`, backgroundSize: 'cover', backgroundPosition: 'center' } : undefined}
               className={`relative overflow-hidden rounded-3xl text-white p-5 shadow-md transition-all ${
-                banner.gradient === 'purple'
-                  ? 'bg-gradient-to-r from-purple-700 via-indigo-600 to-purple-600'
-                  : banner.gradient === 'blue'
-                  ? 'bg-gradient-to-r from-blue-700 via-cyan-600 to-blue-600'
-                  : banner.gradient === 'emerald'
-                  ? 'bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-600'
-                  : banner.gradient === 'rose'
-                  ? 'bg-gradient-to-r from-rose-700 via-red-600 to-rose-600'
-                  : 'bg-gradient-to-r from-orange-600 via-amber-600 to-orange-500'
-              }`}
+                !banner.imageUrl ? (
+                  banner.gradient === 'purple'
+                    ? 'bg-gradient-to-r from-purple-700 via-indigo-600 to-purple-600 shadow-purple-500/15'
+                    : banner.gradient === 'blue'
+                    ? 'bg-gradient-to-r from-blue-700 via-cyan-600 to-blue-600 shadow-blue-500/15'
+                    : banner.gradient === 'emerald'
+                    ? 'bg-gradient-to-r from-emerald-700 via-teal-600 to-emerald-600 shadow-emerald-500/15'
+                    : banner.gradient === 'rose'
+                    ? 'bg-gradient-to-r from-rose-700 via-red-600 to-rose-600 shadow-rose-500/15'
+                    : banner.gradient === 'midnight'
+                    ? 'bg-gradient-to-r from-gray-900 via-slate-800 to-black shadow-gray-900/20'
+                    : 'bg-gradient-to-r from-orange-600 via-amber-600 to-orange-500 shadow-orange-500/15'
+                ) : 'shadow-black/20'
+              } ${!banner.isActive ? 'opacity-60 grayscale' : ''}`}
             >
               <div className="relative z-10 max-w-[70%] space-y-1">
                 <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-white text-gray-900 uppercase tracking-widest shadow-sm">
@@ -387,23 +475,34 @@ export default function AdminConfigPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-semibold focus:border-orange-500 outline-none"
               />
             </div>
+
             <div>
-              <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">Floating Emoji</label>
-              <div className="flex gap-2">
-                {['🍱', '🍔', '🍕', '☕', '🔥', '⚡', '🎉', '🍛'].map((em) => (
-                  <button
-                    key={em}
-                    type="button"
-                    onClick={() => setBanner({ ...banner, emoji: em })}
-                    className={`h-9 w-9 text-lg rounded-xl border flex items-center justify-center transition-all ${
-                      banner.emoji === em ? 'border-orange-500 bg-orange-50 scale-110 shadow-sm' : 'border-gray-200 hover:bg-gray-50'
-                    }`}
-                  >
-                    {em}
-                  </button>
-                ))}
+              <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">Floating Emoji / Icon</label>
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={banner.emoji}
+                  onChange={(e) => setBanner({ ...banner, emoji: e.target.value })}
+                  placeholder="🍱"
+                  className="w-16 px-2 py-1.5 border border-gray-300 rounded-xl text-sm font-bold text-center focus:border-orange-500 outline-none"
+                />
+                <div className="flex gap-1.5 flex-wrap">
+                  {['🍱', '🍔', '🍕', '☕', '🔥', '⚡', '🎉', '🍛', '🥤', '🌯'].map((em) => (
+                    <button
+                      key={em}
+                      type="button"
+                      onClick={() => setBanner({ ...banner, emoji: em })}
+                      className={`h-8 w-8 text-base rounded-xl border flex items-center justify-center transition-all ${
+                        banner.emoji === em ? 'border-orange-500 bg-orange-50 scale-110 shadow-sm' : 'border-gray-200 hover:bg-gray-50'
+                      }`}
+                    >
+                      {em}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
+
             <div className="sm:col-span-2">
               <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">Banner Headline</label>
               <input
@@ -414,6 +513,7 @@ export default function AdminConfigPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-semibold focus:border-orange-500 outline-none"
               />
             </div>
+
             <div>
               <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">Subtitle / Details</label>
               <input
@@ -424,6 +524,7 @@ export default function AdminConfigPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-semibold focus:border-orange-500 outline-none"
               />
             </div>
+
             <div>
               <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">Promo Tag Highlight</label>
               <input
@@ -434,8 +535,9 @@ export default function AdminConfigPage() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-semibold focus:border-orange-500 outline-none"
               />
             </div>
+
             <div className="sm:col-span-2">
-              <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">Color Theme</label>
+              <label className="block text-[11px] font-bold text-gray-700 uppercase mb-1">Color Theme Gradient</label>
               <div className="flex flex-wrap gap-2.5">
                 {[
                   { id: 'orange', label: 'Sunset Orange', class: 'bg-orange-500' },
@@ -443,13 +545,14 @@ export default function AdminConfigPage() {
                   { id: 'blue', label: 'Electric Blue', class: 'bg-blue-600' },
                   { id: 'emerald', label: 'Fresh Emerald', class: 'bg-emerald-600' },
                   { id: 'rose', label: 'Ruby Rose', class: 'bg-rose-600' },
+                  { id: 'midnight', label: 'Midnight Dark', class: 'bg-gray-900' },
                 ].map((g) => (
                   <button
                     key={g.id}
                     type="button"
-                    onClick={() => setBanner({ ...banner, gradient: g.id })}
+                    onClick={() => setBanner({ ...banner, gradient: g.id, imageUrl: '' })}
                     className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all ${
-                      banner.gradient === g.id ? 'border-orange-500 bg-orange-50 text-orange-900 shadow-sm' : 'border-gray-200 text-gray-600'
+                      banner.gradient === g.id && !banner.imageUrl ? 'border-orange-500 bg-orange-50 text-orange-900 shadow-sm' : 'border-gray-200 text-gray-600 hover:bg-gray-50'
                     }`}
                   >
                     <span className={`h-3 w-3 rounded-full ${g.class}`} />
@@ -459,8 +562,30 @@ export default function AdminConfigPage() {
               </div>
             </div>
 
+            <div className="sm:col-span-2">
+              <div className="flex justify-between items-center mb-1">
+                <label className="block text-[11px] font-bold text-gray-700 uppercase">Optional Custom Background Image URL</label>
+                {banner.imageUrl && (
+                  <button
+                    type="button"
+                    onClick={() => setBanner({ ...banner, imageUrl: '' })}
+                    className="text-[10px] text-red-600 font-bold hover:underline"
+                  >
+                    Clear Image (Use Gradient)
+                  </button>
+                )}
+              </div>
+              <input
+                type="text"
+                value={banner.imageUrl || ''}
+                onChange={(e) => setBanner({ ...banner, imageUrl: e.target.value })}
+                placeholder="https://images.unsplash.com/... (optional)"
+                className="w-full px-3 py-2 border border-gray-300 rounded-xl text-xs font-medium focus:border-orange-500 outline-none"
+              />
+            </div>
+
             <div className="sm:col-span-2 pt-1">
-              <label className="flex items-center gap-2 cursor-pointer bg-gray-50 border border-gray-200 rounded-xl p-3">
+              <label className="flex items-center gap-2.5 cursor-pointer bg-gray-50 border border-gray-200 rounded-2xl p-3.5 hover:bg-orange-50/40 transition-all">
                 <input
                   type="checkbox"
                   checked={banner.isActive}
@@ -468,11 +593,11 @@ export default function AdminConfigPage() {
                   className="h-4 w-4 rounded accent-orange-600 cursor-pointer"
                 />
                 <div>
-                  <span className="text-xs font-bold text-gray-900 block">
-                    {banner.isActive ? '🟢 Visible in Student App (Live)' : '🔴 Hidden in Student App'}
+                  <span className="text-xs font-black text-gray-900 block">
+                    {banner.isActive ? '🟢 Visible in Student App (Live Now)' : '🔴 Hidden in Student App (Disabled)'}
                   </span>
                   <span className="text-[10px] text-gray-500 block">
-                    Toggle to immediately display or hide the promotional banner on student home and explore feeds
+                    When enabled, this banner is displayed to all students at the top of the Home and Explore screens.
                   </span>
                 </div>
               </label>
@@ -489,7 +614,7 @@ export default function AdminConfigPage() {
             type="button"
             onClick={handleSaveBanner}
             disabled={bannerSaving}
-            className="w-full bg-gray-900 hover:bg-black text-white text-xs font-black py-3 rounded-2xl transition-all shadow-md"
+            className="w-full bg-gray-900 hover:bg-black text-white text-xs font-black py-3.5 rounded-2xl transition-all shadow-md active:scale-95 disabled:opacity-60"
           >
             {bannerSaving ? 'Publishing Banner to Database...' : '🚀 Save & Publish Live Explore Banner'}
           </button>
