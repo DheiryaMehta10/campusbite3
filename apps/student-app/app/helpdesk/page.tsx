@@ -20,7 +20,7 @@ const FAQS: FAQ[] = [
     category: 'Delivery',
     question: 'How do scheduled batch delivery waves work?',
     answer:
-      'UniBite bundles orders into specific campus waves (Evening 6-7 PM, 7-8 PM, and Night Canteen 9:30-10:30 PM) to ensure meals arrive piping hot at your hostel drop-off point with zero delivery fees.',
+      'UniBite bundles orders into specific campus waves (Lunch 12-1 PM, Evening 6-7 PM, 7-8 PM, and 8-9 PM) to ensure meals arrive piping hot at your hostel drop-off point with zero delivery fees.',
     actionText: 'View Active Orders',
     actionHref: '/orders',
   },

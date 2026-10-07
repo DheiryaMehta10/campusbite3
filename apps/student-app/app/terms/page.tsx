@@ -68,9 +68,10 @@ export default function TermsAndConditionsPage() {
               To maintain food quality and eliminate campus delivery traffic, orders operate strictly on <strong>Scheduled Batch Waves</strong>:
             </p>
             <ul className="list-disc pl-5 space-y-1 text-gray-600">
-              <li><strong>Evening Slot 1:</strong> 6:00 PM – 7:00 PM (Orders Cutoff at 5:45 PM).</li>
-              <li><strong>Evening Slot 2:</strong> 7:00 PM – 8:00 PM (Orders Cutoff at 6:45 PM).</li>
-              <li><strong>Night Canteen Slot:</strong> 9:30 PM – 10:30 PM (Orders Cutoff at 9:15 PM).</li>
+              <li><strong>Lunch Slot:</strong> 12:00 PM – 1:00 PM (Orders Cutoff at 11:50 AM).</li>
+              <li><strong>Evening Slot 1:</strong> 6:00 PM – 7:00 PM (Orders Cutoff at 5:50 PM).</li>
+              <li><strong>Evening Slot 2:</strong> 7:00 PM – 8:00 PM (Orders Cutoff at 6:50 PM).</li>
+              <li><strong>Evening Slot 3:</strong> 8:00 PM – 9:00 PM (Orders Cutoff at 7:50 PM).</li>
             </ul>
             <p className="text-gray-500 text-[11px]">
               Orders placed after the cutoff time will be automatically scheduled for the next available wave.

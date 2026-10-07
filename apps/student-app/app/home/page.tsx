@@ -73,7 +73,7 @@ const DEFAULT_RESTAURANTS: Restaurant[] = [
     rating: 4.4,
     operational_status: 'open',
     cuisines: 'Snacks, Burgers, Fast Food',
-    deliveryTime: 'Night Slot 9:30 - 10:30 PM',
+    deliveryTime: 'Slot 8:00 - 9:00 PM',
     priceForTwo: 150,
   },
   {

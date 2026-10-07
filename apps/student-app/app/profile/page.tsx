@@ -228,7 +228,7 @@ export default function ProfilePage() {
                 <span className="text-base">🕒</span>
                 <div>
                   <p className="font-bold text-gray-900">Delivery Wave Timings</p>
-                  <p className="text-[10px] text-gray-500">Evening (6-7 PM, 7-8 PM) & Night Canteen (9:30-10:30 PM)</p>
+                  <p className="text-[10px] text-gray-500">Lunch (12-1 PM) & Evening (6-7 PM, 7-8 PM, 8-9 PM)</p>
                 </div>
               </div>
             </div>

@@ -98,7 +98,7 @@ const DEFAULT_RESTAURANTS_SEED: RestaurantProfile[] = [
     image_url: 'https://images.unsplash.com/photo-1541544741938-0af808871cc0?w=800&auto=format&fit=crop&q=80',
     phone: '9876543212',
     operational_status: 'open',
-    delivery_time: 'Night Slot 9:30 - 10:30 PM',
+    delivery_time: 'Slot 8:00 - 9:00 PM',
     price_for_two: 150,
     rating: 4.4,
   },
@@ -1355,10 +1355,10 @@ export default function RestaurantDashboardPage() {
                     onChange={(e) => setNewRestaurantForm({ ...newRestaurantForm, delivery_time: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-orange-500"
                   >
-                    <option value="Slot 6:00 - 7:00 PM">Evening Slot (6:00 - 7:00 PM)</option>
-                    <option value="Slot 7:00 - 8:00 PM">Evening Slot (7:00 - 8:00 PM)</option>
-                    <option value="Slot 8:00 - 9:00 PM">Evening Slot (8:00 - 9:00 PM)</option>
-                    <option value="Night Slot 9:30 - 10:30 PM">Night Slot (9:30 - 10:30 PM)</option>
+                    <option value="Slot 12:00 - 1:00 PM">Lunch Slot (12:00 - 1:00 PM)</option>
+                    <option value="Slot 6:00 - 7:00 PM">Evening Slot 1 (6:00 - 7:00 PM)</option>
+                    <option value="Slot 7:00 - 8:00 PM">Evening Slot 2 (7:00 - 8:00 PM)</option>
+                    <option value="Slot 8:00 - 9:00 PM">Evening Slot 3 (8:00 - 9:00 PM)</option>
                   </select>
                 </div>
 
@@ -1498,10 +1498,10 @@ export default function RestaurantDashboardPage() {
                     onChange={(e) => setEditRestaurantForm({ ...editRestaurantForm, delivery_time: e.target.value })}
                     className="w-full px-3.5 py-2.5 bg-slate-800 border border-slate-700 rounded-xl text-xs font-bold text-white focus:outline-none focus:border-purple-500"
                   >
-                    <option value="Slot 6:00 - 7:00 PM">Evening Slot (6:00 - 7:00 PM)</option>
-                    <option value="Slot 7:00 - 8:00 PM">Evening Slot (7:00 - 8:00 PM)</option>
-                    <option value="Slot 8:00 - 9:00 PM">Evening Slot (8:00 - 9:00 PM)</option>
-                    <option value="Night Slot 9:30 - 10:30 PM">Night Slot (9:30 - 10:30 PM)</option>
+                    <option value="Slot 12:00 - 1:00 PM">Lunch Slot (12:00 - 1:00 PM)</option>
+                    <option value="Slot 6:00 - 7:00 PM">Evening Slot 1 (6:00 - 7:00 PM)</option>
+                    <option value="Slot 7:00 - 8:00 PM">Evening Slot 2 (7:00 - 8:00 PM)</option>
+                    <option value="Slot 8:00 - 9:00 PM">Evening Slot 3 (8:00 - 9:00 PM)</option>
                   </select>
                 </div>
 

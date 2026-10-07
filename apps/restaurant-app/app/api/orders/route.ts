@@ -23,16 +23,13 @@ function resolveRestaurantId(id: string): string {
 const MEMORY_ORDERS: any[] = [];
 
 const DEFAULT_SLOTS_MAP: Record<string, string> = {
-  '550e8400-e29b-41d4-a716-446655440101': 'Evening Slot 1 (6:00 PM – 7:00 PM)',
-  '550e8400-e29b-41d4-a716-446655440102': 'Evening Slot 2 (7:00 PM – 8:00 PM)',
-  '550e8400-e29b-41d4-a716-446655440103': 'Night Canteen Slot (9:30 PM – 10:30 PM)',
-  '550e8400-e29b-41d4-a716-446655440104': 'Late Night Snack Slot (11:30 PM – 12:30 AM)',
-  'slot-eve-1': 'Evening Slot 1 (6:00 PM – 7:00 PM)',
-  'slot-eve-2': 'Evening Slot 2 (7:00 PM – 8:00 PM)',
-  'slot-night': 'Night Canteen Slot (9:30 PM – 10:30 PM)',
   '4a7cabf4-a40e-4fa8-92f2-d12586ca69f1': 'Lunch Slot (12:00 PM – 1:00 PM)',
   '4a511603-db68-4dee-b602-0478566adedd': 'Evening Slot 1 (6:00 PM – 7:00 PM)',
   'e5df2f44-35eb-4f99-838e-98570c6536c8': 'Evening Slot 2 (7:00 PM – 8:00 PM)',
+  '550e8400-e29b-41d4-a716-446655440103': 'Evening Slot 3 (8:00 PM – 9:00 PM)',
+  'slot-eve-1': 'Evening Slot 1 (6:00 PM – 7:00 PM)',
+  'slot-eve-2': 'Evening Slot 2 (7:00 PM – 8:00 PM)',
+  'slot-eve-3': 'Evening Slot 3 (8:00 PM – 9:00 PM)',
 };
 
 function formatOrder(dbOrder: any) {

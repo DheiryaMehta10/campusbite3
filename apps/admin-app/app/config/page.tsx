@@ -55,12 +55,10 @@ export default function AdminConfigPage() {
   ]);
 
   const [slots, setSlots] = useState<DeliverySlotConfig[]>([
-    { id: '4a7cabf4-a40e-4fa8-92f2-d12586ca69f1', name: 'Lunch Slot (12:00 PM – 1:00 PM)', startTime: '12:00', endTime: '13:00', cutoffTime: '11:50', isActive: false },
+    { id: '4a7cabf4-a40e-4fa8-92f2-d12586ca69f1', name: 'Lunch Slot (12:00 PM – 1:00 PM)', startTime: '12:00', endTime: '13:00', cutoffTime: '11:50', isActive: true },
     { id: '4a511603-db68-4dee-b602-0478566adedd', name: 'Evening Slot 1 (6:00 PM – 7:00 PM)', startTime: '18:00', endTime: '19:00', cutoffTime: '17:50', isActive: true },
     { id: 'e5df2f44-35eb-4f99-838e-98570c6536c8', name: 'Evening Slot 2 (7:00 PM – 8:00 PM)', startTime: '19:00', endTime: '20:00', cutoffTime: '18:50', isActive: true },
     { id: '550e8400-e29b-41d4-a716-446655440103', name: 'Evening Slot 3 (8:00 PM – 9:00 PM)', startTime: '20:00', endTime: '21:00', cutoffTime: '19:50', isActive: true },
-    { id: '550e8400-e29b-41d4-a716-446655440104', name: 'Night Canteen Slot (9:30 PM – 10:30 PM)', startTime: '21:30', endTime: '22:30', cutoffTime: '21:20', isActive: true },
-    { id: '550e8400-e29b-41d4-a716-446655440105', name: 'Late Night Snack Slot (11:30 PM – 12:30 AM)', startTime: '23:30', endTime: '00:30', cutoffTime: '23:20', isActive: true },
   ]);
 
   // Promotional Banner State
